@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3 uid="uid://dvj4ixdew2cl5"]
+[gd_scene load_steps=21 format=3 uid="uid://dvj4ixdew2cl5"]
 
 [ext_resource type="Script" uid="uid://dfukqvi7p8lin" path="res://remote_cctv.gd" id="1_og2t3"]
 [ext_resource type="Texture2D" uid="uid://cqi8pfb27eur0" path="res://map.png" id="1_r7ydr"]
@@ -21,6 +21,20 @@ shader = ExtResource("15_lqbdw")
 shader_parameter/quantite_bruit = 0.2590000123025
 shader_parameter/densite = 0.626000029735
 
+[sub_resource type="Gradient" id="Gradient_lqbdw"]
+colors = PackedColorArray(0.41568628, 0.41568628, 0.41568628, 1, 0.41598046, 0.41598043, 0.4159804, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_dshet"]
+gradient = SubResource("Gradient_lqbdw")
+width = 400
+
+[sub_resource type="Gradient" id="Gradient_ocw4j"]
+colors = PackedColorArray(0, 1, 0, 1, 0, 1, 0, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_73acr"]
+gradient = SubResource("Gradient_ocw4j")
+width = 400
+
 [node name="Moniteur_CCTV" type="Control"]
 layout_mode = 3
 anchors_preset = 15
@@ -30,7 +44,17 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_og2t3")
 
-[node name="FondDeCarte" type="TextureRect" parent="."]
+[node name="Ecran_Vue" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Map" type="TextureRect" parent="."]
 layout_mode = 0
 offset_left = 900.0
 offset_top = 396.0
@@ -38,6 +62,7 @@ offset_right = 1400.0
 offset_bottom = 896.0
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("1_r7ydr")
+stretch_mode = 6
 
 [node name="Container_Boutons" type="Control" parent="."]
 anchors_preset = 0
@@ -167,15 +192,55 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[connection signal="pressed" from="Container_Boutons/Bouton_CAM01" to="." method="_on_bouton_cam_01_pressed"]
-[connection signal="pressed" from="Container_Boutons/Bouton_CAM02" to="." method="_on_bouton_cam_02_pressed"]
-[connection signal="pressed" from="Container_Boutons/Bouton_CAM03" to="." method="_on_bouton_cam_03_pressed"]
-[connection signal="pressed" from="Container_Boutons/Bouton_CAM04" to="." method="_on_bouton_cam_04_pressed"]
-[connection signal="pressed" from="Container_Boutons/Bouton_CAM05" to="." method="_on_bouton_cam_05_pressed"]
-[connection signal="pressed" from="Container_Boutons/Bouton_CAM06" to="." method="_on_bouton_cam_06_pressed"]
-[connection signal="pressed" from="Container_Boutons/Bouton_CAM07" to="." method="_on_bouton_cam_07_pressed"]
-[connection signal="pressed" from="Container_Boutons/Bouton_CAM08" to="." method="_on_bouton_cam_08_pressed"]
-[connection signal="pressed" from="Container_Boutons/Bouton_CAM09" to="." method="_on_bouton_cam_09_pressed"]
-[connection signal="pressed" from="Container_Boutons/Bouton_CAM10" to="." method="_on_bouton_cam_10_pressed"]
-[connection signal="pressed" from="Container_Boutons/Bouton_CAM11" to="." method="_on_bouton_cam_11_pressed"]
-[connection signal="pressed" from="Container_Boutons/Bouton_CAM12" to="." method="_on_bouton_cam_12_pressed"]
+[node name="MusicBox_UI" type="Control" parent="."]
+visible = false
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Barre_Musique" type="TextureProgressBar" parent="MusicBox_UI"]
+layout_mode = 0
+offset_left = 177.0
+offset_top = 336.0
+offset_right = 562.0
+offset_bottom = 376.0
+value = 100.0
+texture_under = SubResource("GradientTexture2D_dshet")
+texture_progress = SubResource("GradientTexture2D_73acr")
+
+[node name="Bouton_Wind" type="Button" parent="MusicBox_UI"]
+layout_mode = 0
+offset_left = 275.0
+offset_top = 433.0
+offset_right = 466.0
+offset_bottom = 517.0
+text = "WIND UP"
+
+[node name="Foxy_UI" type="Control" parent="."]
+visible = false
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Bouton_Flash" type="Button" parent="Foxy_UI"]
+layout_mode = 0
+offset_left = 162.0
+offset_top = 404.0
+offset_right = 326.0
+offset_bottom = 467.0
+text = "FLASHER"
+
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM01" to="." method="_on_cam_01_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM02" to="." method="_on_cam_02_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM03" to="." method="_on_cam_03_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM04" to="." method="_on_cam_04_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM05" to="." method="_on_cam_05_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM06" to="." method="_on_cam_06_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM07" to="." method="_on_cam_07_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM08" to="." method="_on_cam_08_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM09" to="." method="_on_cam_09_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM10" to="." method="_on_cam_10_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM11" to="." method="_on_cam_11_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM12" to="." method="_on_cam_12_pressed"]
+[connection signal="button_down" from="MusicBox_UI/Bouton_Wind" to="." method="_on_wind_start"]
+[connection signal="button_up" from="MusicBox_UI/Bouton_Wind" to="." method="_on_wind_stop"]

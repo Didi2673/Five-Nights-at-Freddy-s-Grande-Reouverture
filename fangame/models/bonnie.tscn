@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://c5wgxcnpobkbs"]
+
+[ext_resource type="PackedScene" uid="uid://dh0ybrfjelgjw" path="res://bonnie.glb" id="1_bitns"]
+
+[node name="Bonnie" type="Node3D"]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 0)
+
+[node name="Bonnie" parent="." instance=ExtResource("1_bitns")]
+transform = Transform3D(4, 0, 0, 0, 4, 0, 0, 0, 4, -0.006628394, 1.1920929e-07, -0.0014737844)

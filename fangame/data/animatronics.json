@@ -1,0 +1,65 @@
+[
+	{
+		"name": "Bonnie",
+		"movement_interval": 5.0,
+		"door_side": "left",
+		"path": ["Cam01", "Cam02", "Cam07", "Cam08", "Cam11", "Left_Door_Pos"],
+		"ai_levels": [
+			[1, 1, 2, 2, 3, 4], 
+			[4, 4, 4, 5, 5, 5],
+			[5, 5, 5, 5, 5, 5],
+			[7, 7, 7, 8, 8, 8],
+			[10, 10, 10, 10, 10, 10],
+		]
+	},
+	{
+		"name": "Chica",
+		"movement_interval": 5.0,
+		"door_side": "right",
+		"path": ["Cam01", "Cam02", "Cam05", "Cam06", "Cam10", "Cam12", "Right_Door_Pos"],
+		"ai_levels": [
+			[0, 0, 0, 0, 0, 0],
+			[1, 2, 3, 3, 4, 4],
+			[5, 5, 5, 5, 6, 6],
+			[7, 7, 7, 7, 7, 7],
+			[8, 8, 8, 8, 8, 8],
+		]
+	},
+	{
+		"name": "Freddy",
+		"movement_interval": 8.0,
+		"path": ["Cam01", "Cam09", "Office_Vent_Pos"],
+		"ai_levels": [
+			[0, 0, 0, 0, 0, 0],
+			[0, 0, 0, 0, 0, 0],
+			[0, 0, 0, 0, 0, 0],
+			[1, 1, 1, 1, 1, 1],
+			[4, 4, 4, 4, 4, 4],
+		]
+	},
+	{
+		"name": "Foxy",
+		"movement_interval": 5.0,
+		"door_side": "left",
+		"path": ["Cam03", "Left_Door_Pos"],
+		"ai_levels": [
+			[0, 0, 0, 0, 0, 0],
+			[0, 0, 0, 0, 0, 0],
+			[1, 2, 3, 3, 3, 3],
+			[5, 5, 5, 5, 5, 5],
+			[7, 7, 7, 10, 10, 10],
+		]
+	},
+	{
+		"name": "Puppet",
+		"movement_interval": 1.0, 
+		"path": ["Cam04"],
+		"ai_levels": [
+			[1, 1, 1, 1, 1, 1], 
+			[2, 2, 2, 2, 2, 2],
+			[3, 3, 3, 3, 3, 3],
+			[4, 4, 4, 4, 4, 4],
+			[5, 5, 5, 5, 5, 5]
+		]
+	}
+]

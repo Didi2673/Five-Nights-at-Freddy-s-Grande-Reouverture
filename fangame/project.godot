@@ -11,6 +11,10 @@ config_version=5
 [application]
 
 config/name="test"
-run/main_scene="uid://cmdmes87qhdmf"
+run/main_scene="uid://d1jvp74qdhp23"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
+
+[autoload]
+
+GameData="*res://GameData.gd"

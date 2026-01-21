@@ -1,89 +1,63 @@
-[gd_scene load_steps=9 format=3 uid="uid://cmdmes87qhdmf"]
+[gd_scene load_steps=14 format=3 uid="uid://cmdmes87qhdmf"]
 
+[ext_resource type="Script" uid="uid://binxa8r2e1lh" path="res://office.gd" id="1_4i814"]
 [ext_resource type="PackedScene" uid="uid://cfrhyxgrw488v" path="res://Player.tscn" id="1_g3mwp"]
 [ext_resource type="PackedScene" uid="uid://bd4x2snu8pgym" path="res://right_door.tscn" id="2_ei2s5"]
 [ext_resource type="PackedScene" uid="uid://dmk8dabn55q7y" path="res://left_door.tscn" id="3_u8nhc"]
-[ext_resource type="PackedScene" uid="uid://dd32hoyugk2ph" path="res://middle_door.tscn" id="4_43ocd"]
 [ext_resource type="Script" uid="uid://toqhnnjlbbq4" path="res://cameras_system.gd" id="5_hsito"]
+[ext_resource type="Texture2D" uid="uid://7boke2nwipgl" path="res://ground_texture.jpg" id="6_70x1r"]
 [ext_resource type="PackedScene" uid="uid://dvj4ixdew2cl5" path="res://moniteur_cctv.tscn" id="6_lcnwv"]
+[ext_resource type="FontFile" uid="uid://dh5jtdq4vw75k" path="res://LcdSolid.ttf" id="8_lcwox"]
+[ext_resource type="VideoStream" uid="uid://cfih00dontugp" path="res://Fnaf6AM.ogv" id="8_wruqr"]
+[ext_resource type="VideoStream" uid="uid://c6taj4hpymjyt" path="res://Bonnie.ogv" id="10_3xqf3"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_43ocd"]
-albedo_color = Color(0.35013354, 0.27616084, 0, 1)
+albedo_texture = ExtResource("6_70x1r")
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hsito"]
-albedo_color = Color(0.13582113, 0.05165872, 0.5037034, 1)
+[sub_resource type="LabelSettings" id="LabelSettings_3xqf3"]
+font = ExtResource("8_lcwox")
+font_size = 36
 
-[node name="Office" type="Node3D"]
+[sub_resource type="LabelSettings" id="LabelSettings_lcwox"]
+font = ExtResource("8_lcwox")
+font_size = 32
+
+[node name="Office" type="Node3D" node_paths=PackedStringArray("portes", "systeme_camera", "porte_gauche", "porte_droite", "ecran_jumpscare")]
+script = ExtResource("1_4i814")
+portes = [NodePath("Left_Door"), NodePath("Right_Door")]
+systeme_camera = NodePath("Cameras_System")
+porte_gauche = NodePath("Left_Door")
+porte_droite = NodePath("Right_Door")
+ecran_jumpscare = NodePath("UI/Jumpscare")
 
 [node name="Player" parent="." instance=ExtResource("1_g3mwp")]
 
 [node name="Right_Door" parent="." instance=ExtResource("2_ei2s5")]
 transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0, 0)
 
+[node name="Right_Door_Pos" type="Marker3D" parent="Right_Door"]
+transform = Transform3D(1, 0, 0, 0, 0.99999976, -8.940697e-08, 0, 8.940697e-08, 0.99999976, 4.7992973, 0.3701706, 0.042883717)
+
 [node name="Left_Door" parent="." instance=ExtResource("3_u8nhc")]
 transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0, 0)
 
-[node name="Middle_Door" parent="." instance=ExtResource("4_43ocd")]
-transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0, 0)
+[node name="Left_Door_Pos" type="Marker3D" parent="Left_Door"]
+transform = Transform3D(1, 0, 0, 0, 0.99999976, -8.940697e-08, 0, 8.940697e-08, 0.99999976, -4.7999387, 0.3701706, 0.042883717)
 
 [node name="Ground" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9925346, -0.8020483, -58.84561)
-size = Vector3(90.50658, 0.42615333, 134.81265)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.36393166, -0.8020483, -0.54961395)
+size = Vector3(19.159286, 0.42615333, 18.220657)
 material = SubResource("StandardMaterial3D_43ocd")
 
-[node name="Cameras_System" type="Node3D" parent="." node_paths=PackedStringArray("cameras", "joueur_node", "ui_moniteur")]
+[node name="Ground2" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.36393166, 7.724227, -0.54961395)
+size = Vector3(19.159286, 0.42615333, 18.220657)
+material = SubResource("StandardMaterial3D_43ocd")
+
+[node name="Cameras_System" type="Node3D" parent="." node_paths=PackedStringArray("ecran_visuel", "ui_moniteur")]
 script = ExtResource("5_hsito")
-cameras = [NodePath("Cam01_Stage"), NodePath("Cam02_Diner"), NodePath("Cam03_PirateCove"), NodePath("Cam04_CornerPrize"), NodePath("Cam05_RestRooms"), NodePath("Cam06_Kitchen"), NodePath("Cam07_PartAndService"), NodePath("Cam08_LeftHall"), NodePath("Cam09_MiddleHall"), NodePath("Cam10_RightHall"), NodePath("Cam11_LeftCornerHall"), NodePath("Cam12_RightCornerHall2")]
-joueur_node = NodePath("../Player")
-ui_moniteur = NodePath("../CanvasLayer")
-
-[node name="Cam01_Stage" type="Camera3D" parent="Cameras_System"]
-transform = Transform3D(1, 0, 0, 0, 0.8276198, 0.5612892, 0, -0.5612892, 0.8276198, -8.078098, 5.1004534, -97.42612)
-fov = 87.7
-
-[node name="Cam02_Diner" type="Camera3D" parent="Cameras_System"]
-transform = Transform3D(0.14917298, -0.555009, 0.8183596, 0, 0.82761973, 0.56128925, -0.98881114, -0.083729185, 0.1234585, -16.639896, 5.1004534, -86.85918)
-fov = 87.7
-
-[node name="Cam03_PirateCove" type="Camera3D" parent="Cameras_System"]
-transform = Transform3D(-0.6488772, -0.42708108, 0.6297302, 0, 0.8276198, 0.56128913, -0.76089317, 0.3642077, -0.5370236, -19.657198, 5.1004534, -65.9574)
-fov = 87.7
-
-[node name="Cam08_LeftHall" type="Camera3D" parent="Cameras_System"]
-transform = Transform3D(0.021657854, -0.5611575, 0.8274257, 5.598883e-08, 0.8276199, 0.5612893, -0.9997654, -0.012156367, 0.017924547, -8.787418, 5.1004534, -20.540684)
-fov = 87.7
-
-[node name="Cam10_RightHall" type="Camera3D" parent="Cameras_System"]
-transform = Transform3D(-0.03425414, 0.5609599, -0.8271343, 5.5703197e-08, 0.82761997, 0.56128925, 0.99941325, 0.01922643, -0.028349437, 8.848961, 5.1004534, -20.540684)
-fov = 87.7
-
-[node name="Cam11_LeftCornerHall" type="Camera3D" parent="Cameras_System"]
-transform = Transform3D(-0.5128221, -0.48186377, 0.7105074, 5.5417534e-08, 0.82761973, 0.5612892, -0.858495, 0.28784165, -0.4244218, -8.787418, 5.1004534, -5.721159)
-fov = 87.7
-
-[node name="Cam12_RightCornerHall2" type="Camera3D" parent="Cameras_System"]
-transform = Transform3D(-0.6175852, 0.44145623, -0.65092635, 5.4862497e-08, 0.8276198, 0.56128913, 0.7865041, 0.3466438, -0.5111257, 8.848961, 5.1004534, -5.721159)
-fov = 87.7
-
-[node name="Cam09_MiddleHall" type="Camera3D" parent="Cameras_System"]
-transform = Transform3D(0.980536, -0.11020336, 0.16249456, -0.06236442, 0.60994446, 0.78998643, -0.1861718, -0.7847439, 0.5911997, -0.43537664, 5.1004534, -20.540684)
-fov = 87.7
-
-[node name="Cam04_CornerPrize" type="Camera3D" parent="Cameras_System"]
-transform = Transform3D(-0.038509876, -0.5608728, 0.82700586, 1.9338048e-08, 0.8276198, 0.56128913, -0.9992583, 0.021615237, -0.031871557, -19.657198, 5.1004534, -43.51341)
-fov = 87.7
-
-[node name="Cam07_PartAndService" type="Camera3D" parent="Cameras_System"]
-transform = Transform3D(-0.038509876, -0.5608728, 0.8270059, 1.9338048e-08, 0.8276198, 0.5612892, -0.9992583, 0.02161519, -0.031871524, -19.657198, 5.1004534, -22.293036)
-fov = 87.7
-
-[node name="Cam05_RestRooms" type="Camera3D" parent="Cameras_System"]
-transform = Transform3D(0.10100414, 0.55841875, -0.8233874, 1.7476784e-08, 0.8276198, 0.5612892, 0.99488604, -0.056692544, 0.08359302, 20.673412, 5.1004534, -69.71819)
-fov = 87.7
-
-[node name="Cam06_Kitchen" type="Camera3D" parent="Cameras_System"]
-transform = Transform3D(0.10100414, 0.55841875, -0.8233874, 1.7476784e-08, 0.8276198, 0.5612892, 0.99488604, -0.056692544, 0.08359302, 20.673412, 5.1004534, -44.087418)
-fov = 87.7
+ecran_visuel = NodePath("../CanvasLayer/Moniteur_CCTV/Ecran_Vue")
+ui_moniteur = NodePath("../CanvasLayer/Moniteur_CCTV")
 
 [node name="Walls" type="Node3D" parent="."]
 
@@ -96,80 +70,70 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.298597, 3.7332802, 2.61667
 size = Vector3(0.30404663, 8.46656, 1.3223877)
 
 [node name="Wall3" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.298597, 3.7332802, -17.015059)
-size = Vector3(0.30404663, 8.46656, 29.9665)
-
-[node name="Wall7" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.609828, 3.7332802, -14.322396)
-size = Vector3(0.30404663, 8.46656, 35.32216)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.298597, 3.7332802, -3.638668)
+size = Vector3(0.30404663, 8.46656, 3.2137184)
 
 [node name="Wall4" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5077996, 3.7332802, -17.004677)
-size = Vector3(0.30404663, 8.46656, 29.945734)
-
-[node name="Wall8" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.819, 3.733, -14.342932)
-size = Vector3(0.30404663, 8.46656, 35.212822)
-
-[node name="Wall5" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(-0.00038401937, 0, 0.98256564, 0, 1, 0, -1.0000064, 0, -0.00037732176, 5.3190536, 3.7332802, -5.119853)
-size = Vector3(0.3, 8.467, 2.716)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5077996, 3.7332802, -3.5655544)
+size = Vector3(0.30404663, 8.46656, 3.0674882)
 
 [node name="Wall6" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(-0.00038401937, 0, 0.98256564, 0, 1, 0, -1.0000064, 0, -0.00037732176, -5.186034, 3.7332802, -5.1198807)
-size = Vector3(0.3, 8.467, 2.5694258)
-
-[node name="Wall18" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(-0.00038401937, 0, 0.98256564, 0, 1, 0, -1.0000064, 0, -0.00037732176, 0.09673059, 3.7332802, 3.3286293)
-size = Vector3(0.3, 8.467, 30.266674)
-
-[node name="Wall9" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(-0.00038401937, 0, 0.98256564, 0, 1, 0, -1.0000064, 0, -0.00037732176, -23.873692, 3.7332802, -31.840786)
-size = Vector3(0.3, 8.467, 19.163597)
-
-[node name="Wall20" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(-0.00038401937, 0, 0.98256564, 0, 1, 0, -1.0000064, 0, -0.00037732176, -23.873692, 3.7332802, -4.019701)
-size = Vector3(0.3, 8.467, 19.163597)
-
-[node name="Wall10" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(-0.00038401937, 0, 0.98256564, 0, 1, 0, -1.0000064, 0, -0.00037732176, -23.873692, 3.7332802, -57.3096)
-size = Vector3(0.3, 8.467, 19.163597)
-
-[node name="Wall11" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(-1.0000064, 0, 8.589862e-08, 0, 1, 0, -8.742334e-08, 0, -0.98256564, -33.12525, 3.7332802, -53.940094)
-size = Vector3(0.3, 8.467, 101.79056)
-
-[node name="Wall12" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(-4.371167e-08, 0, -0.9825657, 0, 1, 0, 1.0000064, 0, -4.294931e-08, 24.23199, 3.7332802, -57.32347)
-size = Vector3(0.3, 8.467, 19.163597)
-
-[node name="Wall13" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(-4.371167e-08, 0, -0.9825657, 0, 1, 0, 1.0000064, 0, -4.294931e-08, 24.085745, 3.7332802, -31.855076)
-size = Vector3(0.3, 8.467, 19.163597)
-
-[node name="Wall14" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(1.0000064, 0, 0, 0, 1, 0, 0, 0, 0.98256564, 33.41031, 3.7332802, -44.54159)
-size = Vector3(0.3, 8.467, 26.226202)
-
-[node name="Wall15" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(-4.371167e-08, 0, -0.9825657, 0, 1, 0, 1.0000064, 0, -4.294931e-08, 24.23199, 3.7332802, -82.97432)
-size = Vector3(0.3, 8.467, 19.163597)
-
-[node name="Wall17" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(-4.371167e-08, 0, -0.9825657, 0, 1, 0, 1.0000064, 0, -4.294931e-08, 0.28389102, 3.7332802, -103.802605)
-size = Vector3(0.3, 8.467, 67.70148)
-
-[node name="Wall19" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(-4.371167e-08, 0, -0.9825657, 0, 1, 0, 1.0000064, 0, -4.294931e-08, 0.28388843, 7.6717105, -45.279823)
-size = Vector3(117.34481, 0.5901387, 67.70148)
-material = SubResource("StandardMaterial3D_hsito")
-
-[node name="Wall16" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(1.0000064, 0, 0, 0, 1, 0, 0, 0, 0.98256564, 33.41031, 3.7332802, -80.55145)
-size = Vector3(0.3, 8.467, 47.311832)
+transform = Transform3D(-0.00038401937, 0, 0.98256564, 0, 1, 0, -1.0000064, 0, -0.00037732176, 0.037002087, 3.7332802, -5.1218863)
+size = Vector3(0.3, 8.467, 13.2008505)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
-visible = false
 
 [node name="Moniteur_CCTV" parent="CanvasLayer" node_paths=PackedStringArray("cameras_system") instance=ExtResource("6_lcnwv")]
+visible = false
 cameras_system = NodePath("../../Cameras_System")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="Label_Heure" type="Label" parent="UI"]
+offset_left = 973.0
+offset_right = 1152.0
+offset_bottom = 93.0
+label_settings = SubResource("LabelSettings_3xqf3")
+horizontal_alignment = 2
+
+[node name="VideoStreamPlayer" type="VideoStreamPlayer" parent="UI"]
+visible = false
+offset_right = 1151.0
+offset_bottom = 652.0
+stream = ExtResource("8_wruqr")
+expand = true
+
+[node name="Jumpscare" type="VideoStreamPlayer" parent="UI"]
+visible = false
+offset_right = 1151.0
+offset_bottom = 652.0
+stream = ExtResource("10_3xqf3")
+expand = true
+
+[node name="Label_Batterie" type="Label" parent="UI"]
+offset_left = 3.0
+offset_top = 571.0
+offset_right = 199.0
+offset_bottom = 608.0
+text = "100%"
+label_settings = SubResource("LabelSettings_lcwox")
+
+[node name="Label_Usage" type="Label" parent="UI"]
+offset_left = 4.0
+offset_top = 607.0
+offset_right = 200.0
+offset_bottom = 644.0
+label_settings = SubResource("LabelSettings_lcwox")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+transform = Transform3D(-0.84619313, 0.5328764, 3.9403938e-10, -0.53285605, -0.84616095, 0.008726535, 0.0046501644, 0.0073843347, 0.9999619, 0, 4.262748, -1.6260723)
+light_energy = 6.533
+light_indirect_energy = 1.2
+light_volumetric_fog_energy = 7.131
+light_size = 0.59
+light_specular = 4.238
+shadow_enabled = true
+omni_range = 16.046
+omni_attenuation = 1.561
+
+[editable path="CanvasLayer/Moniteur_CCTV"]

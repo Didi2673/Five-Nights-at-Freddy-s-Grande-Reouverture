@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://d3kf5ae8lh260"]
+
+[ext_resource type="PackedScene" uid="uid://b68f4o5i1m7hq" path="res://chica.glb" id="1_6mjs6"]
+
+[node name="Chica" type="Node3D"]
+
+[node name="Chica" parent="." instance=ExtResource("1_6mjs6")]
+transform = Transform3D(0.08, 0, 0, 0, 0.08, 0, 0, 0, 0.08, -0.03999415, 1.2129626, 0)

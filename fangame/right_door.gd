@@ -15,6 +15,8 @@ var couleur_fermee = Color(0, 1, 0) # VERT (Rouge=0, Vert=1, Bleu=0)
 @onready var bouton = $Bouton_Rouge # <-- ASSURE-TOI QUE LE NOM EST BON DANS TA SCÈNE
 var tween : Tween
 
+var a_du_courant : bool = true
+
 func _ready():
 	if porte_mobile:
 		position_ouverte = porte_mobile.position
@@ -23,9 +25,16 @@ func _ready():
 	maj_couleur_bouton(couleur_ouverte)
 
 func _on_area_3d_input_event(_camera, event, _event_position, _normal, _shape_idx):
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+	if a_du_courant and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		toggle_door()
 
+func couper_courant():
+	a_du_courant = false # Le bouton ne marche plus
+	maj_couleur_bouton(Color(0.1, 0.1, 0.1)) # Bouton éteint (Gris sombre)
+	
+	if est_fermee:
+		toggle_door() # On force l'ouverture si elle était fermée
+		
 func toggle_door():
 	if tween:
 		tween.kill()

@@ -1,0 +1,53 @@
+[
+	{
+		"id": 1,
+		"title": "Nuit 1",
+		"description": "Bonnie est actif",
+		"difficulty_label": "Facile",
+		"display_duration_text": "6 minutes",
+		"hour_duration_seconds": 60, 
+		"start_hour": 0,
+		"end_hour": 6
+	},
+	{
+		"id": 2,
+		"title": "Nuit 2",
+		"description": "Chica va aussi être active.",
+		"difficulty_label": "Facile",
+		"display_duration_text": "9 minutes",
+		"hour_duration_seconds": 90, 
+		"start_hour": 0,
+		"end_hour": 6
+	},
+	{
+		"id": 3,
+		"title": "Nuit 3",
+		"description": "Pensez à flasher foxy!",
+		"difficulty_label": "Normal",
+		"display_duration_text": "9 minutes",
+		"hour_duration_seconds": 90, 
+		"start_hour": 0,
+		"end_hour": 6
+	},
+	{
+		"id": 4,
+		"title": "Nuit 4",
+		"description": "Regardez Freddy dans les caméras!",
+		"difficulty_label": "Normal",
+		"display_duration_text": "9 minutes",
+		"hour_duration_seconds": 90, 
+		"start_hour": 0,
+		"end_hour": 6
+	},
+	{
+		"id": 5,
+		"title": "Nuit 5",
+		"description": "Bonne chance!",
+		"difficulty_label": "Difficile",
+		"display_duration_text": "9 minutes",
+		"hour_duration_seconds": 90, 
+		"start_hour": 0,
+		"end_hour": 6
+	}
+	
+]
