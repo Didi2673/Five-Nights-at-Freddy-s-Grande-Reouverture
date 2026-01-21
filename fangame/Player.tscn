@@ -1,0 +1,35 @@
+[gd_scene load_steps=8 format=3 uid="uid://cfrhyxgrw488v"]
+
+[ext_resource type="Script" uid="uid://bqrnpcqqo0x77" path="res://camera.gd" id="1_xhfnw"]
+
+[sub_resource type="Gradient" id="Gradient_xhfnw"]
+colors = PackedColorArray(0.22545668, 0.6897815, 0.97626144, 1, 1, 1, 1, 1)
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_kpjcp"]
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_kne1u"]
+noise = SubResource("FastNoiseLite_kpjcp")
+color_ramp = SubResource("Gradient_xhfnw")
+
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_e80uo"]
+panorama = SubResource("NoiseTexture2D_kne1u")
+
+[sub_resource type="Sky" id="Sky_cxr5p"]
+sky_material = SubResource("PanoramaSkyMaterial_e80uo")
+
+[sub_resource type="Environment" id="Environment_kpjcp"]
+background_mode = 2
+background_color = Color(1, 1, 1, 1)
+sky = SubResource("Sky_cxr5p")
+ambient_light_source = 2
+ambient_light_color = Color(1, 1, 1, 1)
+
+[node name="Player" type="Node3D"]
+script = ExtResource("1_xhfnw")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
+current = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_kpjcp")

@@ -1,0 +1,181 @@
+[gd_scene load_steps=17 format=3 uid="uid://dvj4ixdew2cl5"]
+
+[ext_resource type="Script" uid="uid://dfukqvi7p8lin" path="res://remote_cctv.gd" id="1_og2t3"]
+[ext_resource type="Texture2D" uid="uid://cqi8pfb27eur0" path="res://map.png" id="1_r7ydr"]
+[ext_resource type="Texture2D" uid="uid://b22hkjv40xtxy" path="res://1.png" id="2_og2t3"]
+[ext_resource type="Texture2D" uid="uid://cpd8oil0s6rc1" path="res://2.png" id="3_lqbdw"]
+[ext_resource type="Texture2D" uid="uid://boby4btsk5h2l" path="res://3.png" id="4_dshet"]
+[ext_resource type="Texture2D" uid="uid://tnikqqej4jmu" path="res://4.png" id="5_ocw4j"]
+[ext_resource type="Texture2D" uid="uid://b1u67my7h6au6" path="res://5.png" id="6_73acr"]
+[ext_resource type="Texture2D" uid="uid://bdet8cuo1lm86" path="res://6.png" id="7_b4apj"]
+[ext_resource type="Texture2D" uid="uid://df4fmx07l2okw" path="res://7.png" id="8_job2a"]
+[ext_resource type="Texture2D" uid="uid://dhhv52ide45p" path="res://8.png" id="9_71ynp"]
+[ext_resource type="Texture2D" uid="uid://uigeyji6fnad" path="res://9.png" id="10_nsts7"]
+[ext_resource type="Texture2D" uid="uid://bjg1uc3wj126d" path="res://10.png" id="11_l16op"]
+[ext_resource type="Texture2D" uid="uid://vkr5cxsya5h2" path="res://11.png" id="12_lv74b"]
+[ext_resource type="Texture2D" uid="uid://vmfif1hnfysn" path="res://12.png" id="13_vt1tl"]
+[ext_resource type="Shader" uid="uid://hhifebkgqjh8" path="res://moniteur_cctv.gdshader" id="15_lqbdw"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_dshet"]
+shader = ExtResource("15_lqbdw")
+shader_parameter/quantite_bruit = 0.2590000123025
+shader_parameter/densite = 0.626000029735
+
+[node name="Moniteur_CCTV" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_og2t3")
+
+[node name="FondDeCarte" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 900.0
+offset_top = 396.0
+offset_right = 1400.0
+offset_bottom = 896.0
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("1_r7ydr")
+
+[node name="Container_Boutons" type="Control" parent="."]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Bouton_CAM01" type="Button" parent="Container_Boutons"]
+layout_mode = 0
+offset_left = 960.0
+offset_top = 400.0
+offset_right = 1368.0
+offset_bottom = 658.0
+scale = Vector2(0.1, 0.1)
+icon = ExtResource("2_og2t3")
+
+[node name="Bouton_CAM02" type="Button" parent="Container_Boutons"]
+layout_mode = 0
+offset_left = 983.0
+offset_top = 433.0
+offset_right = 1391.0
+offset_bottom = 691.0
+scale = Vector2(0.1, 0.1)
+icon = ExtResource("3_lqbdw")
+
+[node name="Bouton_CAM03" type="Button" parent="Container_Boutons"]
+layout_mode = 0
+offset_left = 914.0
+offset_top = 442.0
+offset_right = 1322.0
+offset_bottom = 700.0
+scale = Vector2(0.1, 0.1)
+icon = ExtResource("4_dshet")
+
+[node name="Bouton_CAM04" type="Button" parent="Container_Boutons"]
+layout_mode = 0
+offset_left = 913.0
+offset_top = 501.0
+offset_right = 1321.0
+offset_bottom = 759.0
+scale = Vector2(0.1, 0.1)
+icon = ExtResource("5_ocw4j")
+
+[node name="Bouton_CAM05" type="Button" parent="Container_Boutons"]
+layout_mode = 0
+offset_left = 1096.0001
+offset_top = 443.0
+offset_right = 1504.0001
+offset_bottom = 701.0
+scale = Vector2(0.1, 0.1)
+icon = ExtResource("6_73acr")
+
+[node name="Bouton_CAM06" type="Button" parent="Container_Boutons"]
+layout_mode = 0
+offset_left = 1097.0
+offset_top = 498.00006
+offset_right = 1505.0
+offset_bottom = 756.00006
+scale = Vector2(0.1, 0.1)
+icon = ExtResource("7_b4apj")
+
+[node name="Bouton_CAM07" type="Button" parent="Container_Boutons"]
+layout_mode = 0
+offset_left = 923.0
+offset_top = 567.0
+offset_right = 1331.0
+offset_bottom = 825.0
+scale = Vector2(0.1, 0.1)
+icon = ExtResource("8_job2a")
+
+[node name="Bouton_CAM08" type="Button" parent="Container_Boutons"]
+layout_mode = 0
+offset_left = 964.0001
+offset_top = 546.0
+offset_right = 1372.0001
+offset_bottom = 804.0
+scale = Vector2(0.1, 0.1)
+icon = ExtResource("9_71ynp")
+
+[node name="Bouton_CAM09" type="Button" parent="Container_Boutons"]
+layout_mode = 0
+offset_left = 1005.0
+offset_top = 567.0
+offset_right = 1413.0
+offset_bottom = 825.0
+scale = Vector2(0.1, 0.1)
+icon = ExtResource("10_nsts7")
+
+[node name="Bouton_CAM10" type="Button" parent="Container_Boutons"]
+layout_mode = 0
+offset_left = 1048.0
+offset_top = 546.0
+offset_right = 1456.0
+offset_bottom = 804.0
+scale = Vector2(0.1, 0.1)
+icon = ExtResource("11_l16op")
+
+[node name="Bouton_CAM11" type="Button" parent="Container_Boutons"]
+layout_mode = 0
+offset_left = 962.0
+offset_top = 606.00006
+offset_right = 1370.0
+offset_bottom = 864.0001
+scale = Vector2(0.1, 0.1)
+icon = ExtResource("12_lv74b")
+
+[node name="Bouton_CAM12" type="Button" parent="Container_Boutons"]
+layout_mode = 0
+offset_left = 1053.0
+offset_top = 610.0
+offset_right = 1461.0
+offset_bottom = 868.0
+scale = Vector2(0.1, 0.1)
+icon = ExtResource("13_vt1tl")
+
+[node name="Label_Nom_Salle" type="Label" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="Effet_Static" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_dshet")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM01" to="." method="_on_bouton_cam_01_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM02" to="." method="_on_bouton_cam_02_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM03" to="." method="_on_bouton_cam_03_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM04" to="." method="_on_bouton_cam_04_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM05" to="." method="_on_bouton_cam_05_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM06" to="." method="_on_bouton_cam_06_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM07" to="." method="_on_bouton_cam_07_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM08" to="." method="_on_bouton_cam_08_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM09" to="." method="_on_bouton_cam_09_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM10" to="." method="_on_bouton_cam_10_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM11" to="." method="_on_bouton_cam_11_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM12" to="." method="_on_bouton_cam_12_pressed"]

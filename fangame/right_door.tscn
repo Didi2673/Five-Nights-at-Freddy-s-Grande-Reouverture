@@ -1,0 +1,47 @@
+[gd_scene load_steps=5 format=3 uid="uid://bd4x2snu8pgym"]
+
+[ext_resource type="Script" uid="uid://divbqg1vkcwjb" path="res://right_door.gd" id="1_lj8c2"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ba8gm"]
+albedo_color = Color(1, 0, 0, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_g1otv"]
+size = Vector3(0.17156982, 0.121154785, 0.05065918)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hun61"]
+albedo_color = Color(0.3553136, 0.35531354, 0.35531357, 1)
+
+[node name="Right_Door" type="Node3D"]
+script = ExtResource("1_lj8c2")
+
+[node name="Porte_Mobile" type="CSGBox3D" parent="."]
+transform = Transform3D(1.4461095, 0, 0, 0, 2.514801, 0, 0, 0, 6.217364, 4.3349333, 3.6277127, -0.020116247)
+size = Vector3(0.11376953, 1.0775757, 0.29577255)
+
+[node name="Bouton_Rouge" type="CSGBox3D" parent="."]
+transform = Transform3D(1.4461095, 0, 0, 0, 2.514801, 0, 0, 0, 6.217364, 4.2316403, 1.2196854, 1.0988572)
+size = Vector3(0.03100586, 0.09077358, 0.03359007)
+material = SubResource("StandardMaterial3D_ba8gm")
+
+[node name="Area3D" type="Area3D" parent="Bouton_Rouge"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Bouton_Rouge/Area3D"]
+transform = Transform3D(0.9999786, 0, 0, 0, 0.9999754, 0, 0, 0, 0.9999742, 0.0066235065, -0.00015386939, 0.0004286915)
+shape = SubResource("BoxShape3D_g1otv")
+
+[node name="encadrement_droit" type="CSGBox3D" parent="."]
+transform = Transform3D(1.4461095, 0, 0, 0, 2.514801, 0, 0, 0, 6.217364, 4.336963, 1.0436448, 1.0992725)
+size = Vector3(0.13977051, 1.1650848, 0.06634331)
+material = SubResource("StandardMaterial3D_hun61")
+
+[node name="encadrement_haut" type="CSGBox3D" parent="."]
+transform = Transform3D(1.4461094, 0, 0, 0, -1.0992543e-07, -6.2173634, 0, 2.5148008, -2.7176958e-07, 4.336963, 3.8037612, -0.02964385)
+size = Vector3(0.13977051, 1.0616484, 0.49047065)
+material = SubResource("StandardMaterial3D_hun61")
+
+[node name="encadrement_gauche" type="CSGBox3D" parent="."]
+transform = Transform3D(1.4461095, 0, 0, 0, 2.514801, 0, 0, 0, 6.217364, 4.336963, 1.0436448, -1.1586022)
+size = Vector3(0.13977051, 1.1650848, 0.06634331)
+material = SubResource("StandardMaterial3D_hun61")
+
+[connection signal="input_event" from="Bouton_Rouge/Area3D" to="." method="_on_area_3d_input_event"]
