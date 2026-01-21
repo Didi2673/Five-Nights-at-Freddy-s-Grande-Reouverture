@@ -96,6 +96,14 @@ offset_bottom = 93.0
 label_settings = SubResource("LabelSettings_3xqf3")
 horizontal_alignment = 2
 
+[node name="Label_Nuit" type="Label" parent="UI"]
+offset_left = 973.0
+offset_top = 57.0
+offset_right = 1152.0
+offset_bottom = 115.0
+label_settings = SubResource("LabelSettings_3xqf3")
+horizontal_alignment = 2
+
 [node name="VideoStreamPlayer" type="VideoStreamPlayer" parent="UI"]
 visible = false
 offset_right = 1151.0

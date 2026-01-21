@@ -4,6 +4,7 @@ extends Node3D
 
 # --- UI & COMPOSANTS ---
 @onready var label_heure = $UI/Label_Heure
+@onready var label_nuit = $UI/Label_Nuit
 @onready var video_victoire = $UI/VideoStreamPlayer
 @onready var game_ui = $UI # Le groupe qui contient le reste de ton UI (boutons caméras etc)
 
@@ -125,6 +126,8 @@ func _ready():
 	# 1. On charge la configuration de la nuit 1 depuis notre Singleton
 	# On vérifie qu'on a bien des données chargées
 	var night_index = GameData.index_nuit_selectionnee
+	if label_nuit:
+		label_nuit.text = "Nuit " + str(night_index+1)
 	if GameData.nights_data.size() > night_index:
 		current_night_data = GameData.nights_data[night_index]
 		hour_duration = current_night_data["hour_duration_seconds"]
@@ -205,6 +208,7 @@ func update_clock_display():
 		text_heure = str(current_hour) + " AM"
 	
 	label_heure.text = text_heure
+	
 
 func trigger_victory():
 	game_over = true
