@@ -128,12 +128,23 @@ func _process(delta):
 			music_timer += 15.0 * delta 
 		else:
 			# Vitesse de descente (DYNAMIQUE selon le JSON)
-			music_timer -= drain_speed * delta 
+			music_timer -= (1.6 + (drain_speed * 0.22)) * delta
 		
 		music_timer = clamp(music_timer, 0.0, music_max)
 		
 		if progress_bar:
-			progress_bar.value = music_timer
+			# On transforme le 0-100 en 0-8
+			# ceil() permet d'arrondir au supérieur (dès qu'on a un peu de musique, on a 1 part)
+			var parts_restantes = ceil((music_timer / music_max) * 20)
+			progress_bar.value = parts_restantes
+			
+			# Changement de couleur selon l'urgence (Optionnel mais stylé)
+			if parts_restantes <= 5:
+				progress_bar.tint_progress = Color.RED # Rouge critique
+			elif parts_restantes <= 10:
+				progress_bar.tint_progress = Color.ORANGE # Orange attention
+			else:
+				progress_bar.tint_progress = Color.WHITE # Blanc tout va bien
 		
 		if music_timer <= 0:
 			trigger_puppet_escape()

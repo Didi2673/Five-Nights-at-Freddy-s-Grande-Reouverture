@@ -1,21 +1,26 @@
-[gd_scene load_steps=8 format=3 uid="uid://d1jvp74qdhp23"]
+[gd_scene load_steps=9 format=3 uid="uid://d1jvp74qdhp23"]
 
 [ext_resource type="FontFile" uid="uid://83xb00w7vpum" path="res://vcr_osd_mono.ttf" id="1_06t4h"]
 [ext_resource type="Script" uid="uid://bbqvbkh1q8p0h" path="res://main_menu.gd" id="1_7vrkn"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_7vrkn"]
 font = ExtResource("1_06t4h")
-font_size = 50
+font_size = 79
 
 [sub_resource type="LabelSettings" id="LabelSettings_fu7sn"]
 font = ExtResource("1_06t4h")
-font_size = 50
+font_size = 91
+
+[sub_resource type="LabelSettings" id="LabelSettings_nlkkf"]
+font_size = 34
 
 [sub_resource type="LabelSettings" id="LabelSettings_jix8l"]
 font = ExtResource("1_06t4h")
+font_size = 34
 
 [sub_resource type="LabelSettings" id="LabelSettings_glbon"]
 font = ExtResource("1_06t4h")
+font_size = 34
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_nlkkf"]
 
@@ -30,11 +35,12 @@ script = ExtResource("1_7vrkn")
 
 [node name="Fond_Ecran" type="ColorRect" parent="."]
 layout_mode = 0
-offset_right = 1176.0
-offset_bottom = 667.0
+offset_right = 1922.0
+offset_bottom = 1080.0
 color = Color(0, 0, 0, 1)
 
 [node name="Ecran_Accueil" type="Control" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -45,8 +51,8 @@ grow_vertical = 2
 [node name="Titre_Jeu" type="Label" parent="Ecran_Accueil"]
 layout_mode = 0
 offset_left = 142.0
-offset_right = 560.0
-offset_bottom = 268.0
+offset_right = 657.0
+offset_bottom = 382.0
 text = "Five
 Nights
 at
@@ -57,22 +63,21 @@ label_settings = SubResource("LabelSettings_7vrkn")
 [node name="Bouton_Play" type="Button" parent="Ecran_Accueil"]
 layout_mode = 0
 offset_left = 141.0
-offset_top = 316.0
-offset_right = 366.0
-offset_bottom = 416.0
+offset_top = 466.0
+offset_right = 477.0
+offset_bottom = 615.0
 text = "Jouer"
 text_direction = 3
 
 [node name="Bouton_Quitter" type="Button" parent="Ecran_Accueil"]
 layout_mode = 0
 offset_left = 141.0
-offset_top = 450.0
-offset_right = 366.0
-offset_bottom = 550.0
+offset_top = 649.0
+offset_right = 477.0
+offset_bottom = 796.0
 text = "Quitter"
 
 [node name="Ecran_Selection" type="Control" parent="."]
-visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -89,8 +94,8 @@ offset_bottom = 651.0
 layout_mode = 0
 offset_left = 332.0
 offset_top = 6.0
-offset_right = 1175.0
-offset_bottom = 652.0
+offset_right = 1920.0
+offset_bottom = 1077.0
 
 [node name="Label_Titre_Nuit" type="Label" parent="Ecran_Selection/Panneau_Details"]
 layout_mode = 0
@@ -104,26 +109,27 @@ label_settings = SubResource("LabelSettings_fu7sn")
 [node name="Label_Description" type="Label" parent="Ecran_Selection/Panneau_Details"]
 layout_mode = 0
 offset_left = 94.0
-offset_top = 204.0
+offset_top = 384.0
 offset_right = 568.0
-offset_bottom = 307.0
+offset_bottom = 487.0
 text = "Description"
+label_settings = SubResource("LabelSettings_nlkkf")
 
 [node name="Label_Duree" type="Label" parent="Ecran_Selection/Panneau_Details"]
 layout_mode = 0
 offset_left = 94.0
-offset_top = 126.0
-offset_right = 277.0
-offset_bottom = 154.0
+offset_top = 207.0
+offset_right = 394.0
+offset_bottom = 237.0
 text = "Durée : 1 heure"
 label_settings = SubResource("LabelSettings_jix8l")
 
 [node name="Label_Difficulte" type="Label" parent="Ecran_Selection/Panneau_Details"]
 layout_mode = 0
 offset_left = 94.0
-offset_top = 156.0
+offset_top = 316.0
 offset_right = 232.0
-offset_bottom = 193.0
+offset_bottom = 353.0
 text = "Easy"
 label_settings = SubResource("LabelSettings_glbon")
 
@@ -131,9 +137,9 @@ label_settings = SubResource("LabelSettings_glbon")
 material = SubResource("CanvasItemMaterial_nlkkf")
 layout_mode = 0
 offset_left = 94.0
-offset_top = 252.0
+offset_top = 499.0
 offset_right = 312.0
-offset_bottom = 320.0
+offset_bottom = 567.0
 text = "Lancer"
 
 [node name="Bouton_Retour" type="Button" parent="Ecran_Selection"]
@@ -144,7 +150,7 @@ offset_right = 254.0
 offset_bottom = 607.0
 text = "Retour"
 
-[connection signal="pressed" from="Ecran_Accueil/Bouton_Play" to="." method="_on_bouton_play_pressed"]
+[connection signal="pressed" from="Ecran_Accueil/Bouton_Play" to="." method="_on_aller_vers_selection"]
 [connection signal="pressed" from="Ecran_Accueil/Bouton_Quitter" to="." method="_on_bouton_quitter_pressed"]
 [connection signal="pressed" from="Ecran_Selection/Panneau_Details/Bouton_Lancer_Nuit" to="." method="_on_bouton_lancer_nuit_pressed"]
 [connection signal="pressed" from="Ecran_Selection/Bouton_Retour" to="." method="_on_bouton_retour_pressed"]

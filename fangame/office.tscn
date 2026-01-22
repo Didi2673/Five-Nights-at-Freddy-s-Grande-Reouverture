@@ -1,20 +1,24 @@
-[gd_scene load_steps=14 format=3 uid="uid://cmdmes87qhdmf"]
+[gd_scene load_steps=20 format=3 uid="uid://dvu2p8dkvbruk"]
 
 [ext_resource type="Script" uid="uid://binxa8r2e1lh" path="res://office.gd" id="1_4i814"]
-[ext_resource type="PackedScene" uid="uid://cfrhyxgrw488v" path="res://Player.tscn" id="1_g3mwp"]
-[ext_resource type="PackedScene" uid="uid://bd4x2snu8pgym" path="res://right_door.tscn" id="2_ei2s5"]
-[ext_resource type="PackedScene" uid="uid://dmk8dabn55q7y" path="res://left_door.tscn" id="3_u8nhc"]
-[ext_resource type="Script" uid="uid://toqhnnjlbbq4" path="res://cameras_system.gd" id="5_hsito"]
-[ext_resource type="Texture2D" uid="uid://7boke2nwipgl" path="res://ground_texture.jpg" id="6_70x1r"]
+[ext_resource type="Texture2D" uid="uid://bnoromdm53qd7" path="res://office_left_light.png" id="3_4hetp"]
+[ext_resource type="Texture2D" uid="uid://cpwovj8ggt1ld" path="res://office.webp" id="3_4i814"]
+[ext_resource type="Texture2D" uid="uid://0hw82mtimimi" path="res://office_left_light_bonnie.png" id="4_o3cd7"]
+[ext_resource type="Texture2D" uid="uid://kts435o7bxf3" path="res://office_right_light.png" id="5_8qan1"]
+[ext_resource type="Texture2D" uid="uid://drqturv75nskt" path="res://office_right_light_chica.png" id="6_jktts"]
 [ext_resource type="PackedScene" uid="uid://dvj4ixdew2cl5" path="res://moniteur_cctv.tscn" id="6_lcnwv"]
+[ext_resource type="PackedScene" uid="uid://4juki6xqtpuk" path="res://porte_systeme.tscn" id="8_3xqf3"]
 [ext_resource type="FontFile" uid="uid://dh5jtdq4vw75k" path="res://LcdSolid.ttf" id="8_lcwox"]
 [ext_resource type="VideoStream" uid="uid://cfih00dontugp" path="res://Fnaf6AM.ogv" id="8_wruqr"]
+[ext_resource type="Texture2D" uid="uid://4cst1lfeynnu" path="res://left_door.png" id="9_gxl1f"]
+[ext_resource type="Texture2D" uid="uid://dyfu8a18td548" path="res://right_button_door_open.webp" id="10_2uxut"]
 [ext_resource type="VideoStream" uid="uid://c6taj4hpymjyt" path="res://Bonnie.ogv" id="10_3xqf3"]
+[ext_resource type="Texture2D" uid="uid://b4foa667skuy2" path="res://right_button_door_close.webp" id="11_n1y4y"]
+[ext_resource type="Texture2D" uid="uid://cclvqv8grjn26" path="res://right_door.png" id="12_m8tx5"]
+[ext_resource type="Texture2D" uid="uid://bsuf1apsdeqi3" path="res://left_button_door_open.webp" id="13_4hetp"]
+[ext_resource type="Texture2D" uid="uid://cf78fi2d3xo03" path="res://left_button_door_close.webp" id="14_o3cd7"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_43ocd"]
-albedo_texture = ExtResource("6_70x1r")
-
-[sub_resource type="LabelSettings" id="LabelSettings_3xqf3"]
+[sub_resource type="LabelSettings" id="LabelSettings_wruqr"]
 font = ExtResource("8_lcwox")
 font_size = 36
 
@@ -22,87 +26,54 @@ font_size = 36
 font = ExtResource("8_lcwox")
 font_size = 32
 
-[node name="Office" type="Node3D" node_paths=PackedStringArray("portes", "systeme_camera", "porte_gauche", "porte_droite", "ecran_jumpscare")]
+[node name="office" type="Node2D" node_paths=PackedStringArray("portes", "systeme_camera", "porte_gauche", "porte_droite")]
 script = ExtResource("1_4i814")
-portes = [NodePath("Left_Door"), NodePath("Right_Door")]
-systeme_camera = NodePath("Cameras_System")
-porte_gauche = NodePath("Left_Door")
-porte_droite = NodePath("Right_Door")
-ecran_jumpscare = NodePath("UI/Jumpscare")
-
-[node name="Player" parent="." instance=ExtResource("1_g3mwp")]
-
-[node name="Right_Door" parent="." instance=ExtResource("2_ei2s5")]
-transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0, 0)
-
-[node name="Right_Door_Pos" type="Marker3D" parent="Right_Door"]
-transform = Transform3D(1, 0, 0, 0, 0.99999976, -8.940697e-08, 0, 8.940697e-08, 0.99999976, 4.7992973, 0.3701706, 0.042883717)
-
-[node name="Left_Door" parent="." instance=ExtResource("3_u8nhc")]
-transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0, 0)
-
-[node name="Left_Door_Pos" type="Marker3D" parent="Left_Door"]
-transform = Transform3D(1, 0, 0, 0, 0.99999976, -8.940697e-08, 0, 8.940697e-08, 0.99999976, -4.7999387, 0.3701706, 0.042883717)
-
-[node name="Ground" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.36393166, -0.8020483, -0.54961395)
-size = Vector3(19.159286, 0.42615333, 18.220657)
-material = SubResource("StandardMaterial3D_43ocd")
-
-[node name="Ground2" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.36393166, 7.724227, -0.54961395)
-size = Vector3(19.159286, 0.42615333, 18.220657)
-material = SubResource("StandardMaterial3D_43ocd")
-
-[node name="Cameras_System" type="Node3D" parent="." node_paths=PackedStringArray("ecran_visuel", "ui_moniteur")]
-script = ExtResource("5_hsito")
-ecran_visuel = NodePath("../CanvasLayer/Moniteur_CCTV/Ecran_Vue")
-ui_moniteur = NodePath("../CanvasLayer/Moniteur_CCTV")
-
-[node name="Walls" type="Node3D" parent="."]
-
-[node name="Wall" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5073028, 3.7332802, 2.6166704)
-size = Vector3(0.30404663, 8.46656, 1.3223877)
-
-[node name="Wall2" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.298597, 3.7332802, 2.6166704)
-size = Vector3(0.30404663, 8.46656, 1.3223877)
-
-[node name="Wall3" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.298597, 3.7332802, -3.638668)
-size = Vector3(0.30404663, 8.46656, 3.2137184)
-
-[node name="Wall4" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5077996, 3.7332802, -3.5655544)
-size = Vector3(0.30404663, 8.46656, 3.0674882)
-
-[node name="Wall6" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(-0.00038401937, 0, 0.98256564, 0, 1, 0, -1.0000064, 0, -0.00037732176, 0.037002087, 3.7332802, -5.1218863)
-size = Vector3(0.3, 8.467, 13.2008505)
-
-[node name="CanvasLayer" type="CanvasLayer" parent="."]
-
-[node name="Moniteur_CCTV" parent="CanvasLayer" node_paths=PackedStringArray("cameras_system") instance=ExtResource("6_lcnwv")]
-visible = false
-cameras_system = NodePath("../../Cameras_System")
+tex_normal = ExtResource("3_4i814")
+tex_light_left = ExtResource("3_4hetp")
+tex_light_left_bonnie = ExtResource("4_o3cd7")
+tex_light_right = ExtResource("5_8qan1")
+tex_light_right_chica = ExtResource("6_jktts")
+portes = [NodePath("Background/Porte_Gauche"), NodePath("Background/Porte_Droite")]
+systeme_camera = NodePath("UI/Moniteur_CCTV")
+porte_gauche = NodePath("Background/Porte_Gauche")
+porte_droite = NodePath("Background/Porte_Droite")
 
 [node name="UI" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="Moniteur_CCTV" parent="UI" instance=ExtResource("6_lcnwv")]
+visible = false
 
 [node name="Label_Heure" type="Label" parent="UI"]
-offset_left = 973.0
-offset_right = 1152.0
-offset_bottom = 93.0
-label_settings = SubResource("LabelSettings_3xqf3")
+offset_left = 1725.0
+offset_top = -3.0
+offset_right = 1904.0
+offset_bottom = 90.0
+label_settings = SubResource("LabelSettings_wruqr")
 horizontal_alignment = 2
 
 [node name="Label_Nuit" type="Label" parent="UI"]
-offset_left = 973.0
-offset_top = 57.0
-offset_right = 1152.0
-offset_bottom = 115.0
-label_settings = SubResource("LabelSettings_3xqf3")
+offset_left = 1725.0
+offset_top = 60.0
+offset_right = 1904.0
+offset_bottom = 118.0
+label_settings = SubResource("LabelSettings_wruqr")
 horizontal_alignment = 2
+
+[node name="Label_Batterie" type="Label" parent="UI"]
+offset_left = 3.0
+offset_top = 1000.0
+offset_right = 199.0
+offset_bottom = 1037.0
+text = "100%"
+label_settings = SubResource("LabelSettings_lcwox")
+
+[node name="Label_Usage" type="Label" parent="UI"]
+offset_left = 4.0
+offset_top = 1030.0
+offset_right = 200.0
+offset_bottom = 1067.0
+label_settings = SubResource("LabelSettings_lcwox")
 
 [node name="VideoStreamPlayer" type="VideoStreamPlayer" parent="UI"]
 visible = false
@@ -118,30 +89,73 @@ offset_bottom = 652.0
 stream = ExtResource("10_3xqf3")
 expand = true
 
-[node name="Label_Batterie" type="Label" parent="UI"]
-offset_left = 3.0
-offset_top = 571.0
-offset_right = 199.0
-offset_bottom = 608.0
-text = "100%"
-label_settings = SubResource("LabelSettings_lcwox")
+[node name="Background" type="Sprite2D" parent="."]
+scale = Vector2(1.5, 1.5)
+texture = ExtResource("3_4i814")
+centered = false
 
-[node name="Label_Usage" type="Label" parent="UI"]
-offset_left = 4.0
-offset_top = 607.0
-offset_right = 200.0
-offset_bottom = 644.0
-label_settings = SubResource("LabelSettings_lcwox")
+[node name="Porte_Gauche" parent="Background" instance=ExtResource("8_3xqf3")]
+position = Vector2(-640, -360)
+scale = Vector2(0.6666667, 0.6666667)
+tex_porte_metal = ExtResource("9_gxl1f")
+tex_panel_vert = ExtResource("10_2uxut")
+tex_panel_rouge = ExtResource("11_n1y4y")
 
-[node name="OmniLight3D" type="OmniLight3D" parent="."]
-transform = Transform3D(-0.84619313, 0.5328764, 3.9403938e-10, -0.53285605, -0.84616095, 0.008726535, 0.0046501644, 0.0073843347, 0.9999619, 0, 4.262748, -1.6260723)
-light_energy = 6.533
-light_indirect_energy = 1.2
-light_volumetric_fog_energy = 7.131
-light_size = 0.59
-light_specular = 4.238
-shadow_enabled = true
-omni_range = 16.046
-omni_attenuation = 1.561
+[node name="Sprite_Porte" parent="Background/Porte_Gauche" index="0"]
+position = Vector2(1240, 1080)
+scale = Vector2(1.5, 1.5)
+texture = ExtResource("9_gxl1f")
 
-[editable path="CanvasLayer/Moniteur_CCTV"]
+[node name="Zone_Clic_Door" parent="Background/Porte_Gauche" index="3"]
+offset_left = 1017.0
+offset_top = 1058.0
+offset_right = 1088.0
+offset_bottom = 1152.0
+
+[node name="Zone_Clic_Light" parent="Background/Porte_Gauche" index="4"]
+offset_left = 1019.0
+offset_top = 1174.0
+offset_right = 1084.0
+offset_bottom = 1265.0
+
+[node name="Sprite_Panel" parent="Background/Porte_Gauche" index="5"]
+position = Vector2(1032, 1170)
+scale = Vector2(1.5, 1.5)
+texture = ExtResource("10_2uxut")
+
+[node name="Porte_Droite" parent="Background" instance=ExtResource("8_3xqf3")]
+position = Vector2(-640, -360)
+scale = Vector2(0.6666667, 0.6666667)
+cote = "right"
+tex_porte_metal = ExtResource("12_m8tx5")
+tex_panel_vert = ExtResource("13_4hetp")
+tex_panel_rouge = ExtResource("14_o3cd7")
+
+[node name="Sprite_Porte" parent="Background/Porte_Droite" index="0"]
+position = Vector2(3016, 1080)
+scale = Vector2(1.5, 1.5)
+texture = ExtResource("12_m8tx5")
+
+[node name="Zone_Clic_Door" parent="Background/Porte_Droite" index="3"]
+offset_left = 3238.0
+offset_top = 1057.0
+offset_right = 3304.0
+offset_bottom = 1151.0
+
+[node name="Zone_Clic_Light" parent="Background/Porte_Droite" index="4"]
+offset_left = 3237.0
+offset_top = 1178.0
+offset_right = 3300.0
+offset_bottom = 1268.0
+
+[node name="Sprite_Panel" parent="Background/Porte_Droite" index="5"]
+position = Vector2(3275, 1170)
+scale = Vector2(1.5, 1.5)
+texture = ExtResource("13_4hetp")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+anchor_mode = 0
+
+[editable path="UI/Moniteur_CCTV"]
+[editable path="Background/Porte_Gauche"]
+[editable path="Background/Porte_Droite"]

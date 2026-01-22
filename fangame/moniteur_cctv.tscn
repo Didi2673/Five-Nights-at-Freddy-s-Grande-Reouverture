@@ -1,7 +1,8 @@
-[gd_scene load_steps=21 format=3 uid="uid://dvj4ixdew2cl5"]
+[gd_scene load_steps=22 format=3 uid="uid://dvj4ixdew2cl5"]
 
 [ext_resource type="Script" uid="uid://dfukqvi7p8lin" path="res://remote_cctv.gd" id="1_og2t3"]
 [ext_resource type="Texture2D" uid="uid://cqi8pfb27eur0" path="res://map.png" id="1_r7ydr"]
+[ext_resource type="Texture2D" uid="uid://cqs0towftcxht" path="res://Cameras/Cam01_Bonnie_Chica_Freddy.png" id="2_dshet"]
 [ext_resource type="Texture2D" uid="uid://b22hkjv40xtxy" path="res://1.png" id="2_og2t3"]
 [ext_resource type="Texture2D" uid="uid://cpd8oil0s6rc1" path="res://2.png" id="3_lqbdw"]
 [ext_resource type="Texture2D" uid="uid://boby4btsk5h2l" path="res://3.png" id="4_dshet"]
@@ -22,20 +23,30 @@ shader_parameter/quantite_bruit = 0.2590000123025
 shader_parameter/densite = 0.626000029735
 
 [sub_resource type="Gradient" id="Gradient_lqbdw"]
-colors = PackedColorArray(0.41568628, 0.41568628, 0.41568628, 1, 0.41598046, 0.41598043, 0.4159804, 1)
+offsets = PackedFloat32Array(0, 0.70253164, 0.70886075)
+colors = PackedColorArray(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
 [sub_resource type="GradientTexture2D" id="GradientTexture2D_dshet"]
 gradient = SubResource("Gradient_lqbdw")
-width = 400
+width = 256
+height = 256
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(0.5, 0)
 
 [sub_resource type="Gradient" id="Gradient_ocw4j"]
-colors = PackedColorArray(0, 1, 0, 1, 0, 1, 0, 1)
+offsets = PackedFloat32Array(0, 0.6898734, 0.70253164)
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
 
 [sub_resource type="GradientTexture2D" id="GradientTexture2D_73acr"]
 gradient = SubResource("Gradient_ocw4j")
-width = 400
+width = 256
+height = 256
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(0.5, 0)
 
-[node name="Moniteur_CCTV" type="Control"]
+[node name="Moniteur_CCTV" type="Control" node_paths=PackedStringArray("ecran_visuel")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -43,6 +54,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_og2t3")
+ecran_visuel = NodePath("Ecran_Vue")
 
 [node name="Ecran_Vue" type="TextureRect" parent="."]
 layout_mode = 1
@@ -51,16 +63,16 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+texture = ExtResource("2_dshet")
 expand_mode = 1
 stretch_mode = 6
 
 [node name="Map" type="TextureRect" parent="."]
 layout_mode = 0
-offset_left = 900.0
-offset_top = 396.0
-offset_right = 1400.0
-offset_bottom = 896.0
-scale = Vector2(0.5, 0.5)
+offset_left = 1420.0
+offset_top = 580.0
+offset_right = 1920.0
+offset_bottom = 1080.0
 texture = ExtResource("1_r7ydr")
 stretch_mode = 6
 
@@ -71,110 +83,110 @@ offset_bottom = 40.0
 
 [node name="Bouton_CAM01" type="Button" parent="Container_Boutons"]
 layout_mode = 0
-offset_left = 960.0
-offset_top = 400.0
-offset_right = 1368.0
-offset_bottom = 658.0
-scale = Vector2(0.1, 0.1)
+offset_left = 1548.0
+offset_top = 592.0
+offset_right = 1956.0
+offset_bottom = 850.0
+scale = Vector2(0.2, 0.2)
 icon = ExtResource("2_og2t3")
 
 [node name="Bouton_CAM02" type="Button" parent="Container_Boutons"]
 layout_mode = 0
-offset_left = 983.0
-offset_top = 433.0
-offset_right = 1391.0
-offset_bottom = 691.0
-scale = Vector2(0.1, 0.1)
+offset_left = 1608.0
+offset_top = 660.0
+offset_right = 2016.0
+offset_bottom = 918.0
+scale = Vector2(0.2, 0.2)
 icon = ExtResource("3_lqbdw")
 
 [node name="Bouton_CAM03" type="Button" parent="Container_Boutons"]
 layout_mode = 0
-offset_left = 914.0
-offset_top = 442.0
-offset_right = 1322.0
-offset_bottom = 700.0
-scale = Vector2(0.1, 0.1)
+offset_left = 1466.0
+offset_top = 682.0
+offset_right = 1874.0
+offset_bottom = 940.0
+scale = Vector2(0.2, 0.2)
 icon = ExtResource("4_dshet")
 
 [node name="Bouton_CAM04" type="Button" parent="Container_Boutons"]
 layout_mode = 0
-offset_left = 913.0
-offset_top = 501.0
-offset_right = 1321.0
-offset_bottom = 759.0
-scale = Vector2(0.1, 0.1)
+offset_left = 1471.0
+offset_top = 792.0
+offset_right = 1879.0
+offset_bottom = 1050.0
+scale = Vector2(0.2, 0.2)
 icon = ExtResource("5_ocw4j")
 
 [node name="Bouton_CAM05" type="Button" parent="Container_Boutons"]
 layout_mode = 0
-offset_left = 1096.0001
-offset_top = 443.0
-offset_right = 1504.0001
-offset_bottom = 701.0
-scale = Vector2(0.1, 0.1)
+offset_left = 1790.0
+offset_top = 682.0
+offset_right = 2198.0
+offset_bottom = 940.0
+scale = Vector2(0.2, 0.2)
 icon = ExtResource("6_73acr")
 
 [node name="Bouton_CAM06" type="Button" parent="Container_Boutons"]
 layout_mode = 0
-offset_left = 1097.0
-offset_top = 498.00006
-offset_right = 1505.0
-offset_bottom = 756.00006
-scale = Vector2(0.1, 0.1)
+offset_left = 1789.0
+offset_top = 795.99994
+offset_right = 2197.0
+offset_bottom = 1054.0
+scale = Vector2(0.2, 0.2)
 icon = ExtResource("7_b4apj")
 
 [node name="Bouton_CAM07" type="Button" parent="Container_Boutons"]
 layout_mode = 0
-offset_left = 923.0
-offset_top = 567.0
-offset_right = 1331.0
-offset_bottom = 825.0
-scale = Vector2(0.1, 0.1)
+offset_left = 1450.0
+offset_top = 914.0
+offset_right = 1858.0
+offset_bottom = 1172.0
+scale = Vector2(0.2, 0.2)
 icon = ExtResource("8_job2a")
 
 [node name="Bouton_CAM08" type="Button" parent="Container_Boutons"]
 layout_mode = 0
-offset_left = 964.0001
-offset_top = 546.0
-offset_right = 1372.0001
-offset_bottom = 804.0
-scale = Vector2(0.1, 0.1)
+offset_left = 1549.0
+offset_top = 881.0
+offset_right = 1957.0
+offset_bottom = 1139.0
+scale = Vector2(0.2, 0.2)
 icon = ExtResource("9_71ynp")
 
 [node name="Bouton_CAM09" type="Button" parent="Container_Boutons"]
 layout_mode = 0
-offset_left = 1005.0
-offset_top = 567.0
-offset_right = 1413.0
-offset_bottom = 825.0
-scale = Vector2(0.1, 0.1)
+offset_left = 1630.0
+offset_top = 937.0
+offset_right = 2038.0
+offset_bottom = 1195.0
+scale = Vector2(0.2, 0.2)
 icon = ExtResource("10_nsts7")
 
 [node name="Bouton_CAM10" type="Button" parent="Container_Boutons"]
 layout_mode = 0
-offset_left = 1048.0
-offset_top = 546.0
-offset_right = 1456.0
-offset_bottom = 804.0
-scale = Vector2(0.1, 0.1)
+offset_left = 1717.0
+offset_top = 880.0
+offset_right = 2125.0
+offset_bottom = 1138.0
+scale = Vector2(0.2, 0.2)
 icon = ExtResource("11_l16op")
 
 [node name="Bouton_CAM11" type="Button" parent="Container_Boutons"]
 layout_mode = 0
-offset_left = 962.0
-offset_top = 606.00006
-offset_right = 1370.0
-offset_bottom = 864.0001
-scale = Vector2(0.1, 0.1)
+offset_left = 1537.0
+offset_top = 1006.0
+offset_right = 1945.0
+offset_bottom = 1264.0
+scale = Vector2(0.2, 0.2)
 icon = ExtResource("12_lv74b")
 
 [node name="Bouton_CAM12" type="Button" parent="Container_Boutons"]
 layout_mode = 0
-offset_left = 1053.0
-offset_top = 610.0
-offset_right = 1461.0
-offset_bottom = 868.0
-scale = Vector2(0.1, 0.1)
+offset_left = 1717.0
+offset_top = 1007.0
+offset_right = 2125.0
+offset_bottom = 1265.0
+scale = Vector2(0.2, 0.2)
 icon = ExtResource("13_vt1tl")
 
 [node name="Label_Nom_Salle" type="Label" parent="."]
@@ -200,13 +212,16 @@ offset_bottom = 40.0
 
 [node name="Barre_Musique" type="TextureProgressBar" parent="MusicBox_UI"]
 layout_mode = 0
-offset_left = 177.0
-offset_top = 336.0
-offset_right = 562.0
-offset_bottom = 376.0
-value = 100.0
+offset_left = 240.0
+offset_top = 165.0
+offset_right = 625.0
+offset_bottom = 421.0
+max_value = 20.0
+value = 20.0
+fill_mode = 4
 texture_under = SubResource("GradientTexture2D_dshet")
 texture_progress = SubResource("GradientTexture2D_73acr")
+tint_progress = Color(0, 1, 0, 1)
 
 [node name="Bouton_Wind" type="Button" parent="MusicBox_UI"]
 layout_mode = 0

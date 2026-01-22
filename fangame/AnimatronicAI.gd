@@ -8,195 +8,182 @@ var current_path_index : int = 0
 
 # --- RÉFÉRENCES ---
 var camera_system_ref : Node 
-var porte_cible : Node3D 
-var office_ref : Node3D 
+var porte_cible : Node2D 
+var office_ref : Node2D 
 
 # --- TIMER ---
 var move_timer : float = 0.0
-var move_interval : float = 5.0
+var base_interval : float = 5.0 # Intervalle de base (ex: 5 secondes)
 
 func setup(data, _camera_system_ref, _porte_cible, _office_ref):
 	data_json = data
 	nom = data["name"]
 	path_list = data["path"]
-	move_interval = data["movement_interval"]
+	base_interval = data["movement_interval"] # On garde la valeur de base
 	
-	move_timer = move_interval
+	# On lance le timer
+	reset_timer(0) # 0 pour l'IA initiale (sera maj au premier process)
 	
 	camera_system_ref = _camera_system_ref
 	porte_cible = _porte_cible
 	office_ref = _office_ref
 	
 	# INITIALISATION SÉCURISÉE
-	# On s'ajoute à la première salle si on n'y est pas déjà
 	var salle_depart = path_list[0]
 	if camera_system_ref.etat_salles.has(salle_depart):
 		if not camera_system_ref.etat_salles[salle_depart].has(nom):
 			camera_system_ref.etat_salles[salle_depart].append(nom)
 			camera_system_ref.mettre_a_jour_image()
 
-func process_ai(delta, current_ai_level):
-	if nom == "Freddy":
-		# 1. Où est Freddy ?
-		var salle_actuelle = path_list[current_path_index]
-		
-		# 2. Le joueur regarde-t-il cette salle ?
-		# On vérifie : Moniteur ouvert + Bonne Caméra
-		if camera_system_ref.est_ouvert and camera_system_ref.camera_actuelle == salle_actuelle:
-			# OUI -> On le bloque !
-			# On remet son timer à fond (il ne peut pas bouger tant qu'on le regarde)
-			move_timer = move_interval
-			# print("Freddy est observé, il ne bouge pas...")
-			return # On arrête la fonction ici, le timer ne descendra pas
-	move_timer -= delta
-	if move_timer <= 0:
-		move_timer = move_interval
-		attempt_movement(current_ai_level)
+func reset_timer(ai_level : int):
+	# --- CALCUL DE LA VITESSE SELON L'IA ---
+	# Plus l'IA est haute, plus le temps diminue.
+	# Exemple : Base 5s. À niveau 20 -> 5 - (20 * 0.15) = 2 secondes.
+	var reduction = float(ai_level) * 0.15
+	var final_time = base_interval - reduction
+	
+	# On garde une limite minimum (par ex 2.0 secondes) pour pas que ce soit injouable
+	if final_time < 2.0: final_time = 2.0
+	
+	move_timer = final_time
 
-func attempt_movement(ai_level):
+func process_ai(delta, current_ai_level):
+	
+	if Engine.get_frames_drawn() % 60 == 0:
+		print(nom, " est au niveau IA : ", current_ai_level)
+		
 	if office_ref.game_over: return
 
-	# --- SPECIAL FOXY ---
-	if nom == "Foxy":
-		
-		# SÉCURITÉ : Si Foxy court déjà, on ne fait RIEN.
-		if camera_system_ref.foxy_attacking:
+	# --- LOGIQUE FREDDY (Ne bouge pas si on le regarde) ---
+	if nom == "Freddy":
+		var salle_actuelle = path_list[current_path_index]
+		if camera_system_ref.est_ouvert and camera_system_ref.camera_actuelle == salle_actuelle:
+			# On le bloque tant qu'on le regarde
+			reset_timer(current_ai_level)
 			return 
-		
-		# 1. On tente le jet de dé
-		var roll = randi_range(1, 20)
-		if roll <= ai_level:
-			# REUSSITE : La rage augmente !
-			camera_system_ref.foxy_rage += 1
-			print("Foxy s'énerve... Rage : ", camera_system_ref.foxy_rage)
-			
-			# EST-IL PRÊT A ATTAQUER ?
-			if camera_system_ref.foxy_rage >= camera_system_ref.foxy_max_rage:
-				lancer_attaque_foxy()
-			else:
-				# Mise à jour visuelle
-				camera_system_ref.mettre_a_jour_image()
-		return
-	# ### NOUVEAU : LOGIQUE SPÉCIALE FREDDY ###
-	# Si je suis Freddy ET que je suis encore au début (Scène)
-	if nom == "Freddy" and current_path_index == 0:
-		# Je vérifie qui est avec moi sur la Cam01
-		var occupants_scene = camera_system_ref.etat_salles["Cam01"]
-		
-		# Si Bonnie OU Chica sont là, je refuse de bouger
-		if occupants_scene.has("Bonnie") or occupants_scene.has("Chica"):
-			# print("Freddy attend que les autres partent...")
-			return 
-	# #########################################
 
+	# --- TIMER ---
+	move_timer -= delta
+	
+	if move_timer <= 0:
+		# Le timer est fini, on tente quelque chose !
+		reset_timer(current_ai_level) # On relance le timer pour la prochaine fois
+		attempt_logic(current_ai_level)
+
+func attempt_logic(ai_level):
+	# --- CAS FOXY ---
+	if nom == "Foxy":
+		gerer_foxy(ai_level)
+		return
+
+	# --- CAS NORMAUX (Bonnie, Chica, Freddy) ---
+	
+	# 1. Sommes-nous DÉJÀ à la porte (dernière étape) ?
+	if current_path_index == path_list.size() - 1:
+		# On est à la porte, on tente d'attaquer !
+		# (Note: Dans FNaF, ils attaquent souvent immédiatement s'ils sont là, 
+		# mais on peut ajouter un jet de dé si on veut les rendre hésitants)
+		tenter_attaque()
+	
+	else:
+		# 2. Nous sommes sur le chemin, on essaie d'avancer
+		# Jet de dé standard (1 à 20)
+		var roll = randi_range(1, 20)
+		
+		# Condition spéciale Freddy : Attend que Cam01 soit vide
+		if nom == "Freddy" and current_path_index == 0:
+			var occupants_scene = camera_system_ref.etat_salles["Cam01"]
+			if occupants_scene.has("Bonnie") or occupants_scene.has("Chica"):
+				return # Il attend son tour
+		
+		# Si le jet réussit, on avance
+		if roll <= ai_level:
+			avancer_sur_chemin()
+
+func gerer_foxy(ai_level):
+	if camera_system_ref.foxy_attacking: return
+	
 	var roll = randi_range(1, 20)
 	if roll <= ai_level:
-		avancer_sur_chemin()
+		camera_system_ref.foxy_rage += 1
+		print("Foxy Rage : ", camera_system_ref.foxy_rage)
+		
+		if camera_system_ref.foxy_rage >= camera_system_ref.foxy_max_rage:
+			lancer_attaque_foxy()
+		else:
+			camera_system_ref.mettre_a_jour_image()
 
+func avancer_sur_chemin():
+	# 1. ON SE RETIRE DE LA SALLE ACTUELLE
+	var ancienne_salle = path_list[current_path_index]
+	if camera_system_ref.etat_salles.has(ancienne_salle):
+		camera_system_ref.etat_salles[ancienne_salle].erase(nom)
+
+	# 2. ON AVANCE L'INDEX
+	current_path_index += 1
+	var nouvelle_salle = path_list[current_path_index]
+	
+	# 3. ON S'AJOUTE DANS LA NOUVELLE SALLE (CORRECTION VISUELLE ICI !)
+	# Avant, tu avais un "return" ici qui empêchait l'ajout. Maintenant on l'ajoute.
+	if camera_system_ref.etat_salles.has(nouvelle_salle):
+		camera_system_ref.etat_salles[nouvelle_salle].append(nom)
+	
+	print(nom, " a bougé vers ", nouvelle_salle)
+	
+	# 4. MISE A JOUR DES CAMERAS
+	camera_system_ref.mettre_a_jour_image()
+
+func tenter_attaque():
+	print(nom, " VERIFIE LA PORTE...")
+	
+	# Cas Freddy
+	if nom == "Freddy":
+		office_ref.trigger_jumpscare("Freddy")
+		return
+	
+	# Cas Bonnie / Chica
+	if porte_cible and porte_cible.est_fermee:
+		# --- ECHEC : RETOUR AU DEBUT ---
+		print("BLOCKED! ", nom, " repart.")
+		
+		# On le retire visuellement de la porte
+		var salle_porte = path_list[current_path_index]
+		if camera_system_ref.etat_salles.has(salle_porte):
+			camera_system_ref.etat_salles[salle_porte].erase(nom)
+		
+		# On cherche où retourner (Cam01 par défaut ou autre)
+		current_path_index = 0 
+		if nom == "Bonnie": current_path_index = path_list.find("Cam05") # Exemple de repli
+		if current_path_index == -1: current_path_index = 0
+		
+		# On le remet dans la salle de repli
+		var salle_repli = path_list[current_path_index]
+		if camera_system_ref.etat_salles.has(salle_repli):
+			camera_system_ref.etat_salles[salle_repli].append(nom)
+			
+		camera_system_ref.mettre_a_jour_image()
+		
+	else:
+		# --- REUSSITE : MORT ---
+		office_ref.trigger_jumpscare(nom)
+
+# ... (Garde tes fonctions lancer_attaque_foxy et knock_door_foxy inchangées) ...
 func lancer_attaque_foxy():
-	print("FOXY COURT VERS LA PORTE !")
+	print("FOXY COURT !")
 	camera_system_ref.foxy_attacking = true
-	camera_system_ref.mettre_a_jour_image() # Affiche le rideau vide
-	
-	# Foxy met un certain temps à arriver (ex: 5 à 10 secondes de course)
-	# On peut simuler ça avec un Timer ou await
+	camera_system_ref.mettre_a_jour_image()
 	await office_ref.get_tree().create_timer(randf_range(6.0, 10.0)).timeout
-	
 	knock_door_foxy()
 
 func knock_door_foxy():
 	if office_ref.game_over: return
-	
-	# VERIFICATION DE LA PORTE (Gauche)
 	if porte_cible and porte_cible.est_fermee:
-		# --- ECHEC (PORTE FERMEE) ---
-		print("FOXY BANG BANG ! (Batterie perdue)")
-		
-		# 1. Perte de batterie
+		print("FOXY BLOQUÉ")
 		office_ref.batterie -= 5.0
 		if office_ref.batterie < 0: office_ref.batterie = 0
 		office_ref.label_batterie.text = "Power: " + str(int(office_ref.batterie)) + "%"
-		
-		# 2. Reset Foxy
 		camera_system_ref.foxy_rage = 0
 		camera_system_ref.foxy_attacking = false
-		camera_system_ref.mettre_a_jour_image() # Retourne dans le rideau
-		
-		# 3. Son de frappe (Optionnel)
-		# porte_cible.jouer_son_bang()
-		
+		camera_system_ref.mettre_a_jour_image()
 	else:
-		# --- REUSSITE (JUMPSCARE) ---
-		print("JUMPSCARE FOXY !")
 		office_ref.trigger_jumpscare("Foxy")
-
-func avancer_sur_chemin():
-	# 1. NETTOYAGE
-	for nom_camera in camera_system_ref.etat_salles:
-		while camera_system_ref.etat_salles[nom_camera].has(nom):
-			camera_system_ref.etat_salles[nom_camera].erase(nom)
-
-	# 2. DÉPLACEMENT
-	if current_path_index == path_list.size() - 1:
-		tenter_attaque()
-		camera_system_ref.mettre_a_jour_image()
-		return
-
-	current_path_index += 1
-	var nouvelle_salle = path_list[current_path_index]
-	
-	# 3. AFFICHAGE
-	if current_path_index == path_list.size() - 1:
-		print(nom, " est caché dans l'angle mort (", nouvelle_salle, ")")
-	else:
-		if camera_system_ref.etat_salles.has(nouvelle_salle):
-			camera_system_ref.etat_salles[nouvelle_salle].append(nom)
-			print(nom, " a bougé vers ", nouvelle_salle)
-	
-	camera_system_ref.mettre_a_jour_image()
-
-func tenter_attaque():
-	print(nom, " TENTE D'ENTRER !")
-	
-	# --- CAS SPÉCIAL FREDDY (VENTILATION) ---
-	if nom == "Freddy":
-		print("FREDDY SORT DE LA VENTILATION !")
-		# Pas de vérification de porte. C'est une mort directe.
-		office_ref.trigger_jumpscare("Freddy")
-		return
-	
-	if porte_cible and porte_cible.est_fermee:
-		# --- ÉCHEC (BLOCKED) ---
-		print("BLOCKED! ", nom, " repart.")
-		
-		# ### NOUVEAU : LOGIQUE DE RETOUR (Cam 02) ###
-		
-		var salle_retour = ""
-		var index_retour = 0
-		
-		# On cherche "Cam02" dans le chemin de cet animatronique
-		var index_trouve = path_list.find("Cam02")
-		
-		if index_trouve != -1:
-			# Si Cam02 existe dans son chemin, on y va
-			index_retour = index_trouve
-			salle_retour = "Cam02"
-		else:
-			# Sinon (sécurité), on retourne au début (Cam01)
-			index_retour = 0
-			salle_retour = path_list[0]
-		
-		# On applique le retour
-		current_path_index = index_retour
-		
-		# On s'affiche visuellement dans la salle de retour
-		if camera_system_ref.etat_salles.has(salle_retour):
-			camera_system_ref.etat_salles[salle_retour].append(nom)
-		
-		camera_system_ref.mettre_a_jour_image()
-		# ###########################################
-		
-	else:
-		# --- RÉUSSITE (JUMPSCARE) ---
-		print("JUMPSCARE !!!")
-		office_ref.trigger_jumpscare(nom)
