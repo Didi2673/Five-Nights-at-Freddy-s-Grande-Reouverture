@@ -1,7 +1,9 @@
-[gd_scene load_steps=9 format=3 uid="uid://d1jvp74qdhp23"]
+[gd_scene load_steps=12 format=3 uid="uid://d1jvp74qdhp23"]
 
 [ext_resource type="FontFile" uid="uid://83xb00w7vpum" path="res://vcr_osd_mono.ttf" id="1_06t4h"]
 [ext_resource type="Script" uid="uid://bbqvbkh1q8p0h" path="res://main_menu.gd" id="1_7vrkn"]
+[ext_resource type="FontFile" uid="uid://dh5jtdq4vw75k" path="res://LcdSolid.ttf" id="3_jix8l"]
+[ext_resource type="AudioStream" uid="uid://f1m0j2lgiypg" path="res://Sounds/camera_change.wav" id="4_glbon"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_7vrkn"]
 font = ExtResource("1_06t4h")
@@ -23,6 +25,10 @@ font = ExtResource("1_06t4h")
 font_size = 34
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_nlkkf"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_qe12f"]
+font = ExtResource("3_jix8l")
+font_size = 70
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -47,6 +53,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 
 [node name="Titre_Jeu" type="Label" parent="Ecran_Accueil"]
 layout_mode = 0
@@ -149,6 +156,44 @@ offset_top = 539.0
 offset_right = 254.0
 offset_bottom = 607.0
 text = "Retour"
+
+[node name="Ecran_Transition" type="ColorRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Label_Nuit_Transition" type="Label" parent="Ecran_Transition"]
+layout_mode = 0
+offset_left = 832.0
+offset_top = 504.0
+offset_right = 1089.0
+offset_bottom = 574.0
+text = "Nuit 1"
+label_settings = SubResource("LabelSettings_qe12f")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Label_Heure" type="Label" parent="Ecran_Transition"]
+layout_mode = 0
+offset_left = 789.0
+offset_top = 607.0
+offset_right = 1132.0
+offset_bottom = 677.0
+text = "12:00 AM"
+label_settings = SubResource("LabelSettings_qe12f")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Audio_Transition" type="AudioStreamPlayer" parent="Ecran_Transition"]
+stream = ExtResource("4_glbon")
+
+[node name="Audio_Hover" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("4_glbon")
 
 [connection signal="pressed" from="Ecran_Accueil/Bouton_Play" to="." method="_on_aller_vers_selection"]
 [connection signal="pressed" from="Ecran_Accueil/Bouton_Quitter" to="." method="_on_bouton_quitter_pressed"]

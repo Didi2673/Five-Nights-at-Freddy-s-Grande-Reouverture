@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3 uid="uid://dvu2p8dkvbruk"]
+[gd_scene load_steps=35 format=3 uid="uid://dvu2p8dkvbruk"]
 
 [ext_resource type="Script" uid="uid://binxa8r2e1lh" path="res://office.gd" id="1_4i814"]
 [ext_resource type="Texture2D" uid="uid://bnoromdm53qd7" path="res://office_left_light.png" id="3_4hetp"]
@@ -7,22 +7,40 @@
 [ext_resource type="Texture2D" uid="uid://kts435o7bxf3" path="res://office_right_light.png" id="5_8qan1"]
 [ext_resource type="Texture2D" uid="uid://drqturv75nskt" path="res://office_right_light_chica.png" id="6_jktts"]
 [ext_resource type="PackedScene" uid="uid://dvj4ixdew2cl5" path="res://moniteur_cctv.tscn" id="6_lcnwv"]
+[ext_resource type="Texture2D" uid="uid://lt65n1s4m4hf" path="res://UsageBar/1.png" id="7_25m5p"]
 [ext_resource type="PackedScene" uid="uid://4juki6xqtpuk" path="res://porte_systeme.tscn" id="8_3xqf3"]
+[ext_resource type="Texture2D" uid="uid://jtf0wg5pbod2" path="res://UsageBar/2.png" id="8_ga26y"]
 [ext_resource type="FontFile" uid="uid://dh5jtdq4vw75k" path="res://LcdSolid.ttf" id="8_lcwox"]
 [ext_resource type="VideoStream" uid="uid://cfih00dontugp" path="res://Fnaf6AM.ogv" id="8_wruqr"]
+[ext_resource type="Texture2D" uid="uid://bdsvpcjk22a02" path="res://UsageBar/3.png" id="9_2k2f6"]
 [ext_resource type="Texture2D" uid="uid://4cst1lfeynnu" path="res://left_door.png" id="9_gxl1f"]
 [ext_resource type="Texture2D" uid="uid://dyfu8a18td548" path="res://right_button_door_open.webp" id="10_2uxut"]
-[ext_resource type="VideoStream" uid="uid://c6taj4hpymjyt" path="res://Bonnie.ogv" id="10_3xqf3"]
+[ext_resource type="Texture2D" uid="uid://b53xkx5llbkf6" path="res://UsageBar/4.png" id="10_hs4kw"]
+[ext_resource type="Texture2D" uid="uid://c3ijl35fvw1ue" path="res://UsageBar/5.png" id="11_bm8iy"]
 [ext_resource type="Texture2D" uid="uid://b4foa667skuy2" path="res://right_button_door_close.webp" id="11_n1y4y"]
+[ext_resource type="Texture2D" uid="uid://c0b543kybl6k5" path="res://golden_freddy.png" id="12_bveom"]
 [ext_resource type="Texture2D" uid="uid://cclvqv8grjn26" path="res://right_door.png" id="12_m8tx5"]
 [ext_resource type="Texture2D" uid="uid://bsuf1apsdeqi3" path="res://left_button_door_open.webp" id="13_4hetp"]
 [ext_resource type="Texture2D" uid="uid://cf78fi2d3xo03" path="res://left_button_door_close.webp" id="14_o3cd7"]
+[ext_resource type="AudioStream" uid="uid://d1cpisn0dya54" path="res://Sounds/cameras.wav" id="24_2k2f6"]
+[ext_resource type="AudioStream" uid="uid://bs88frxmqbe1w" path="res://Sounds/Vent.wav" id="25_bm8iy"]
+[ext_resource type="AudioStream" uid="uid://cu7yr4uq7w4ji" path="res://Sounds/ambience.ogg" id="25_hs4kw"]
+[ext_resource type="AudioStream" uid="uid://dwl6x4upbatvy" path="res://Sounds/danger.wav" id="26_bm8iy"]
+[ext_resource type="AudioStream" uid="uid://duaxdecrs234d" path="res://Sounds/freddy_laugh.wav" id="27_2uru3"]
+[ext_resource type="AudioStream" uid="uid://c0vwtlmvuvika" path="res://Sounds/music_box.wav" id="28_ekubs"]
+[ext_resource type="AudioStream" uid="uid://40oh251q4qcs" path="res://Sounds/pizza.wav" id="29_hblr6"]
+[ext_resource type="AudioStream" uid="uid://cqgqjxna5ir8m" path="res://Sounds/flash.wav" id="30_46so7"]
+[ext_resource type="AudioStream" uid="uid://ch48tiu1ukym2" path="res://Sounds/golden_freddy.wav" id="32_6jtqa"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_wruqr"]
 font = ExtResource("8_lcwox")
 font_size = 36
 
 [sub_resource type="LabelSettings" id="LabelSettings_lcwox"]
+font = ExtResource("8_lcwox")
+font_size = 32
+
+[sub_resource type="LabelSettings" id="LabelSettings_m8tx5"]
 font = ExtResource("8_lcwox")
 font_size = 32
 
@@ -33,6 +51,7 @@ tex_light_left = ExtResource("3_4hetp")
 tex_light_left_bonnie = ExtResource("4_o3cd7")
 tex_light_right = ExtResource("5_8qan1")
 tex_light_right_chica = ExtResource("6_jktts")
+textures_barres = Array[Texture2D]([null, ExtResource("7_25m5p"), ExtResource("8_ga26y"), ExtResource("9_2k2f6"), ExtResource("10_hs4kw"), ExtResource("11_bm8iy")])
 portes = [NodePath("Background/Porte_Gauche"), NodePath("Background/Porte_Droite")]
 systeme_camera = NodePath("UI/Moniteur_CCTV")
 porte_gauche = NodePath("Background/Porte_Gauche")
@@ -62,32 +81,74 @@ horizontal_alignment = 2
 
 [node name="Label_Batterie" type="Label" parent="UI"]
 offset_left = 3.0
-offset_top = 1000.0
-offset_right = 199.0
-offset_bottom = 1037.0
-text = "100%"
+offset_top = 950.0
+offset_right = 238.0
+offset_bottom = 987.0
+text = "Power : 100%"
 label_settings = SubResource("LabelSettings_lcwox")
 
 [node name="Label_Usage" type="Label" parent="UI"]
 offset_left = 4.0
-offset_top = 1030.0
+offset_top = 1000.0
 offset_right = 200.0
-offset_bottom = 1067.0
+offset_bottom = 1037.0
+text = "Usage : "
 label_settings = SubResource("LabelSettings_lcwox")
+
+[node name="Label_Temperature" type="Label" parent="UI"]
+offset_left = 3.0
+offset_top = 900.0
+offset_right = 81.0
+offset_bottom = 933.0
+text = "60°F"
+label_settings = SubResource("LabelSettings_m8tx5")
 
 [node name="VideoStreamPlayer" type="VideoStreamPlayer" parent="UI"]
 visible = false
-offset_right = 1151.0
-offset_bottom = 652.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 stream = ExtResource("8_wruqr")
 expand = true
 
-[node name="Jumpscare" type="VideoStreamPlayer" parent="UI"]
+[node name="Barres_Container" type="HBoxContainer" parent="UI"]
+offset_left = 151.0
+offset_top = 990.0
+offset_right = 321.0
+offset_bottom = 1042.0
+theme_override_constants/separation = 4
+
+[node name="TextureRect" type="TextureRect" parent="UI/Barres_Container"]
 visible = false
-offset_right = 1151.0
-offset_bottom = 652.0
-stream = ExtResource("10_3xqf3")
-expand = true
+layout_mode = 2
+texture = ExtResource("7_25m5p")
+expand_mode = 3
+
+[node name="TextureRect2" type="TextureRect" parent="UI/Barres_Container"]
+visible = false
+layout_mode = 2
+texture = ExtResource("8_ga26y")
+expand_mode = 3
+
+[node name="TextureRect3" type="TextureRect" parent="UI/Barres_Container"]
+visible = false
+layout_mode = 2
+texture = ExtResource("9_2k2f6")
+expand_mode = 3
+
+[node name="TextureRect4" type="TextureRect" parent="UI/Barres_Container"]
+visible = false
+layout_mode = 2
+texture = ExtResource("10_hs4kw")
+expand_mode = 3
+
+[node name="TextureRect5" type="TextureRect" parent="UI/Barres_Container"]
+visible = false
+layout_mode = 2
+texture = ExtResource("11_bm8iy")
+expand_mode = 3
 
 [node name="Background" type="Sprite2D" parent="."]
 scale = Vector2(1.5, 1.5)
@@ -106,19 +167,19 @@ position = Vector2(1240, 1080)
 scale = Vector2(1.5, 1.5)
 texture = ExtResource("9_gxl1f")
 
-[node name="Zone_Clic_Door" parent="Background/Porte_Gauche" index="3"]
+[node name="Zone_Clic_Door" parent="Background/Porte_Gauche" index="1"]
 offset_left = 1017.0
 offset_top = 1058.0
 offset_right = 1088.0
 offset_bottom = 1152.0
 
-[node name="Zone_Clic_Light" parent="Background/Porte_Gauche" index="4"]
+[node name="Zone_Clic_Light" parent="Background/Porte_Gauche" index="2"]
 offset_left = 1019.0
 offset_top = 1174.0
 offset_right = 1084.0
 offset_bottom = 1265.0
 
-[node name="Sprite_Panel" parent="Background/Porte_Gauche" index="5"]
+[node name="Sprite_Panel" parent="Background/Porte_Gauche" index="3"]
 position = Vector2(1032, 1170)
 scale = Vector2(1.5, 1.5)
 texture = ExtResource("10_2uxut")
@@ -136,25 +197,76 @@ position = Vector2(3016, 1080)
 scale = Vector2(1.5, 1.5)
 texture = ExtResource("12_m8tx5")
 
-[node name="Zone_Clic_Door" parent="Background/Porte_Droite" index="3"]
+[node name="Zone_Clic_Door" parent="Background/Porte_Droite" index="1"]
 offset_left = 3238.0
 offset_top = 1057.0
 offset_right = 3304.0
 offset_bottom = 1151.0
 
-[node name="Zone_Clic_Light" parent="Background/Porte_Droite" index="4"]
+[node name="Zone_Clic_Light" parent="Background/Porte_Droite" index="2"]
 offset_left = 3237.0
 offset_top = 1178.0
 offset_right = 3300.0
 offset_bottom = 1268.0
 
-[node name="Sprite_Panel" parent="Background/Porte_Droite" index="5"]
+[node name="Sprite_Panel" parent="Background/Porte_Droite" index="3"]
 position = Vector2(3275, 1170)
 scale = Vector2(1.5, 1.5)
 texture = ExtResource("13_4hetp")
 
+[node name="GoldenFreddy_Sprite" type="Sprite2D" parent="."]
+visible = false
+position = Vector2(896.00006, 758)
+scale = Vector2(1.2, 1.2)
+texture = ExtResource("12_bveom")
+
 [node name="Camera2D" type="Camera2D" parent="."]
 anchor_mode = 0
+
+[node name="Layer_Jumpscare" type="CanvasLayer" parent="."]
+layer = 100
+visible = false
+
+[node name="Jumpscare" type="VideoStreamPlayer" parent="Layer_Jumpscare"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand = true
+
+[node name="Ventilateur" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("25_hs4kw")
+
+[node name="Audio_Monitor" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("24_2k2f6")
+
+[node name="Audio_Vent_Move" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("25_bm8iy")
+
+[node name="Audio_Warning" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("26_bm8iy")
+
+[node name="Audio_Fan" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("25_hs4kw")
+volume_db = -4.37
+
+[node name="Audio_Freddy_Laugh" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("27_2uru3")
+
+[node name="Audio_MusicBox" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("28_ekubs")
+volume_db = -80.0
+autoplay = true
+
+[node name="Audio_Leurre" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("29_hblr6")
+
+[node name="Audio_Flash_Foxy" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("30_46so7")
+
+[node name="Audio_GF_Appear" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("32_6jtqa")
 
 [editable path="UI/Moniteur_CCTV"]
 [editable path="Background/Porte_Gauche"]

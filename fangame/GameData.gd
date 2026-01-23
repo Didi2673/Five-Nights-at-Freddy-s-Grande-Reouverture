@@ -17,6 +17,7 @@ var current_night_played : int = 1 # Celle qu'on va lancer
 func _ready():
 	load_nights_data()
 	load_data()
+	load_game()
 	
 	
 # --- CHARGEMENT DU JSON ---
@@ -57,10 +58,20 @@ func load_game():
 		if json.parse(file.get_as_text()) == OK:
 			unlocked_night = json.get_data()["unlocked"]
 
-func win_night(n):
-	if n == unlocked_night and unlocked_night < nights_data.size():
-		unlocked_night += 1
-		save_game()
+func win_night(n_terminee : int):
+	print("Victoire validée pour la nuit : ", n_terminee)
+	
+	# Si on vient de finir la nuit qu'on devait débloquer
+	if n_terminee == unlocked_night:
+		# On vérifie qu'il existe une nuit suivante
+		if unlocked_night < nights_data.size():
+			unlocked_night += 1
+			save_game()
+			print(">>> SUCCÈS : Nuit ", unlocked_night, " débloquée !")
+		else:
+			print("Jeu terminé à 100% !")
+	else:
+		print("Pas de déblocage (Nuit déjà acquise ou nuit précédente rejouée).")
 
 func load_data():
 	nights_data = load_json_file("res://data/nights.json")
@@ -86,24 +97,28 @@ func load_json_file(path : String):
 
 # Fonction pour récupérer l'IA d'un animatronique pour une nuit et une heure précise
 func get_ai_level(animatronic_index: int, night_index: int, hour: int) -> int:
-	
+	# Sécurité de base
 	if animatronics_data.size() == 0 or animatronic_index >= animatronics_data.size():
 		return 0
 		
-	var real_night_index = max(0, night_index - 1)
-	
-	
-	# Sécurités pour éviter les crashs si les fichiers sont mal remplis
-	if animatronic_index >= animatronics_data.size(): return 0
 	var data = animatronics_data[animatronic_index]
 	
-	if real_night_index >= data["ai_levels"].size():
-		return 0
+	# Conversion : Nuit 1 (Humain) devient Index 0 (Tableau)
+	var real_night_index = max(0, night_index - 1)
 	
-	if night_index >= data["ai_levels"].size(): return 0
+	# --- CORRECTION ICI ---
+	# On vérifie si l'index dépasse la taille du tableau.
+	# Si j'ai 5 nuits, les index vont de 0 à 4.
+	# Si je demande la nuit 5 (index 4), 4 >= 5 est FAUX, donc ça passe. C'est bon !
+	if real_night_index >= data["ai_levels"].size():
+		print("ATTENTION : Pas de données IA pour la nuit ", night_index, ". IA forcée à 0.")
+		return 0 
+	
 	var night_ai = data["ai_levels"][real_night_index]
 	
-	if hour >= night_ai.size(): return night_ai[night_ai.size() - 1] # Retourne la dernière valeur si on dépasse
+	# Sécurité pour l'heure
+	if hour >= night_ai.size(): 
+		return night_ai[night_ai.size() - 1]
 	
 	return night_ai[hour]
 	

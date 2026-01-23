@@ -11,8 +11,8 @@ extends Node2D
 
 # --- SONS ---
 @export_group("Sons")
-@export var son_door : AudioStream
-@export var son_light : AudioStream
+@export var son_door : AudioStreamPlayer
+@export var son_light : AudioStreamPlayer
 
 # --- REFERENCES INTERNES ---
 @onready var sprite_porte = $Sprite_Porte
@@ -65,7 +65,12 @@ func _on_door_toggle():
 		if tex_panel_vert: sprite_panel.texture = tex_panel_vert
 	
 	# Son
-	audio_porte.play()
+	# Vérification du son avant de jouer
+	if audio_porte.stream == null:
+		print("ERREUR : Pas de fichier son dans Audio_Porte !")
+	else:
+		print("Lecture du son...")
+		audio_porte.play()
 
 # --- ACTION LUMIERE ---
 func _on_light_start():

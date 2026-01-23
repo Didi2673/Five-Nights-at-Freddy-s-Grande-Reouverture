@@ -13,19 +13,44 @@ extends Control
 @onready var label_difficulte = $Ecran_Selection/Panneau_Details/Label_Difficulte
 @onready var btn_lancer = $Ecran_Selection/Panneau_Details/Bouton_Lancer_Nuit
 
+@onready var ecran_transition = $Ecran_Transition
+@onready var label_trans_nuit = $Ecran_Transition/Label_Nuit_Transition
+@onready var audio_transition = $Ecran_Transition/Audio_Transition
+
+@onready var audio_hover = $Audio_Hover
+
 # Variable pour savoir quelle nuit est sélectionnée (mais pas encore lancée)
 var nuit_selectionnee_temp : int = 1
 
 func _ready():
 	# Initialisation : On affiche l'accueil, on cache la sélection
+	if ecran_transition:
+		ecran_transition.visible = false
+		
 	ecran_accueil.visible = true
 	ecran_selection.visible = false
+	if btn_lancer:
+		btn_lancer.mouse_entered.connect(_jouer_son_hover)
 	
+	# 2. Le bouton "Retour"
+	var btn_retour = $Ecran_Selection/Bouton_Retour
+	if btn_retour:
+		btn_retour.mouse_entered.connect(_jouer_son_hover)
+		
+	# 3. Le bouton "Jouer" (celui qu'on cherche dynamiquement)
+
+	# 4. Le bouton "Quitter" (si tu en as un)
+	var btn_quit = ecran_accueil.find_child("Bouton_Quitter", true, false)
+	if btn_quit:
+		btn_quit.mouse_entered.connect(_jouer_son_hover)
+		
 	# Connecter le bouton "Jouer" de l'accueil (s'il existe)
 	# Supposons qu'il s'appelle "Bouton_Jouer" dans Ecran_Accueil
-	var btn_play = ecran_accueil.find_child("Bouton_Jouer", true, false)
+	var btn_play = ecran_accueil.find_child("Bouton_Play", true, false)
 	if btn_play:
+		btn_play.mouse_entered.connect(_jouer_son_hover)
 		btn_play.pressed.connect(_on_aller_vers_selection)
+		
 	
 	# Connecter le bouton retour et lancer
 	$Ecran_Selection/Bouton_Retour.pressed.connect(_on_retour_accueil)
@@ -47,6 +72,12 @@ func _on_bouton_quitter_pressed():
 	print("Fermeture du jeu...")
 	get_tree().quit()
 
+func _jouer_son_hover():
+	if audio_hover:
+		# Petite variation de pitch pour que ce soit moins robotique
+		
+		audio_hover.play()
+		
 func _on_retour_accueil():
 	ecran_selection.visible = false
 	ecran_accueil.visible = true
@@ -65,7 +96,7 @@ func generer_liste_nuits():
 		
 		# Esthétique : Taille min pour qu'on puisse cliquer
 		btn.custom_minimum_size.y = 40 
-		
+		btn.mouse_entered.connect(_jouer_son_hover)
 		if i <= GameData.unlocked_night:
 			# Nuit DÉBLOQUÉE
 			btn.text = "Nuit " + str(i)
@@ -111,10 +142,28 @@ func update_details_panel(numero_nuit):
 
 # --- LANCEMENT DU JEU ---
 func _on_lancer_nuit():
-	print("Lancement de la nuit ", nuit_selectionnee_temp)
+	print("Lancement de la transition pour la nuit ", nuit_selectionnee_temp)
 	
-	# 1. On enregistre la nuit choisie dans les données globales
+	# 1. On enregistre la donnée
 	GameData.current_night_played = nuit_selectionnee_temp
 	
-	# 2. On change de scène
+	# 2. On configure l'écran de transition
+	if label_trans_nuit:
+		label_trans_nuit.text = "Nuit " + str(nuit_selectionnee_temp)
+	
+	# 3. On affiche l'écran noir (qui couvre tout le menu)
+	if ecran_transition:
+		ecran_transition.visible = true
+		# Optionnel : S'assurer qu'il est devant tout (Z-Index)
+		ecran_transition.z_index = 999 
+	
+	# 4. On joue le son
+	if audio_transition:
+		audio_transition.play()
+	
+	# 5. ON ATTEND (Le délai style FNAF)
+	# "await" met le script en pause pendant 2.5 secondes (ajuste selon la longueur de ton son)
+	await get_tree().create_timer(2.5).timeout
+	
+	# 6. Une fois le temps écoulé, on lance vraiment le jeu
 	get_tree().change_scene_to_file("res://office.tscn")

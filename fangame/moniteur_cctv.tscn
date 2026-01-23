@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://dvj4ixdew2cl5"]
+[gd_scene load_steps=25 format=3 uid="uid://dvj4ixdew2cl5"]
 
 [ext_resource type="Script" uid="uid://dfukqvi7p8lin" path="res://remote_cctv.gd" id="1_og2t3"]
 [ext_resource type="Texture2D" uid="uid://cqi8pfb27eur0" path="res://map.png" id="1_r7ydr"]
@@ -16,6 +16,9 @@
 [ext_resource type="Texture2D" uid="uid://vkr5cxsya5h2" path="res://11.png" id="12_lv74b"]
 [ext_resource type="Texture2D" uid="uid://vmfif1hnfysn" path="res://12.png" id="13_vt1tl"]
 [ext_resource type="Shader" uid="uid://hhifebkgqjh8" path="res://moniteur_cctv.gdshader" id="15_lqbdw"]
+[ext_resource type="Texture2D" uid="uid://cgiem0shlq3jq" path="res://13.png" id="16_ocw4j"]
+[ext_resource type="AudioStream" uid="uid://f1m0j2lgiypg" path="res://Sounds/camera_change.wav" id="18_73acr"]
+[ext_resource type="AudioStream" uid="uid://cqgqjxna5ir8m" path="res://Sounds/flash.wav" id="19_b4apj"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_dshet"]
 shader = ExtResource("15_lqbdw")
@@ -155,10 +158,10 @@ icon = ExtResource("9_71ynp")
 
 [node name="Bouton_CAM09" type="Button" parent="Container_Boutons"]
 layout_mode = 0
-offset_left = 1630.0
-offset_top = 937.0
-offset_right = 2038.0
-offset_bottom = 1195.0
+offset_left = 1634.0
+offset_top = 881.0
+offset_right = 2042.0
+offset_bottom = 1139.0
 scale = Vector2(0.2, 0.2)
 icon = ExtResource("10_nsts7")
 
@@ -174,25 +177,44 @@ icon = ExtResource("11_l16op")
 [node name="Bouton_CAM11" type="Button" parent="Container_Boutons"]
 layout_mode = 0
 offset_left = 1537.0
-offset_top = 1006.0
+offset_top = 956.0
 offset_right = 1945.0
-offset_bottom = 1264.0
+offset_bottom = 1214.0
 scale = Vector2(0.2, 0.2)
 icon = ExtResource("12_lv74b")
 
 [node name="Bouton_CAM12" type="Button" parent="Container_Boutons"]
 layout_mode = 0
-offset_left = 1717.0
-offset_top = 1007.0
-offset_right = 2125.0
-offset_bottom = 1265.0
+offset_left = 1723.0
+offset_top = 951.0
+offset_right = 2131.0
+offset_bottom = 1209.0
 scale = Vector2(0.2, 0.2)
 icon = ExtResource("13_vt1tl")
+
+[node name="Bouton_CAM13" type="Button" parent="Container_Boutons"]
+layout_mode = 0
+offset_left = 1653.0
+offset_top = 1018.0
+offset_right = 2061.0
+offset_bottom = 1276.0
+scale = Vector2(0.2, 0.2)
+icon = ExtResource("16_ocw4j")
 
 [node name="Label_Nom_Salle" type="Label" parent="."]
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 23.0
+
+[node name="Ecran_Brouillage" type="ColorRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.2629324, 0.26293248, 0.26293245, 1)
 
 [node name="Effet_Static" type="ColorRect" parent="."]
 material = SubResource("ShaderMaterial_dshet")
@@ -245,6 +267,33 @@ offset_right = 326.0
 offset_bottom = 467.0
 text = "FLASHER"
 
+[node name="Bouton_Audio" type="Button" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 1520.0
+offset_top = 466.0
+offset_right = 1709.0
+offset_bottom = 561.0
+theme_override_font_sizes/font_size = 29
+text = "PLAY AUDIO"
+
+[node name="Bouton_Vent" type="Button" parent="."]
+modulate = Color(0, 1, 0, 1)
+layout_mode = 0
+offset_left = 619.0
+offset_top = 689.0
+offset_right = 800.0
+offset_bottom = 763.0
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+theme_override_font_sizes/font_size = 25
+text = "SCELLER VENT"
+
+[node name="Audio_Switch_Cam" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("18_73acr")
+
+[node name="Audio_Flash_Foxy" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("19_b4apj")
+
 [connection signal="pressed" from="Container_Boutons/Bouton_CAM01" to="." method="_on_cam_01_pressed"]
 [connection signal="pressed" from="Container_Boutons/Bouton_CAM02" to="." method="_on_cam_02_pressed"]
 [connection signal="pressed" from="Container_Boutons/Bouton_CAM03" to="." method="_on_cam_03_pressed"]
@@ -257,5 +306,7 @@ text = "FLASHER"
 [connection signal="pressed" from="Container_Boutons/Bouton_CAM10" to="." method="_on_cam_10_pressed"]
 [connection signal="pressed" from="Container_Boutons/Bouton_CAM11" to="." method="_on_cam_11_pressed"]
 [connection signal="pressed" from="Container_Boutons/Bouton_CAM12" to="." method="_on_cam_12_pressed"]
+[connection signal="pressed" from="Container_Boutons/Bouton_CAM13" to="." method="_on_cam_13_pressed"]
 [connection signal="button_down" from="MusicBox_UI/Bouton_Wind" to="." method="_on_wind_start"]
 [connection signal="button_up" from="MusicBox_UI/Bouton_Wind" to="." method="_on_wind_stop"]
+[connection signal="pressed" from="Bouton_Audio" to="." method="_on_bouton_audio_pressed"]

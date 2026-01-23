@@ -4,6 +4,18 @@ extends Control # <-- Important : on étend Control maintenant !
 # Glisse ton TextureRect (l'écran noir/image) ici
 @export var ecran_visuel : TextureRect 
 
+var btn_audio : BaseButton
+
+var vent_scelle : bool = false
+var btn_vent : BaseButton
+
+var chemin_chica_audio = ["Cam12", "Cam10", "Cam06", "Cam05", "Cam02"]
+
+var ecran_brouillage : ColorRect
+
+@onready var audio_switch = $Audio_Switch_Cam
+@onready var audio_flash_foxy = $Audio_Flash_Foxy
+
 # --- VARIABLES D'ÉTAT ---
 var est_ouvert : bool = false
 var a_du_courant : bool = true
@@ -36,7 +48,7 @@ var foxy_attacking : bool = false
 var etat_salles = {
 	"Cam01": [], "Cam02": [], "Cam03": [], "Cam04": ["Puppet"],
 	"Cam05": [], "Cam06": [], "Cam07": [], "Cam08": [], 
-	"Cam09": [], "Cam10": [], "Cam11": [], "Cam12": [],
+	"Cam09": [], "Cam10": [], "Cam11": [], "Cam12": [], "Cam13": [],
 	# --- AJOUTE CES DEUX LIGNES IMPÉRATIVEMENT ---
 	"Left_Door_Pos": [],   # Position finale pour Bonnie
 	"Right_Door_Pos": []   # Position finale pour Chica
@@ -68,8 +80,87 @@ func _ready():
 		if GameData.animatronics_data[i]["name"] == "Puppet":
 			puppet_data_index = i
 			break
+			
+	btn_audio = find_child("Bouton_Audio", true, false)
+	if btn_audio:
+		btn_audio.pressed.connect(_on_audio_pressed)
+		btn_audio.visible = false
+	
+	# --- CONFIGURATION BOUTON VENT ---
+	btn_vent = find_child("Bouton_Vent", true, false)
+	if btn_vent:
+		btn_vent.visible = false # Caché au départ
+		if not btn_vent.pressed.is_connected(_on_toggle_vent):
+			btn_vent.pressed.connect(_on_toggle_vent)
+			
+	ecran_brouillage = find_child("Ecran_Brouillage", true, false)
+	if ecran_brouillage:
+		ecran_brouillage.visible = false
 	
 	mettre_a_jour_image()
+	
+func declencher_brouillage():
+	# Si le moniteur est éteint, pas de brouillage visible
+	if not est_ouvert or not visible: return
+	
+	if ecran_brouillage:
+		print(">>> BROUILLAGE ACTIVÉ !")
+		ecran_brouillage.visible = true
+		
+		# On attend 2 secondes
+		await get_tree().create_timer(1.0).timeout
+		
+		# On vérifie si l'écran existe toujours (au cas où on quitte le jeu entre temps)
+		if ecran_brouillage:
+			ecran_brouillage.visible = false
+# --- ACTION DU BOUTON VENT ---
+func _on_toggle_vent():
+	# On inverse l'état (Ouvert <-> Fermé)
+	vent_scelle = !vent_scelle
+	
+	# Mise à jour du texte et de la couleur
+	if btn_vent:
+		if vent_scelle:
+			btn_vent.text = "OUVRIR VENT"
+			btn_vent.modulate = Color.RED # Feedback visuel (Consomme batterie !)
+		else:
+			btn_vent.text = "SCELLER VENT"
+			btn_vent.modulate = Color.GREEN
+			
+	print("Ventilation scellée : ", vent_scelle)
+	
+# --- NOUVELLE FONCTION ---
+func _on_audio_pressed():
+	# 1. IMPORTANT : On "capture" le nom de la caméra MAINTENANT !
+	# On le stocke dans une variable locale temporaire.
+	var camera_cible = camera_actuelle
+	
+	print("[ID: ", get_instance_id(), "] Audio lancé sur -> ", camera_cible)
+	
+	# 2. On envoie l'ordre IMMEDIATEMENT à l'Office
+	# On utilise la variable 'camera_cible' et non 'camera_actuelle' pour être sûr.
+	var office = get_owner()
+	if not office:
+		var parent = get_parent()
+		while parent:
+			if parent.name == "office" or parent.has_method("jouer_audio_leurre"):
+				office = parent
+				break
+			parent = parent.get_parent()
+			
+	if office and office.has_method("jouer_audio_leurre"):
+		office.jouer_audio_leurre(camera_cible) # <--- L'IA reçoit l'info tout de suite !
+	else:
+		print("ERREUR : Office introuvable.")
+
+	# 3. ENSUITE, on gère le visuel et le temps d'attente (Cooldown)
+	if btn_audio:
+		btn_audio.disabled = true
+		
+		# On attend 3 secondes (le script se met en pause ICI, mais l'audio est déjà parti !)
+		await get_tree().create_timer(3.0).timeout 
+		
+		if btn_audio: btn_audio.disabled = false
 
 func _process(delta):
 	# ... (Ta logique Puppet inchangée) ...
@@ -129,6 +220,10 @@ func fermer_moniteur():
 
 func couper_courant_camera():
 	a_du_courant = false
+	vent_scelle = false 
+	if btn_vent: 
+		btn_vent.text = "SCELLER VENT"
+		btn_vent.modulate = Color.GREEN
 	fermer_moniteur()
 
 # --- FONCTIONS BOUTONS (Intégrées directement !) ---
@@ -145,6 +240,7 @@ func _on_cam_09_pressed(): changer_camera("Cam09")
 func _on_cam_10_pressed(): changer_camera("Cam10")
 func _on_cam_11_pressed(): changer_camera("Cam11")
 func _on_cam_12_pressed(): changer_camera("Cam12")
+func _on_cam_13_pressed(): changer_camera("Cam13")
 # ... Ajoute les autres ...
 
 func _on_bouton_exit_pressed():
@@ -152,7 +248,24 @@ func _on_bouton_exit_pressed():
 
 # --- LOGIQUE INTERNE ---
 func changer_camera(nom_cam : String):
+	print("[ID: ", get_instance_id(), "] Changement Caméra -> ", nom_cam)
 	camera_actuelle = nom_cam
+	audio_switch.play()
+	
+	if btn_audio:
+		# On l'affiche SI la caméra est dans le chemin de Chica
+		# ET que ce n'est pas la scène (Cam01)
+		if nom_cam in chemin_chica_audio:
+			btn_audio.visible = true
+		else:
+			btn_audio.visible = false
+			
+	# 2. GESTION VENTILATION (Mangle - Cam13)
+	if btn_vent:
+		if nom_cam == "Cam13":
+			btn_vent.visible = true
+		else:
+			btn_vent.visible = false
 	
 	# Gestion UI Music Box
 	if ui_music_box:
@@ -224,6 +337,7 @@ func lancer_attaque_puppet():
 func _on_flash_foxy():
 	if not peut_flasher: return
 	if camera_actuelle == "Cam03" and not foxy_attacking:
+		audio_flash_foxy.play()
 		foxy_rage -= 1
 		if foxy_rage < 0: foxy_rage = 0
 		flash_screen_effect()

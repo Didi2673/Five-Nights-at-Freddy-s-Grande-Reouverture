@@ -48,6 +48,16 @@
 		"hour_duration_seconds": 90, 
 		"start_hour": 0,
 		"end_hour": 6
+	},
+	{
+		"id": 6,
+		"title": "Nuit 6",
+		"description": "I ALWAYS COME BACK",
+		"difficulty_label": "Difficile",
+		"display_duration_text": "9 minutes",
+		"hour_duration_seconds": 90, 
+		"start_hour": 0,
+		"end_hour": 6
 	}
 	
 ]
