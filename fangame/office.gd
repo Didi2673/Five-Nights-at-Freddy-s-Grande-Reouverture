@@ -11,10 +11,27 @@ extends Node2D
 @onready var audio_music_box = $Audio_MusicBox
 @onready var audio_leurre = $Audio_Leurre
 @onready var audio_flash_foxy = $Audio_Flash_Foxy
-@export var nom_camera_puppet : String = "Cam04"
+var puppet_timer_attaque : float = 5.0 # Temps avant jumpscare
+var puppet_timer_reset : float = 5.0   # Temps pour qu'elle parte
+var puppet_est_en_position : bool = false
+
+@onready var audio_phone_call = $Audio_PhoneCall
+@onready var btn_mute_call = $UI/Bouton_Mute_Call # Vérifie le chemin
 
 @onready var sprite_gf = $GoldenFreddy_Sprite # Vérifie le chemin !
 @onready var audio_gf_appear = $Audio_GF_Appear
+
+@onready var audio_ambiance = $Audio_Ambiance
+
+# Dictionnaire des appels (Fichier audio par nuit)
+var phone_calls = {
+	1: "res://phone/night1.wav",
+	2: "res://phone/night2.ogg",
+	3: "res://phone/night3.ogg",
+	4: "res://phone/night4.ogg",
+	5: "res://phone/night5.ogg",
+	6: "res://phone/night6.ogg" 
+}
 
 var gf_active : bool = false          # Est-il dans le bureau ?
 var gf_reaction_timer : float = 0.0   # Compte à rebours avant la mort (1 seconde)
@@ -144,9 +161,6 @@ func _ready():
 	# C. SPAWN ROBOTS & VITESSE PUPPET
 	spawn_animatronics()
 	
-	# Initialisation immédiate de la difficulté Puppet
-	if systeme_camera.has_method("update_puppet_difficulty"):
-		systeme_camera.update_puppet_difficulty(current_hour, night_index)
 		
 	if son_monitor: audio_monitor.stream = son_monitor
 	
@@ -158,35 +172,32 @@ func _ready():
 			# On met le timer à l'infini ou on le bloque
 			systeme_camera.music_timer = 99999.0 
 			# Si tu as une variable pour dire "Puppet active", mets-la à false ici
+			
+	if btn_mute_call:
+		btn_mute_call.visible = false
+		btn_mute_call.pressed.connect(_on_mute_call_pressed)
 	
-func gestion_audio_music_box():
-	# 1. On vérifie d'abord si la boite est vide
-	# On suppose que la variable 'music_box_timer' est dans systeme_camera
-	var est_vide = false
-	
-	if "music_timer" in systeme_camera:
-		if systeme_camera.music_timer <= 0:
-			est_vide = true
-	
-	# 2. Si la boite est vide : ON COUPE TOUT
-	if est_vide:
-		if audio_music_box.playing:
-			audio_music_box.stop()
-		return # On arrête la fonction ici
-		
-	# 3. Si la boite n'est pas vide, on s'assure que le son tourne
-	if not audio_music_box.playing:
-		audio_music_box.play()
-	
-	# 4. GESTION DU VOLUME (Le cœur de ta demande)
-	# Condition : Moniteur OUVERT + Sur la BONNE CAMÉRA
-	if systeme_camera.est_ouvert and systeme_camera.camera_actuelle == nom_camera_puppet:
-		# On monte le volume (0 dB = volume normal)
-		# On utilise lerp pour une transition douce (optionnel, mais plus agréable)
-		audio_music_box.volume_db = lerp(audio_music_box.volume_db, 0.0, 0.1)
-	else:
-		# On coupe le volume (-80 dB = silence)
-		audio_music_box.volume_db = lerp(audio_music_box.volume_db, -80.0, 0.1)
+	lancer_appel_telephonique()
+
+func lancer_appel_telephonique():
+	if phone_calls.has(night_index):
+		var chemin = phone_calls[night_index]
+		if FileAccess.file_exists(chemin):
+			audio_phone_call.stream = load(chemin)
+			audio_phone_call.play()
+			
+			# On affiche le bouton "Mute" tant que ça parle
+			if btn_mute_call: btn_mute_call.visible = true
+			
+			# Quand l'appel est fini, on cache le bouton
+			await audio_phone_call.finished
+			if btn_mute_call: btn_mute_call.visible = false
+
+func _on_mute_call_pressed():
+	if audio_phone_call.playing:
+		audio_phone_call.stop()
+		if btn_mute_call: btn_mute_call.visible = false
+		print("Appel coupé par le joueur.")
 
 func toggle_ventilateur():	
 	ventilateur_actif = !ventilateur_actif
@@ -272,8 +283,81 @@ func _process(delta):
 		# 2. On exécute son intelligence
 		bot.process_ai(delta, current_ai)
 		
-	gestion_audio_music_box()
+	
 	process_golden_freddy(delta)
+	gestion_puppet(delta)
+	
+	
+func gestion_puppet(delta):
+	if game_over: return
+
+	# 1. Trouver où est la Puppet
+	var puppet_bot = null
+	for bot in animatronics_instances:
+		if bot.nom == "Puppet":
+			puppet_bot = bot
+			break
+	
+	if puppet_bot == null: return # Pas de Puppet cette nuit
+
+	# On récupère sa salle actuelle via son index de chemin
+	# (Assure-toi que AnimatronicAI a une variable publique 'current_path_index' ou un getter)
+	# Si tu ne l'as pas, tu peux déduire la salle via : bot.path_list[bot.current_path_index]
+	
+	var salle_puppet = ""
+	if puppet_bot.path_list.size() > 0:
+		salle_puppet = puppet_bot.path_list[puppet_bot.current_path_index]
+
+	# --- 2. LOGIQUE AUDIO ---
+	
+	var volume_cible = -80.0
+	puppet_est_en_position = (salle_puppet == "Right_Door_Pos")
+
+	if puppet_est_en_position:
+		# CAS A : Elle est à la porte -> Son PARTOUT (Bureau + Caméras)
+		volume_cible = 0.0
+	
+	elif systeme_camera.est_ouvert and systeme_camera.camera_actuelle == salle_puppet:
+		# CAS B : On regarde sa caméra -> Son activé
+		volume_cible = 0.0
+	
+	else:
+		# CAS C : Elle est ailleurs ou on regarde ailleurs -> Silence
+		volume_cible = -80.0
+
+	# Application douce du volume
+	if audio_music_box:
+		if not audio_music_box.playing: audio_music_box.play()
+		audio_music_box.volume_db = lerp(audio_music_box.volume_db, volume_cible, 5 * delta)
+
+	# --- 3. LOGIQUE D'ATTAQUE (PORTE DROITE) ---
+	
+	if puppet_est_en_position:
+		if porte_droite.est_fermee:
+			# LE JOUEUR SE DÉFEND
+			puppet_timer_reset -= delta
+			print("Puppet repoussée dans : ", int(puppet_timer_reset))
+			
+			if puppet_timer_reset <= 0:
+				renvoyer_puppet(puppet_bot)
+		else:
+			# LE JOUEUR EST EN DANGER
+			puppet_timer_attaque -= delta
+			puppet_timer_reset = 5.0 # Reset du timer de défense si on rouvre
+			
+			if puppet_timer_attaque <= 0:
+				trigger_jumpscare("Puppet")
+	else:
+		# Elle n'est pas encore arrivée, on reset les timers
+		puppet_timer_attaque = 5.0
+		puppet_timer_reset = 5.0
+
+func renvoyer_puppet(bot):
+	print("PUPPET REPART AU DÉBUT !")
+	# On la remet à la case départ (index 0 du path)
+	bot.changer_position(0)
+	puppet_timer_attaque = 5.0
+	puppet_timer_reset = 5.0
 
 	# --- NOUVELLE FONCTION TEMPÉRATURE ---
 func calculer_temperature(delta):
@@ -498,7 +582,7 @@ func spawn_animatronics():
 		# --- LE FIX EST ICI ---
 		# Si c'est Puppet OU Golden-Freddy, on saute le tour !
 		# On ne veut pas qu'ils aient le script d'IA classique.
-		if data["name"] == "Puppet" or data["name"] == "Golden-Freddy": 
+		if data["name"] == "Golden-Freddy": 
 			continue 
 		# ----------------------
 		
@@ -521,10 +605,7 @@ func passer_heure_suivante():
 	current_hour += 1
 	update_clock_display()
 	print("Il est ", current_hour, " AM")
-	
-	# Mise à jour difficulté Puppet
-	if systeme_camera.has_method("update_puppet_difficulty"):
-		systeme_camera.update_puppet_difficulty(current_hour, night_index)
+
 
 	if current_hour == 6: # Ou info["end_hour"] si tu veux lire le JSON
 		trigger_victory()
@@ -543,6 +624,7 @@ func trigger_jumpscare(nom_tueur : String):
 	# 1. Cacher l'interface
 	if map_container: map_container.visible = false
 	if game_ui: game_ui.visible = false 
+	if audio_ambiance: audio_ambiance.stop()
 	
 	# 2. Configurer la vidéo
 	if ecran_jumpscare:
@@ -586,6 +668,10 @@ func trigger_victory():
 	game_over = true
 	GameData.win_night(night_index)
 	print("VICTOIRE ! Lancement vidéo...") # Debug
+	audio_fan.stop()
+	audio_music_box.volume_db = -80.0
+	audio_music_box.stop()
+	audio_ambiance.stop()
 	
 	# 1. On cache TOUT le reste pour être sûr
 	if map_container: map_container.visible = false

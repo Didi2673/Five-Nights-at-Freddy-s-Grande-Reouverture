@@ -1,4 +1,4 @@
-[gd_scene load_steps=25 format=3 uid="uid://dvj4ixdew2cl5"]
+[gd_scene load_steps=22 format=3 uid="uid://dvj4ixdew2cl5"]
 
 [ext_resource type="Script" uid="uid://dfukqvi7p8lin" path="res://remote_cctv.gd" id="1_og2t3"]
 [ext_resource type="Texture2D" uid="uid://cqi8pfb27eur0" path="res://map.png" id="1_r7ydr"]
@@ -19,35 +19,12 @@
 [ext_resource type="Texture2D" uid="uid://cgiem0shlq3jq" path="res://13.png" id="16_ocw4j"]
 [ext_resource type="AudioStream" uid="uid://f1m0j2lgiypg" path="res://Sounds/camera_change.wav" id="18_73acr"]
 [ext_resource type="AudioStream" uid="uid://cqgqjxna5ir8m" path="res://Sounds/flash.wav" id="19_b4apj"]
+[ext_resource type="AudioStream" uid="uid://cl31s7w8f73e1" path="res://Sounds/radio.wav" id="20_job2a"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_dshet"]
 shader = ExtResource("15_lqbdw")
 shader_parameter/quantite_bruit = 0.2590000123025
 shader_parameter/densite = 0.626000029735
-
-[sub_resource type="Gradient" id="Gradient_lqbdw"]
-offsets = PackedFloat32Array(0, 0.70253164, 0.70886075)
-colors = PackedColorArray(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-
-[sub_resource type="GradientTexture2D" id="GradientTexture2D_dshet"]
-gradient = SubResource("Gradient_lqbdw")
-width = 256
-height = 256
-fill = 1
-fill_from = Vector2(0.5, 0.5)
-fill_to = Vector2(0.5, 0)
-
-[sub_resource type="Gradient" id="Gradient_ocw4j"]
-offsets = PackedFloat32Array(0, 0.6898734, 0.70253164)
-colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
-
-[sub_resource type="GradientTexture2D" id="GradientTexture2D_73acr"]
-gradient = SubResource("Gradient_ocw4j")
-width = 256
-height = 256
-fill = 1
-fill_from = Vector2(0.5, 0.5)
-fill_to = Vector2(0.5, 0)
 
 [node name="Moniteur_CCTV" type="Control" node_paths=PackedStringArray("ecran_visuel")]
 layout_mode = 3
@@ -226,33 +203,6 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="MusicBox_UI" type="Control" parent="."]
-visible = false
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
-
-[node name="Barre_Musique" type="TextureProgressBar" parent="MusicBox_UI"]
-layout_mode = 0
-offset_left = 240.0
-offset_top = 165.0
-offset_right = 625.0
-offset_bottom = 421.0
-max_value = 20.0
-value = 20.0
-fill_mode = 4
-texture_under = SubResource("GradientTexture2D_dshet")
-texture_progress = SubResource("GradientTexture2D_73acr")
-tint_progress = Color(0, 1, 0, 1)
-
-[node name="Bouton_Wind" type="Button" parent="MusicBox_UI"]
-layout_mode = 0
-offset_left = 275.0
-offset_top = 433.0
-offset_right = 466.0
-offset_bottom = 517.0
-text = "WIND UP"
-
 [node name="Foxy_UI" type="Control" parent="."]
 visible = false
 anchors_preset = 0
@@ -294,6 +244,10 @@ stream = ExtResource("18_73acr")
 [node name="Audio_Flash_Foxy" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("19_b4apj")
 
+[node name="Audio_Mangle_Static" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("20_job2a")
+volume_db = -18.84
+
 [connection signal="pressed" from="Container_Boutons/Bouton_CAM01" to="." method="_on_cam_01_pressed"]
 [connection signal="pressed" from="Container_Boutons/Bouton_CAM02" to="." method="_on_cam_02_pressed"]
 [connection signal="pressed" from="Container_Boutons/Bouton_CAM03" to="." method="_on_cam_03_pressed"]
@@ -307,6 +261,4 @@ stream = ExtResource("19_b4apj")
 [connection signal="pressed" from="Container_Boutons/Bouton_CAM11" to="." method="_on_cam_11_pressed"]
 [connection signal="pressed" from="Container_Boutons/Bouton_CAM12" to="." method="_on_cam_12_pressed"]
 [connection signal="pressed" from="Container_Boutons/Bouton_CAM13" to="." method="_on_cam_13_pressed"]
-[connection signal="button_down" from="MusicBox_UI/Bouton_Wind" to="." method="_on_wind_start"]
-[connection signal="button_up" from="MusicBox_UI/Bouton_Wind" to="." method="_on_wind_stop"]
 [connection signal="pressed" from="Bouton_Audio" to="." method="_on_bouton_audio_pressed"]

@@ -169,6 +169,15 @@ func attempt_logic(ai_level):
 			avancer_sur_chemin()
 		return
 		
+	if nom == "Puppet":
+		# La Puppet avance juste. Elle ne déclenche PAS d'attaque ici.
+		# C'est office.gd qui détecte si elle est en "Pos_Attaque_Droite" et lance le timer.
+		if current_path_index < path_list.size() - 1:
+			var roll = randi_range(1, 20)
+			if roll <= ai_level:
+				avancer_sur_chemin()
+		return
+		
 	if nom == "Springtrap":
 		process_springtrap_logic(ai_level)
 		return
