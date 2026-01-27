@@ -16,6 +16,8 @@ var office_ref : Node2D
 var move_timer : float = 0.0
 var base_interval : float = 5.0 # Intervalle de base (ex: 5 secondes)
 
+var current_ai_level : int = 0
+
 func setup(data, _camera_system_ref, _porte_cible, _office_ref, _real_index):
 	json_index = _real_index
 	data_json = data
@@ -45,6 +47,23 @@ func tenter_jouer_son_vent():
 		# On ajoute une petite variation de pitch pour le réalisme
 		audio.pitch_scale = randf_range(0.9, 1.1)
 		audio.play()
+
+func definir_visibilite_camera(est_visible : bool):
+	var salle_actuelle = path_list[current_path_index]
+	
+	if est_visible:
+		# On l'ajoute à la salle s'il n'y est pas déjà
+		if camera_system_ref.etat_salles.has(salle_actuelle):
+			if not camera_system_ref.etat_salles[salle_actuelle].has(nom):
+				camera_system_ref.etat_salles[salle_actuelle].append(nom)
+	else:
+		# On le retire de la salle
+		if camera_system_ref.etat_salles.has(salle_actuelle):
+			if camera_system_ref.etat_salles[salle_actuelle].has(nom):
+				camera_system_ref.etat_salles[salle_actuelle].erase(nom)
+				
+	# On demande au système caméra de rafraîchir l'image tout de suite
+	camera_system_ref.mettre_a_jour_image()
 
 func reset_timer(ai_level : int):
 	

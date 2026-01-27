@@ -1,19 +1,26 @@
-[gd_scene load_steps=12 format=3 uid="uid://d1jvp74qdhp23"]
+[gd_scene load_steps=16 format=3 uid="uid://d1jvp74qdhp23"]
 
 [ext_resource type="FontFile" uid="uid://83xb00w7vpum" path="res://vcr_osd_mono.ttf" id="1_06t4h"]
 [ext_resource type="Script" uid="uid://bbqvbkh1q8p0h" path="res://main_menu.gd" id="1_7vrkn"]
+[ext_resource type="Shader" uid="uid://hhifebkgqjh8" path="res://moniteur_cctv.gdshader" id="2_glbon"]
 [ext_resource type="FontFile" uid="uid://dh5jtdq4vw75k" path="res://LcdSolid.ttf" id="3_jix8l"]
 [ext_resource type="AudioStream" uid="uid://f1m0j2lgiypg" path="res://Sounds/camera_change.wav" id="4_glbon"]
 
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_nlkkf"]
+shader = ExtResource("2_glbon")
+shader_parameter/quantite_bruit = 0.2590000123025
+shader_parameter/densite = 0.626000029735
+
 [sub_resource type="LabelSettings" id="LabelSettings_7vrkn"]
 font = ExtResource("1_06t4h")
-font_size = 79
+font_size = 100
 
 [sub_resource type="LabelSettings" id="LabelSettings_fu7sn"]
 font = ExtResource("1_06t4h")
 font_size = 91
 
 [sub_resource type="LabelSettings" id="LabelSettings_nlkkf"]
+font = ExtResource("1_06t4h")
 font_size = 34
 
 [sub_resource type="LabelSettings" id="LabelSettings_jix8l"]
@@ -24,7 +31,14 @@ font_size = 34
 font = ExtResource("1_06t4h")
 font_size = 34
 
-[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_nlkkf"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_glbon"]
+bg_color = Color(1, 0, 0, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nlkkf"]
+bg_color = Color(0.61229926, 1.504086e-06, 5.7756904e-07, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qe12f"]
+bg_color = Color(0.6117647, 0, 0, 1)
 
 [sub_resource type="LabelSettings" id="LabelSettings_qe12f"]
 font = ExtResource("3_jix8l")
@@ -45,6 +59,16 @@ offset_right = 1922.0
 offset_bottom = 1080.0
 color = Color(0, 0, 0, 1)
 
+[node name="Effet_Static" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_nlkkf")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
 [node name="Ecran_Accueil" type="Control" parent="."]
 visible = false
 layout_mode = 1
@@ -63,26 +87,44 @@ offset_bottom = 382.0
 text = "Five
 Nights
 at
-Freddy's
-Fan Game"
+Freddy's :
+Grande Ré ouverture"
 label_settings = SubResource("LabelSettings_7vrkn")
 
 [node name="Bouton_Play" type="Button" parent="Ecran_Accueil"]
 layout_mode = 0
-offset_left = 141.0
-offset_top = 466.0
-offset_right = 477.0
-offset_bottom = 615.0
+offset_left = 137.0
+offset_top = 634.0
+offset_right = 350.0
+offset_bottom = 704.0
+theme_type_variation = &"FlatButton"
+theme_override_fonts/font = ExtResource("1_06t4h")
+theme_override_font_sizes/font_size = 70
 text = "Jouer"
 text_direction = 3
 
 [node name="Bouton_Quitter" type="Button" parent="Ecran_Accueil"]
 layout_mode = 0
-offset_left = 141.0
-offset_top = 649.0
-offset_right = 477.0
-offset_bottom = 796.0
+offset_left = 137.0
+offset_top = 730.0
+offset_right = 432.0
+offset_bottom = 800.0
+theme_type_variation = &"FlatButton"
+theme_override_fonts/font = ExtResource("1_06t4h")
+theme_override_font_sizes/font_size = 70
 text = "Quitter"
+
+[node name="version" type="Label" parent="Ecran_Accueil"]
+layout_mode = 0
+offset_left = 2.0
+offset_top = 1061.0
+offset_right = 354.0
+offset_bottom = 1149.0
+scale = Vector2(0.2, 0.2)
+theme_override_fonts/font = ExtResource("1_06t4h")
+theme_override_font_sizes/font_size = 10
+text = "v0.0.1"
+label_settings = SubResource("LabelSettings_7vrkn")
 
 [node name="Ecran_Selection" type="Control" parent="."]
 layout_mode = 1
@@ -117,7 +159,7 @@ label_settings = SubResource("LabelSettings_fu7sn")
 layout_mode = 0
 offset_left = 94.0
 offset_top = 384.0
-offset_right = 568.0
+offset_right = 1315.0
 offset_bottom = 487.0
 text = "Description"
 label_settings = SubResource("LabelSettings_nlkkf")
@@ -141,20 +183,34 @@ text = "Easy"
 label_settings = SubResource("LabelSettings_glbon")
 
 [node name="Bouton_Lancer_Nuit" type="Button" parent="Ecran_Selection/Panneau_Details"]
-material = SubResource("CanvasItemMaterial_nlkkf")
 layout_mode = 0
 offset_left = 94.0
 offset_top = 499.0
 offset_right = 312.0
 offset_bottom = 567.0
+theme_override_colors/icon_disabled_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("1_06t4h")
+theme_override_font_sizes/font_size = 50
+theme_override_styles/normal = SubResource("StyleBoxFlat_glbon")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_nlkkf")
+theme_override_styles/hover = SubResource("StyleBoxFlat_qe12f")
 text = "Lancer"
+
+[node name="Grid_Custom_Night" type="GridContainer" parent="Ecran_Selection/Panneau_Details"]
+layout_mode = 0
+offset_top = 178.0
+offset_right = 1586.0
+offset_bottom = 494.0
 
 [node name="Bouton_Retour" type="Button" parent="Ecran_Selection"]
 layout_mode = 0
-offset_left = 36.0
-offset_top = 539.0
-offset_right = 254.0
+offset_left = 112.0
+offset_top = 573.0
+offset_right = 191.0
 offset_bottom = 607.0
+theme_type_variation = &"FlatButton"
+theme_override_fonts/font = ExtResource("1_06t4h")
+theme_override_font_sizes/font_size = 20
 text = "Retour"
 
 [node name="Ecran_Transition" type="ColorRect" parent="."]

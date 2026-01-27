@@ -62,22 +62,13 @@
 	{
 		"id": 7,
 		"title": "Nuit 7",
-		"description": "La nuit 7/10",
-		"difficulty_label": "Extrême",
+		"description": "Personnalisez l'IA des animatroniques.",
+		"difficulty_label": "???",
 		"display_duration_text": "9 minutes",
-		"hour_duration_seconds": 90, 
+		"hour_duration_seconds": 90,
 		"start_hour": 0,
-		"end_hour": 6
-	},
-	{
-		"id": 8,
-		"title": "Nuit 8",
-		"description": "La nuit 7/20",
-		"difficulty_label": "Extrême",
-		"display_duration_text": "9 minutes",
-		"hour_duration_seconds": 90, 
-		"start_hour": 0,
-		"end_hour": 6
+		"end_hour": 6,
+		"type": "custom"
 	}
 	
 ]

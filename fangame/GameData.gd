@@ -14,6 +14,14 @@ var nights_json_path = "res://data/nights.json" # Chemin vers ton fichier
 var unlocked_night : int = 1 
 var current_night_played : int = 1 # Celle qu'on va lancer
 
+var custom_night_levels : Dictionary = {} 
+
+func reset_custom_levels():
+	# Par défaut, on met tout le monde à 0
+	custom_night_levels.clear()
+	for anim in animatronics_data:
+		custom_night_levels[anim["name"]] = 0
+
 func _ready():
 	load_nights_data()
 	load_data()

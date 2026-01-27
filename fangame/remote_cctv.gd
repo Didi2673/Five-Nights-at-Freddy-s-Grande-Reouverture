@@ -26,6 +26,7 @@ var chemin_chica_audio = ["Cam12", "Cam10", "Cam06", "Cam05", "Cam02"]
 # --- FOXY (Gardé pour le flash) ---
 var ui_foxy : Control
 var peut_flasher : bool = true
+var foxy_max_rage : int = 5
 var temps_recharge_flash : float = 3.0
 var foxy_rage : int = 0
 var foxy_attacking : bool = false
