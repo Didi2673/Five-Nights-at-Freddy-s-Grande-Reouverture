@@ -1,0 +1,93 @@
+[
+	{
+		"id": "night_1",
+		"title": "Premiers Pas",
+		"description": "Terminer la Nuit 1.",
+		"icon": "res://achievements/badge_1.png",
+		"hidden": false
+	},
+	{
+		"id": "night_2",
+		"title": "Double Mise",
+		"description": "Terminer la Nuit 2.",
+		"icon": "res://achievements/badge_2.png",
+		"hidden": false
+	},
+	{
+		"id": "night_3",
+		"title": "Ça se complique",
+		"description": "Terminer la Nuit 3.",
+		"icon": "res://achievements/badge_3.png",
+		"hidden": false
+	},
+	{
+		"id": "night_4",
+		"title": "Presque là",
+		"description": "Terminer la Nuit 4.",
+		"icon": "res://achievements/badge_4.png",
+		"hidden": false
+	},
+	{
+		"id": "night_5",
+		"title": "Heures Supp",
+		"description": "Terminer la Nuit 5.",
+		"icon": "res://achievements/badge_5.png",
+		"hidden": false
+	},
+	{
+		"id": "night_6",
+		"title": "Cauchemar",
+		"description": "Survivre au boss final.",
+		"icon": "res://achievements/badge_6.png",
+		"hidden": true
+	},
+	{
+		"id": "20_20_mode",
+		"title": "Légende Vivante",
+		"description": "Terminer la Nuit 7 avec tous les animatroniques à 20.",
+		"icon": "res://achievements/badge_7.png",
+		"hidden": true
+	},
+	{
+		"id": "early_death",
+		"title": "Trop Tôt",
+		"description": "Mourir à 12 AM.",
+		"icon": "res://achievements/achievement_12am.png",
+		"hidden": false
+	},
+	{
+		"id": "battery_master",
+		"title": "Économe",
+		"description": "Finir une nuit avec plus de 20% de batterie.",
+		"icon": "res://achievements/achievement_battery.png",
+		"hidden": false
+	},
+	{
+		"id": "foxy_flasher",
+		"title": "Paparazzi",
+		"description": "Flasher Foxy 10 fois en une nuit.",
+		"icon": "res://achievements/achievement_foxy.png",
+		"hidden": false
+	},
+	{
+		"id": "golden_sighting",
+		"title": "C'est moi",
+		"description": "Rencontrer Golden Freddy.",
+		"icon": "res://achievements/achievement_golden.png",
+		"hidden": true
+	},
+	{
+		"id": "honk",
+		"title": "Honk !",
+		"description": "Toucher le nez de Freddy.",
+		"icon": "res://achievements/achievement_nose.png",
+		"hidden": true
+	},
+	{
+		"id": "heat_survivor",
+		"title": "Sauna",
+		"description": "Rester 10s au-dessus de 110°F sans mourir.",
+		"icon": "res://achievements/achievement_fire.png",
+		"hidden": false
+	}
+]

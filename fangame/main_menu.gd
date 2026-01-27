@@ -19,6 +19,11 @@ extends Control
 
 @onready var audio_hover = $Audio_Hover
 
+@onready var ecran_succes = $Ecran_Succes
+@onready var grid_succes = $Ecran_Succes/ScrollContainer/Grid_Succes
+# Charge une icone par défaut si tu n'as pas encore créé les images
+@onready var icon_defaut = preload("res://icon.svg")
+
 @onready var container_custom = $Ecran_Selection/Panneau_Details/Grid_Custom_Night
 
 var font_custom = load("res://vcr_osd_mono.ttf")
@@ -28,6 +33,9 @@ var nuit_selectionnee_temp : int = 1
 func _ready():
 	if ecran_transition:
 		ecran_transition.visible = false
+		
+	if ecran_succes: 
+		ecran_succes.visible = false
 		
 	if container_custom:
 		container_custom.visible = false
@@ -54,9 +62,114 @@ func _ready():
 		btn_play.mouse_entered.connect(_jouer_son_hover)
 		btn_play.pressed.connect(_on_aller_vers_selection)
 		
+	var btn_succes_accueil = ecran_accueil.find_child("Bouton_Succes", true, false)
+	if btn_succes_accueil:
+		btn_succes_accueil.pressed.connect(_on_aller_vers_succes)
+		btn_succes_accueil.mouse_entered.connect(_jouer_son_hover)
+
+	# Connexion du bouton "Retour" (sur l'écran succès)
+	var btn_retour_succes = ecran_succes.find_child("Bouton_Retour", true, false)
+	if btn_retour_succes:
+		btn_retour_succes.pressed.connect(_on_retour_accueil_depuis_succes)
+		btn_retour_succes.mouse_entered.connect(_jouer_son_hover)
+		
 	btn_lancer.pressed.connect(_on_lancer_nuit)
 	
 	update_details_panel(0) 
+	
+func _on_aller_vers_succes():
+	ecran_accueil.visible = false
+	ecran_selection.visible = false # Au cas où
+	ecran_succes.visible = true
+	
+	generer_liste_succes() # On génère la liste à l'ouverture
+
+func _on_retour_accueil_depuis_succes():
+	ecran_succes.visible = false
+	ecran_accueil.visible = true
+	
+func generer_liste_succes():
+	# 1. Nettoyage de la liste précédente
+	for child in grid_succes.get_children():
+		child.queue_free()
+	
+	# 2. Configuration de la grille (Espacement)
+	grid_succes.add_theme_constant_override("h_separation", 20)
+	grid_succes.add_theme_constant_override("v_separation", 20)
+	
+	# 3. Boucle sur les données
+	for ach in GameData.achievements_data:
+		var est_debloque = GameData.unlocked_achievements.has(ach["id"])
+		
+		# --- LE CONTENEUR (Panel) ---
+		var panel = PanelContainer.new()
+		panel.custom_minimum_size = Vector2(400, 100) # Taille fixe assez large
+		
+		# --- DISPOSITION (HBox : Icone à gauche | Texte à droite) ---
+		var hbox = HBoxContainer.new()
+		hbox.add_theme_constant_override("separation", 15)
+		panel.add_child(hbox)
+		
+		# A. L'ICONE
+		var icon_rect = TextureRect.new()
+		icon_rect.custom_minimum_size = Vector2(80, 80)
+		icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		
+		if est_debloque:
+			# Si débloqué : On charge l'image (si elle existe) sinon défaut
+			if ResourceLoader.exists(ach["icon"]):
+				icon_rect.texture = load(ach["icon"])
+			else:
+				icon_rect.texture = icon_defaut
+			icon_rect.modulate = Color.WHITE
+		else:
+			# Si verrouillé : Image sombre ou "?"
+			icon_rect.texture = icon_defaut
+			icon_rect.modulate = Color(0.1, 0.1, 0.1, 0.5) # Très sombre et transparent
+			
+		hbox.add_child(icon_rect)
+		
+		# B. LES TEXTES (VBox : Titre en haut, Description en bas)
+		var vbox_text = VBoxContainer.new()
+		vbox_text.alignment = BoxContainer.ALIGNMENT_CENTER # Centré verticalement
+		vbox_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL # Prend toute la place restante
+		
+		var lbl_titre = Label.new()
+		var lbl_desc = Label.new()
+		
+		# Police (si tu veux l'appliquer)
+		if font_custom:
+			lbl_titre.add_theme_font_override("font", font_custom)
+			lbl_desc.add_theme_font_override("font", font_custom)
+		
+		if est_debloque:
+			lbl_titre.text = ach["title"]
+			lbl_desc.text = ach["description"]
+			lbl_titre.modulate = Color.GREEN # Titre en vert
+		else:
+			if ach["hidden"]:
+				lbl_titre.text = "???"
+				lbl_desc.text = "Succès Secret"
+			else:
+				lbl_titre.text = ach["title"]
+				lbl_desc.text = "Verrouillé"
+			
+			lbl_titre.modulate = Color.GRAY
+			lbl_desc.modulate = Color(0.5, 0.5, 0.5)
+		
+		# Style des textes
+		lbl_titre.add_theme_font_size_override("font_size", 22) # Titre gros
+		lbl_desc.add_theme_font_size_override("font_size", 16)  # Desc plus petite
+		lbl_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART # Retour à la ligne auto
+		
+		vbox_text.add_child(lbl_titre)
+		vbox_text.add_child(lbl_desc)
+		
+		hbox.add_child(vbox_text)
+		
+		# Ajout final à la grille
+		grid_succes.add_child(panel)
 
 func preparer_interface_custom():
 	# On nettoie d'abord

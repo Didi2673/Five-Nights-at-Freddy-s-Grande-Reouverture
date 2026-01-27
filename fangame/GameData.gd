@@ -6,6 +6,9 @@ var animatronics_data = []
 
 var index_nuit_selectionnee : int = 0
 
+var achievements_data = [] # Le contenu du JSON
+var unlocked_achievements = [] # Liste des IDs débloqués ["night_1", "honk"]
+
 # --- DONNÉES GLOBALES ---
 var save_path = "user://savegame.save" # Le chemin du fichier (caché dans l'ordi du joueur)
 var nights_json_path = "res://data/nights.json" # Chemin vers ton fichier
@@ -25,6 +28,7 @@ func reset_custom_levels():
 func _ready():
 	load_nights_data()
 	load_data()
+	achievements_data = load_json_file("res://data/achievements.json")
 	load_game()
 	
 	
@@ -55,7 +59,10 @@ func get_night_info(night_number : int):
 func save_game():
 	var file = FileAccess.open(save_path, FileAccess.WRITE)
 	if file:
-		var data = {"unlocked": unlocked_night}
+		var data = {
+			"unlocked": unlocked_night,
+			"achievements": unlocked_achievements # On sauvegarde la liste
+		}
 		file.store_string(JSON.stringify(data))
 		file.close()
 
@@ -64,7 +71,24 @@ func load_game():
 		var file = FileAccess.open(save_path, FileAccess.READ)
 		var json = JSON.new()
 		if json.parse(file.get_as_text()) == OK:
-			unlocked_night = json.get_data()["unlocked"]
+			var data = json.get_data()
+			if data.has("unlocked"): unlocked_night = data["unlocked"]
+			
+			# Chargement des succès
+			if data.has("achievements"):
+				unlocked_achievements = data["achievements"]
+
+func unlock_achievement(ach_id : String):
+	# Si on l'a déjà, on ne fait rien
+	if unlocked_achievements.has(ach_id): return
+	
+	# Sinon, on l'ajoute et on sauvegarde
+	print(">>> SUCCÈS DÉBLOQUÉ : ", ach_id)
+	unlocked_achievements.append(ach_id)
+	save_game()
+	
+	# Optionnel : Tu pourrais émettre un signal ici pour afficher une popup en jeu
+	# signal achievement_unlocked(ach_id)
 
 func win_night(n_terminee : int):
 	print("Victoire validée pour la nuit : ", n_terminee)

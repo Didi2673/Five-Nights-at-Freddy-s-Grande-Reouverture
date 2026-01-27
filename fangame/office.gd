@@ -11,6 +11,9 @@ extends Node2D
 @onready var audio_music_box = $Audio_MusicBox
 @onready var audio_leurre = $Audio_Leurre
 @onready var audio_flash_foxy = $Audio_Flash_Foxy
+@onready var audio_honk = $Audio_Honk
+
+var heat_timer_accumulated : float = 0.0
 
 # Variables Puppet
 var puppet_timer_attaque : float = 5.0
@@ -151,6 +154,10 @@ func _ready():
 		btn_mute_call.pressed.connect(_on_mute_call_pressed)
 	
 	lancer_appel_telephonique()
+
+func _on_nez_freddy_pressed():
+	if audio_honk: audio_honk.play()
+	GameData.unlock_achievement("honk")
 
 func lancer_appel_telephonique():
 	if phone_calls.has(night_index):
@@ -293,6 +300,16 @@ func calculer_temperature(delta):
 			
 	if temperature >= 120.0:
 		trigger_game_over_heat()
+		
+	if temperature >= 110.0 and not game_over:
+		heat_timer_accumulated += delta
+		if heat_timer_accumulated >= 10.0:
+			GameData.unlock_achievement("heat_survivor")
+	else:
+		# Si la température redescend, on reset le compteur ?
+		# Ou on garde le cumulé ? "Pendant 10s" sous-entend "en continu" souvent.
+		# Si tu veux "en continu", reset ici :
+		heat_timer_accumulated = 0.0
 
 func trigger_game_over_heat():
 	print("MORT DE CHALEUR !")
@@ -489,6 +506,9 @@ func trigger_jumpscare(nom_tueur : String):
 	if game_over: return
 	game_over = true
 	
+	if current_hour == 0:
+		GameData.unlock_achievement("early_death")
+	
 	if map_container: map_container.visible = false
 	if game_ui: game_ui.visible = false 
 	if audio_ambiance: audio_ambiance.stop()
@@ -513,6 +533,32 @@ func trigger_jumpscare(nom_tueur : String):
 
 func trigger_victory():
 	game_over = true
+	
+	if batterie >= 20.0:
+		GameData.unlock_achievement("battery_master")
+		
+	# --- SUCCÈS : NUITS ---
+	if night_index >= 1 and night_index <= 6:
+		GameData.unlock_achievement("night_" + str(night_index))
+		
+	# --- SUCCÈS : 7/20 MODE ---
+	if night_index == 7:
+		var tous_a_20 = true
+		# On vérifie si un seul robot est en dessous de 20
+		# Attention : On vérifie TOUS les robots disponibles
+		for key in GameData.custom_night_levels:
+			if GameData.custom_night_levels[key] < 20:
+				tous_a_20 = false
+				break
+		
+		# Vérification supplémentaire : est-ce que les robots sont bien activés ?
+		# (Pour éviter le cheat où on met 0 partout)
+		if GameData.custom_night_levels.size() < 4: # Sécurité
+			tous_a_20 = false
+			 
+		if tous_a_20:
+			GameData.unlock_achievement("20_20_mode")
+	
 	GameData.win_night(night_index)
 	audio_fan.stop()
 	audio_music_box.volume_db = -80.0
@@ -566,6 +612,7 @@ func tenter_spawn_golden_freddy():
 func activer_golden_freddy():
 	sprite_gf.visible = true
 	gf_active = true
+	GameData.unlock_achievement("golden_sighting")
 	gf_reaction_timer = 2.0 
 	if has_node("Audio_GF_Appear"): $Audio_GF_Appear.play()
 

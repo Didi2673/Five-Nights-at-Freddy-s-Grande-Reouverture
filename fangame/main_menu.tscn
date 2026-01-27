@@ -70,7 +70,6 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="Ecran_Accueil" type="Control" parent="."]
-visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -105,10 +104,10 @@ text_direction = 3
 
 [node name="Bouton_Quitter" type="Button" parent="Ecran_Accueil"]
 layout_mode = 0
-offset_left = 137.0
-offset_top = 730.0
-offset_right = 432.0
-offset_bottom = 800.0
+offset_left = 141.0
+offset_top = 800.0
+offset_right = 436.0
+offset_bottom = 870.0
 theme_type_variation = &"FlatButton"
 theme_override_fonts/font = ExtResource("1_06t4h")
 theme_override_font_sizes/font_size = 70
@@ -126,7 +125,20 @@ theme_override_font_sizes/font_size = 10
 text = "v0.0.1"
 label_settings = SubResource("LabelSettings_7vrkn")
 
+[node name="Bouton_Succes" type="Button" parent="Ecran_Accueil"]
+layout_mode = 0
+offset_left = 141.0
+offset_top = 717.0
+offset_right = 395.0
+offset_bottom = 787.0
+theme_type_variation = &"FlatButton"
+theme_override_fonts/font = ExtResource("1_06t4h")
+theme_override_font_sizes/font_size = 70
+text = "Succès"
+text_direction = 3
+
 [node name="Ecran_Selection" type="Control" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -213,6 +225,49 @@ theme_override_fonts/font = ExtResource("1_06t4h")
 theme_override_font_sizes/font_size = 20
 text = "Retour"
 
+[node name="Ecran_Succes" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Ecran_Succes"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 262.0
+offset_top = 186.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Grid_Succes" type="GridContainer" parent="Ecran_Succes/ScrollContainer"]
+layout_mode = 2
+columns = 2
+
+[node name="Bouton_Retour" type="Button" parent="Ecran_Succes"]
+layout_mode = 0
+offset_left = 112.0
+offset_top = 573.0
+offset_right = 191.0
+offset_bottom = 607.0
+theme_type_variation = &"FlatButton"
+theme_override_fonts/font = ExtResource("1_06t4h")
+theme_override_font_sizes/font_size = 20
+text = "Retour"
+
+[node name="Label_Titre" type="Label" parent="Ecran_Succes"]
+layout_mode = 0
+offset_left = 428.0
+offset_top = 60.0
+offset_right = 748.0
+offset_bottom = 140.0
+text = "Succès débloqués"
+label_settings = SubResource("LabelSettings_fu7sn")
+
 [node name="Ecran_Transition" type="ColorRect" parent="."]
 visible = false
 layout_mode = 1
@@ -253,5 +308,7 @@ stream = ExtResource("4_glbon")
 
 [connection signal="pressed" from="Ecran_Accueil/Bouton_Play" to="." method="_on_aller_vers_selection"]
 [connection signal="pressed" from="Ecran_Accueil/Bouton_Quitter" to="." method="_on_bouton_quitter_pressed"]
+[connection signal="pressed" from="Ecran_Accueil/Bouton_Succes" to="." method="_on_aller_vers_succes"]
 [connection signal="pressed" from="Ecran_Selection/Panneau_Details/Bouton_Lancer_Nuit" to="." method="_on_bouton_lancer_nuit_pressed"]
 [connection signal="pressed" from="Ecran_Selection/Bouton_Retour" to="." method="_on_bouton_retour_pressed"]
+[connection signal="pressed" from="Ecran_Succes/Bouton_Retour" to="." method="_on_retour_accueil_depuis_succes"]

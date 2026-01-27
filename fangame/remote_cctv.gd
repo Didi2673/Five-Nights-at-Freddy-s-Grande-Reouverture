@@ -4,6 +4,8 @@ extends Control
 @export var ecran_visuel : TextureRect 
 @export var ecran_brouillage : ColorRect # Assigne-le dans l'inspecteur si possible
 
+var flash_count_session : int = 0
+
 # --- RÉFÉRENCES AUDIO ---
 @onready var audio_switch = $Audio_Switch_Cam
 @onready var audio_flash_foxy = $Audio_Flash_Foxy
@@ -126,6 +128,10 @@ func _on_flash_foxy():
 		# On calme Foxy (mécanique visuelle et logique)
 		foxy_rage -= 1
 		if foxy_rage < 0: foxy_rage = 0
+		
+		flash_count_session += 1
+		if flash_count_session >= 10:
+			GameData.unlock_achievement("foxy_flasher")
 		
 		# Feedback visuel
 		flash_screen_effect()
