@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://dvj4ixdew2cl5"]
+[gd_scene load_steps=24 format=3 uid="uid://dvj4ixdew2cl5"]
 
 [ext_resource type="Script" uid="uid://dfukqvi7p8lin" path="res://remote_cctv.gd" id="1_og2t3"]
 [ext_resource type="Texture2D" uid="uid://cqi8pfb27eur0" path="res://map.png" id="1_r7ydr"]
@@ -18,7 +18,9 @@
 [ext_resource type="Shader" uid="uid://hhifebkgqjh8" path="res://moniteur_cctv.gdshader" id="15_lqbdw"]
 [ext_resource type="Texture2D" uid="uid://cgiem0shlq3jq" path="res://13.png" id="16_ocw4j"]
 [ext_resource type="AudioStream" uid="uid://f1m0j2lgiypg" path="res://Sounds/camera_change.wav" id="18_73acr"]
+[ext_resource type="Theme" uid="uid://b4ofsq1nh46rs" path="res://bouton.tres" id="18_nsts7"]
 [ext_resource type="AudioStream" uid="uid://cqgqjxna5ir8m" path="res://Sounds/flash.wav" id="19_b4apj"]
+[ext_resource type="FontFile" uid="uid://dh5jtdq4vw75k" path="res://LcdSolid.ttf" id="19_l16op"]
 [ext_resource type="AudioStream" uid="uid://cl31s7w8f73e1" path="res://Sounds/radio.wav" id="20_job2a"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_dshet"]
@@ -215,6 +217,9 @@ offset_left = 162.0
 offset_top = 404.0
 offset_right = 326.0
 offset_bottom = 467.0
+theme = ExtResource("18_nsts7")
+theme_override_fonts/font = ExtResource("19_l16op")
+theme_override_font_sizes/font_size = 29
 text = "FLASHER"
 
 [node name="Bouton_Audio" type="Button" parent="."]
@@ -224,17 +229,20 @@ offset_left = 1520.0
 offset_top = 466.0
 offset_right = 1709.0
 offset_bottom = 561.0
+theme = ExtResource("18_nsts7")
+theme_override_fonts/font = ExtResource("19_l16op")
 theme_override_font_sizes/font_size = 29
 text = "PLAY AUDIO"
 
 [node name="Bouton_Vent" type="Button" parent="."]
-modulate = Color(0, 1, 0, 1)
+visible = false
 layout_mode = 0
 offset_left = 619.0
 offset_top = 689.0
 offset_right = 800.0
 offset_bottom = 763.0
-theme_override_colors/font_color = Color(0, 1, 0, 1)
+theme = ExtResource("18_nsts7")
+theme_override_fonts/font = ExtResource("19_l16op")
 theme_override_font_sizes/font_size = 25
 text = "SCELLER VENT"
 

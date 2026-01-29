@@ -94,10 +94,8 @@ func _on_toggle_vent():
 	if btn_vent:
 		if vent_scelle:
 			btn_vent.text = "OUVRIR VENT"
-			btn_vent.modulate = Color.RED # Rouge = Attention conso !
 		else:
 			btn_vent.text = "SCELLER VENT"
-			btn_vent.modulate = Color.GREEN
 			
 	print("Système Vent scellé : ", vent_scelle)
 

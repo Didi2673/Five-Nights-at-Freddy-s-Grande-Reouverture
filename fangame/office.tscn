@@ -1,4 +1,4 @@
-[gd_scene load_steps=37 format=3 uid="uid://dvu2p8dkvbruk"]
+[gd_scene load_steps=38 format=3 uid="uid://dvu2p8dkvbruk"]
 
 [ext_resource type="Script" uid="uid://binxa8r2e1lh" path="res://office.gd" id="1_4i814"]
 [ext_resource type="Texture2D" uid="uid://bnoromdm53qd7" path="res://office_left_light.png" id="3_4hetp"]
@@ -22,6 +22,7 @@
 [ext_resource type="Texture2D" uid="uid://cclvqv8grjn26" path="res://right_door.png" id="12_m8tx5"]
 [ext_resource type="Texture2D" uid="uid://bsuf1apsdeqi3" path="res://left_button_door_open.webp" id="13_4hetp"]
 [ext_resource type="Texture2D" uid="uid://cf78fi2d3xo03" path="res://left_button_door_close.webp" id="14_o3cd7"]
+[ext_resource type="Theme" uid="uid://b4ofsq1nh46rs" path="res://bouton.tres" id="15_26ul0"]
 [ext_resource type="AudioStream" uid="uid://d1cpisn0dya54" path="res://Sounds/cameras.wav" id="24_2k2f6"]
 [ext_resource type="AudioStream" uid="uid://bs88frxmqbe1w" path="res://Sounds/Vent.wav" id="25_bm8iy"]
 [ext_resource type="AudioStream" uid="uid://cu7yr4uq7w4ji" path="res://Sounds/ambience.ogg" id="25_hs4kw"]
@@ -155,6 +156,8 @@ expand_mode = 3
 [node name="Bouton_Mute_Call" type="Button" parent="UI"]
 offset_right = 293.0
 offset_bottom = 90.0
+theme = ExtResource("15_26ul0")
+theme_override_fonts/font = ExtResource("8_lcwox")
 theme_override_font_sizes/font_size = 46
 text = "MUTE CALL"
 

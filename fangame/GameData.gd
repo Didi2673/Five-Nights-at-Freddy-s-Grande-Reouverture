@@ -6,6 +6,8 @@ var animatronics_data = []
 
 var index_nuit_selectionnee : int = 0
 
+var image_fin_a_afficher : String = ""
+
 var achievements_data = [] # Le contenu du JSON
 var unlocked_achievements = [] # Liste des IDs débloqués ["night_1", "honk"]
 

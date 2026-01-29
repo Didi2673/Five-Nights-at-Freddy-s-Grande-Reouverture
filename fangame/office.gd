@@ -1,6 +1,5 @@
 extends Node2D
 
-# --- 1. CONFIGURATION CAMERA 2D ---
 @export_group("Réglages Caméra")
 @export var vitesse_scroll : float = 600.0
 @export var zone_active_x : int = 150
@@ -15,7 +14,6 @@ extends Node2D
 
 var heat_timer_accumulated : float = 0.0
 
-# Variables Puppet
 var puppet_timer_attaque : float = 5.0
 var puppet_timer_reset : float = 5.0
 var puppet_est_en_position : bool = false
@@ -43,7 +41,6 @@ var gf_cooldown : float = 2.0
 var gf_interval_check : float = 1.0   
 var gf_timer_check : float = 0.0
 
-# --- TEXTURES ---
 @export_group("Textures Bureau")
 @export var tex_normal : Texture2D          
 @export var tex_light_left : Texture2D      
@@ -69,17 +66,19 @@ var videos_jumpscares = {
 @onready var container_barres = $UI/Barres_Container
 @onready var ventilateur = $Ventilateur
 
-# --- TEMPÉRATURE ---
-var taux_drain = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+var taux_drain = [0.1, 0.23, 0.40, 0.60, 0.80, 1.0]
 var temperature : float = 60.0
 var temperature_min : float = 60.0
 var temperature_max : float = 120.0
 var ventilateur_actif : bool = true 
 
+var silent_ventilateur_active : bool = false
+var silent_fan_timer : float = 0.0
+
 @export var textures_barres : Array[Texture2D] 
 @onready var indicateur_usage = $UI/Indicateur_Usage
-var vitesse_chauffe : float = 1  
-var vitesse_refroidissement : float = 2.5 
+var vitesse_chauffe : float = 2
+var vitesse_refroidissement : float = 3
 @onready var label_temp = $UI/Label_Temperature 
 
 # --- LUMIERES ---
@@ -154,6 +153,11 @@ func _ready():
 		btn_mute_call.pressed.connect(_on_mute_call_pressed)
 	
 	lancer_appel_telephonique()
+	
+	if night_index < 3:
+		if label_temp: label_temp.visible = false
+	else:
+		if label_temp: label_temp.visible = true
 
 func _on_nez_freddy_pressed():
 	if audio_honk: audio_honk.play()
@@ -174,12 +178,28 @@ func _on_mute_call_pressed():
 		audio_phone_call.stop()
 		if btn_mute_call: btn_mute_call.visible = false
 
-func toggle_ventilateur():	
+func toggle_ventilateur():
 	ventilateur_actif = !ventilateur_actif
+	
 	if ventilateur_actif:
+		# Si on allume le normal, on éteint le silencieux
+		silent_ventilateur_active = false
 		if audio_fan and not audio_fan.playing: audio_fan.play()
 	else:
 		if audio_fan: audio_fan.stop()
+		
+	print("Ventilateur Normal : ", ventilateur_actif)
+	
+func toggle_silent_ventilateur():
+	silent_ventilateur_active = !silent_ventilateur_active
+	
+	if silent_ventilateur_active:
+		# Si on allume le silencieux, on éteint le normal
+		ventilateur_actif = false
+		if audio_fan: audio_fan.stop() # Le silencieux ne fait pas de bruit
+		print("Ventilateur Silencieux : ACTIF")
+	else:
+		print("Ventilateur Silencieux : INACTIF")
 
 func _process(delta):
 	if est_coupure_courant or game_over: return 
@@ -193,10 +213,21 @@ func _process(delta):
 				if porte_gauche.has_method("_on_light_stop"): porte_gauche._on_light_stop()
 				if porte_droite.has_method("_on_light_stop"): porte_droite._on_light_stop()
 				
-	if Input.is_action_just_pressed("toggle_fan"):
-		toggle_ventilateur()
-		if ventilateur and ventilateur.has_method("toggle_ventilateur"):
-			ventilateur.toggle_ventilateur()
+	if night_index >= 3:
+		
+		if Input.is_action_just_pressed("toggle_fan"):
+			toggle_ventilateur()
+			
+		if Input.is_action_just_pressed("toggle_silent_fan"):
+			toggle_silent_ventilateur()
+	else:
+		
+		if not ventilateur_actif:
+			ventilateur_actif = true
+			if audio_fan and not audio_fan.playing: audio_fan.play()
+			
+		if silent_ventilateur_active:
+			silent_ventilateur_active = false
 	
 	if systeme_camera and not systeme_camera.est_ouvert:
 		gestion_camera_scroll(delta)
@@ -285,6 +316,17 @@ func calculer_temperature(delta):
 	if ventilateur_actif:
 		if temperature > temperature_min:
 			temperature -= vitesse_refroidissement * delta
+			
+	elif silent_ventilateur_active:
+		if temperature < temperature_max:
+			temperature += vitesse_chauffe * delta
+			
+		silent_fan_timer += delta
+		if silent_fan_timer >= 0.5:
+			silent_fan_timer = 0.0
+			if randf() < 0.7:
+				temperature -= 1.0
+				
 	else:
 		if temperature < temperature_max:
 			temperature += vitesse_chauffe * delta
@@ -306,13 +348,9 @@ func calculer_temperature(delta):
 		if heat_timer_accumulated >= 10.0:
 			GameData.unlock_achievement("heat_survivor")
 	else:
-		# Si la température redescend, on reset le compteur ?
-		# Ou on garde le cumulé ? "Pendant 10s" sous-entend "en continu" souvent.
-		# Si tu veux "en continu", reset ici :
 		heat_timer_accumulated = 0.0
 
 func trigger_game_over_heat():
-	print("MORT DE CHALEUR !")
 	trigger_jumpscare("Heat")
 	update_office_background()
 
@@ -320,7 +358,6 @@ func jouer_audio_leurre(nom_camera : String):
 	if audio_leurre:
 		audio_leurre.pitch_scale = randf_range(0.95, 1.05)
 		audio_leurre.play()
-	print("📢 OFFICE : Diffusion audio en ", nom_camera)
 	for bot in animatronics_instances:
 		if bot.has_method("recevoir_audio"):
 			bot.recevoir_audio(nom_camera)
@@ -373,7 +410,7 @@ func gestion_camera_scroll(delta):
 func calculer_drain_batterie(delta):
 	var usage_level : int = 0 
 	
-	if ventilateur_actif: usage_level += 1
+	if silent_ventilateur_active: usage_level += 1
 	for porte in portes:
 		if porte.est_fermee: usage_level += 1
 	if systeme_camera and systeme_camera.est_ouvert: usage_level += 1
@@ -387,7 +424,7 @@ func calculer_drain_batterie(delta):
 			if i < usage_level: barres[i].visible = true 
 			else: barres[i].visible = false
 			
-	if usage_level == 0: return 
+	#if usage_level == 0: return 
 	
 	usage_level = clampi(usage_level, 0, 5) 
 	var drain_de_base = taux_drain[usage_level] if usage_level < taux_drain.size() else 5.0
@@ -444,38 +481,21 @@ func spawn_animatronics():
 		bot.setup(data, systeme_camera, porte_a_attaquer, self, i)
 		bot.current_ai_level = ai_level_final
 		animatronics_instances.append(bot)
+		
+	if systeme_camera:
+		systeme_camera.mettre_a_jour_image()
 	
 
 func passer_heure_suivante():
 	current_hour += 1
 	update_clock_display()
-	print("Il est ", current_hour, " AM")
 
-		
 	if current_hour == 6: 
 		trigger_victory()
 	
-	# On vide la map des "Autres" et on fait apparaître Springtrap
-	for bot in animatronics_instances:
-		if bot.nom == "Springtrap":
-			# Springtrap se réveille et DEVIENT VISIBLE
-			bot.reset_timer(0)
-			bot.changer_position(0) # S'assure qu'il est au départ (Cam 02)
-			bot.definir_visibilite_camera(true) # <--- IMPORTANT
-			print("Springtrap est activé.")
-			
-		else:
-			# Les autres disparaissent
-			bot.reset_timer(0)
-			bot.definir_visibilite_camera(false) # <--- ILS DEVIENNENT INVISIBLES
-			
-			# Reset spécifique Foxy
-			if bot.nom == "Foxy":
-				systeme_camera.foxy_attacking = false
-				systeme_camera.foxy_rage = 0
-				
-	# Mise à jour immédiate de l'écran
-	systeme_camera.mettre_a_jour_image()
+	if systeme_camera:
+		systeme_camera.mettre_a_jour_image()
+	
 	update_office_background()
 
 func forcer_depart_autres_robots():
@@ -575,7 +595,37 @@ func trigger_victory():
 		video_victoire.play()
 		await video_victoire.finished
 		
-	get_tree().change_scene_to_file("res://main_menu.tscn")
+	var chemin_image_fin = ""
+	
+	# DÉFINITION DES IMAGES SELON LA NUIT
+	if night_index == 5:
+		chemin_image_fin = "res://night5.png" # Ton image "Chèque"
+	elif night_index == 6:
+		chemin_image_fin = "res://night6.png" # Ton image "Heures Supp"
+	elif night_index == 7:
+		chemin_image_fin = "res://night7.png"     # Ton image "Licenciement"
+	
+	# 1. SI C'EST UNE NUIT AVEC IMAGE DE FIN
+	if chemin_image_fin != "" and ResourceLoader.exists(chemin_image_fin):
+		print("Affichage écran de fin pour la nuit ", night_index)
+		
+		# On passe l'info au GameData
+		GameData.image_fin_a_afficher = chemin_image_fin
+		
+		# On charge la scène de fin
+		get_tree().change_scene_to_file("res://ending_screen.tscn")
+		return # On arrête la fonction ici, on ne lance pas de mini-jeu
+		
+	var nom_scene_minijeu = "res://minigames/Minigame_" + str(night_index) + ".tscn"
+	
+	# On vérifie si ce fichier existe réellement
+	if ResourceLoader.exists(nom_scene_minijeu):
+		print("Lancement du Mini-Jeu pour la nuit ", night_index)
+		get_tree().change_scene_to_file(nom_scene_minijeu)
+	else:
+		# Si pas de mini-jeu pour cette nuit (ex: Nuit 7), retour au menu
+		print("Pas de mini-jeu trouvé, retour menu.")
+		get_tree().change_scene_to_file("res://main_menu.tscn")
 
 func process_golden_freddy(delta):
 	if game_over or est_coupure_courant: return
@@ -599,15 +649,28 @@ func process_golden_freddy(delta):
 
 func tenter_spawn_golden_freddy():
 	var ai_level = 0
-	for i in range(GameData.animatronics_data.size()):
-		if GameData.animatronics_data[i]["name"] == "Golden-Freddy":
-			ai_level = GameData.get_ai_level(i, night_index, current_hour)
-			break
+	
+	# --- 1. RECUPERATION DU NIVEAU ---
+	if night_index == 7:
+		# CAS CUSTOM NIGHT : On lit le menu
+		if GameData.custom_night_levels.has("Golden-Freddy"):
+			ai_level = GameData.custom_night_levels["Golden-Freddy"]
+	else:
+		# CAS HISTOIRE : On lit le JSON
+		for i in range(GameData.animatronics_data.size()):
+			if GameData.animatronics_data[i]["name"] == "Golden-Freddy":
+				ai_level = GameData.get_ai_level(i, night_index, current_hour)
+				break
+	
+	# Si IA est à 0, il n'apparaît jamais
 	if ai_level == 0: return 
 	
+	# --- 2. CALCUL PROBABILITÉ ---
 	var chance = randi_range(1, 1000)
 	var seuil = ai_level * 10 
-	if chance <= seuil: activer_golden_freddy()
+	
+	if chance <= seuil:
+		activer_golden_freddy()
 
 func activer_golden_freddy():
 	sprite_gf.visible = true

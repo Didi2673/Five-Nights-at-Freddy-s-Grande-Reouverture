@@ -12,7 +12,7 @@
 	{
 		"id": 2,
 		"title": "Nuit 2",
-		"description": "Chica va introduire une nouvelle méchanique, à vous de comprendre.",
+		"description": "La nuit un plus tendu avec l'arrivée de Chica et Puppet",
 		"difficulty_label": "Facile",
 		"display_duration_text": "7 minutes",
 		"hour_duration_seconds": 70, 
@@ -22,7 +22,7 @@
 	{
 		"id": 3,
 		"title": "Nuit 3",
-		"description": "Pensez à flasher foxy! Ecoutez bien la boite à musique.. si vous l'entendez dans votre bureau, c'est que vous êtes en danger.",
+		"description": "Foxy et Freddy vont ajouter une nouvelle pression",
 		"difficulty_label": "Normal",
 		"display_duration_text": "8 minutes",
 		"hour_duration_seconds": 80, 
@@ -32,7 +32,7 @@
 	{
 		"id": 4,
 		"title": "Nuit 4",
-		"description": "Pensez à surveiller régulièrement Freddy, et... les autres",
+		"description": "Entraînement dur avant la réelle difficulté.",
 		"difficulty_label": "Normal",
 		"display_duration_text": "9 minutes",
 		"hour_duration_seconds": 90, 

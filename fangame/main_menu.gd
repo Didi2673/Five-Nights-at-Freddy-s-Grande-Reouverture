@@ -13,6 +13,10 @@ extends Control
 @onready var label_difficulte = $Ecran_Selection/Panneau_Details/Label_Difficulte
 @onready var btn_lancer = $Ecran_Selection/Panneau_Details/Bouton_Lancer_Nuit
 
+@onready var etoile_1 = $Ecran_Accueil/Container_Etoiles/Etoile_1
+@onready var etoile_2 = $Ecran_Accueil/Container_Etoiles/Etoile_2
+@onready var etoile_3 = $Ecran_Accueil/Container_Etoiles/Etoile_3
+
 @onready var ecran_transition = $Ecran_Transition
 @onready var label_trans_nuit = $Ecran_Transition/Label_Nuit_Transition
 @onready var audio_transition = $Ecran_Transition/Audio_Transition
@@ -74,7 +78,7 @@ func _ready():
 		btn_retour_succes.mouse_entered.connect(_jouer_son_hover)
 		
 	btn_lancer.pressed.connect(_on_lancer_nuit)
-	
+	verifier_etoiles()
 	update_details_panel(0) 
 	
 func _on_aller_vers_succes():
@@ -177,49 +181,51 @@ func preparer_interface_custom():
 		child.queue_free()
 	
 	# --- 1. CONFIGURATION DE LA GRILLE ---
-	container_custom.columns = 4 # <--- 4 ANIMATRONIQUES PAR LIGNE
-	
-	# On espacement les éléments (Horizontal et Vertical)
+	container_custom.columns = 4
 	container_custom.add_theme_constant_override("h_separation", 30)
-	container_custom.add_theme_constant_override("v_separation", 30)
+	container_custom.add_theme_constant_override("v_separation", 50)
 	
-	# Pour chaque animatronique du jeu
 	for data in GameData.animatronics_data:
 		var nom_bot = data["name"]
 		
+		# On ignore Springtrap (comme prévu) [cite: 29]
 		if nom_bot == "Springtrap": 
 			continue
-		# --- 2. LE CONTENEUR DU ROBOT (LA "CARTE") ---
+			
+		# --- 2. LE CONTENEUR DU ROBOT ---
 		var boite_robot = VBoxContainer.new()
-		# On force une taille minimale pour que ça prenne de la place
-		boite_robot.custom_minimum_size = Vector2(180, 100) 
-		# On centre le contenu
+		boite_robot.custom_minimum_size = Vector2(180, 150) # J'ai augmenté un peu la hauteur
 		boite_robot.alignment = BoxContainer.ALIGNMENT_CENTER
 		
-		# --- A. NOM DU ROBOT ---
-		var lbl_nom = Label.new()
-		lbl_nom.text = nom_bot
-		lbl_nom.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		# --- A. IMAGE DE L'ANIMATRONIQUE (Remplacement du Label) ---
+		var icon_robot = TextureRect.new()
 		
-		# Style du nom (Gros et gras si possible)
-		if font_custom: 
-			lbl_nom.add_theme_font_override("font", font_custom)
-			lbl_nom.add_theme_font_size_override("font_size", 25) # <--- NOM PLUS GRAND
+		# Taille de l'image (ajuste selon tes besoins, ex: 100x100)
+		icon_robot.custom_minimum_size = Vector2(200, 200) 
+		icon_robot.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon_robot.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		
+		# Construction du chemin : "res://ui/custom_icons/Bonnie.png"
+		# Assure-toi que ce chemin correspond à ton dossier !
+		var chemin_image = "res://IconesAnimatroniques/" + nom_bot + ".webp"
+		
+		if ResourceLoader.exists(chemin_image):
+			icon_robot.texture = load(chemin_image)
 		else:
-			lbl_nom.add_theme_font_size_override("font_size", 20)
+			# Si l'image n'existe pas, on met l'icône par défaut [cite: 24]
+			print("Image manquante pour : ", nom_bot)
+			icon_robot.texture = icon_defaut 
 			
-		boite_robot.add_child(lbl_nom)
+		boite_robot.add_child(icon_robot)
 		
 		# --- B. SÉLECTEUR (HBox) ---
 		var boite_selecteur = HBoxContainer.new()
 		boite_selecteur.alignment = BoxContainer.ALIGNMENT_CENTER
-		# Un peu d'espace entre les boutons et le nombre
 		boite_selecteur.add_theme_constant_override("separation", 15) 
 		
 		# Bouton Moins
 		var btn_minus = Button.new()
 		btn_minus.text = "<"
-		# GROS BOUTON CARRÉ
 		btn_minus.custom_minimum_size = Vector2(40, 40) 
 		btn_minus.pressed.connect(_on_change_ai.bind(nom_bot, -1, boite_selecteur))
 		btn_minus.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -228,21 +234,19 @@ func preparer_interface_custom():
 		var lbl_val = Label.new()
 		lbl_val.text = "0"
 		lbl_val.name = "Label_AI"
-		# LARGEUR FIXE pour ne pas que ça bouge quand on passe de 9 à 10
 		lbl_val.custom_minimum_size.x = 40 
 		lbl_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		
-		# GROS CHIFFRE
+		# Police du chiffre
 		if font_custom: 
 			lbl_val.add_theme_font_override("font", font_custom)
-			lbl_val.add_theme_font_size_override("font_size", 50) # <--- CHIFFRE ENORME
+			lbl_val.add_theme_font_size_override("font_size", 40) 
 		else:
 			lbl_val.add_theme_font_size_override("font_size", 28)
 		
 		# Bouton Plus
 		var btn_plus = Button.new()
 		btn_plus.text = ">"
-		# GROS BOUTON CARRÉ
 		btn_plus.custom_minimum_size = Vector2(40, 40)
 		btn_plus.pressed.connect(_on_change_ai.bind(nom_bot, 1, boite_selecteur))
 		btn_plus.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -305,8 +309,25 @@ func _on_retour_accueil():
 func generer_liste_nuits():
 	var total_nuits_json = GameData.nights_data.size()
 	
-	# 1. CHARGEMENT DE LA POLICE (Une seule fois pour optimiser)
-	# Remplace le chemin ci-dessous par le tien !
+	# --- 1. CALCUL DE LA HAUTEUR DYNAMIQUE ---
+	# On récupère la hauteur totale du conteneur (définie dans l'éditeur avec les Ancres/Anchors)
+	var hauteur_totale = liste_nuits_container.size.y
+	
+	# On récupère l'espace entre les boutons (défini dans Theme Overrides > Constants > Separation)
+	# Si ce n'est pas défini, Godot utilise 4px par défaut.
+	var separation = liste_nuits_container.get_theme_constant("separation")
+	
+	# Calcul de l'espace total "perdu" par les écarts (Il y a N-1 écarts pour N boutons)
+	var total_separation = separation * (total_nuits_json - 1)
+	if total_separation < 0: total_separation = 0
+	
+	# Hauteur restante divisée par le nombre de boutons
+	var hauteur_bouton = (hauteur_totale - total_separation) / total_nuits_json
+	
+	# Petite sécurité pour éviter des boutons minuscules ou négatifs
+	if hauteur_bouton < 30: hauteur_bouton = 30 
+	
+	# --- 2. CHARGEMENT POLICE ---
 	var ma_police = load("res://vcr_osd_mono.ttf") 
 	
 	# Nettoyage
@@ -316,19 +337,18 @@ func generer_liste_nuits():
 	for i in range(1, total_nuits_json + 1):
 		var btn = Button.new()
 		
-		# --- APPLICATION DE LA POLICE ---
+		# --- STYLE ---
 		if ma_police:
-			# "font" est le nom de la propriété de thème pour la police du texte
 			btn.add_theme_font_override("font", ma_police)
-			
-			# Optionnel : Ajuster la taille si la police est petite/grande
-			btn.add_theme_font_size_override("font_size", 24) 
-		else:
-			print("ERREUR : Police introuvable. Vérifie le chemin !")
+			# On adapte aussi la taille du texte : plus le bouton est petit, plus le texte est petit
+			# (C'est optionnel, tu peux garder une taille fixe comme 24)
+			var taille_texte = 50
+			btn.add_theme_font_size_override("font_size", int(taille_texte))
 		
-		# --- RESTE DU STYLE (Comme avant) ---
-		btn.custom_minimum_size.y = 55 
-		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		# --- HAUTEUR DYNAMIQUE ICI ---
+		btn.custom_minimum_size.y = hauteur_bouton
+		
+		btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
 		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		btn.mouse_entered.connect(_jouer_son_hover)
 		
@@ -346,6 +366,27 @@ func generer_liste_nuits():
 func _on_nuit_bouton_clicked(numero_nuit):
 	nuit_selectionnee_temp = numero_nuit
 	update_details_panel(numero_nuit)
+
+func verifier_etoiles():
+	# Par sécurité, on cache tout d'abord
+	if etoile_1: etoile_1.visible = false
+	if etoile_2: etoile_2.visible = false
+	if etoile_3: etoile_3.visible = false
+	
+	# --- ETOILE 1 : Avoir fini la Nuit 5 ---
+	# Si on a débloqué la nuit 6 (ou plus), c'est qu'on a fini la 5.
+	if GameData.unlocked_night >= 6:
+		if etoile_1: etoile_1.visible = true
+		
+	# --- ETOILE 2 : Avoir fini la Nuit 6 ---
+	# Si on a débloqué la nuit 7 (ou plus), c'est qu'on a fini la 6.
+	if GameData.unlocked_night >= 7:
+		if etoile_2: etoile_2.visible = true
+		
+	# --- ETOILE 3 : Le défi 20/20/20/20 ---
+	# On vérifie si le succès spécifique a été débloqué
+	if GameData.unlocked_achievements.has("20_20_mode"):
+		if etoile_3: etoile_3.visible = true
 
 func update_details_panel(numero_nuit):
 	if numero_nuit == 0:
