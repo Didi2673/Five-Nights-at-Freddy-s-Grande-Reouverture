@@ -100,7 +100,10 @@ func est_coupure_courant() -> bool:
 
 func couper_courant():
 	# Appelée par Office.gd lors du blackout
-	est_fermee = false
+	if est_fermee == true:
+		est_fermee = false
+		audio_porte.play()
+		
 	est_allumee = false
 	sprite_porte.visible = false
 	audio_light.stop()

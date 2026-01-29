@@ -1,4 +1,4 @@
-[gd_scene load_steps=70 format=3 uid="uid://d1jvp74qdhp23"]
+[gd_scene load_steps=71 format=3 uid="uid://d1jvp74qdhp23"]
 
 [ext_resource type="FontFile" uid="uid://83xb00w7vpum" path="res://vcr_osd_mono.ttf" id="1_06t4h"]
 [ext_resource type="Script" uid="uid://bbqvbkh1q8p0h" path="res://main_menu.gd" id="1_7vrkn"]
@@ -7,6 +7,7 @@
 [ext_resource type="AudioStream" uid="uid://f1m0j2lgiypg" path="res://Sounds/camera_change.wav" id="4_glbon"]
 [ext_resource type="Texture2D" uid="uid://d05y5ylad3fdn" path="res://star.png" id="4_nlkkf"]
 [ext_resource type="Texture2D" uid="uid://bn0yyf1714mg" path="res://freddy.png" id="4_qe12f"]
+[ext_resource type="Texture2D" uid="uid://ctymrjpc6bnc3" path="res://night1.png" id="8_8qtwp"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_8qtwp"]
 atlas = ExtResource("4_qe12f")
@@ -447,7 +448,7 @@ text = "Five
 Nights
 at
 Freddy's :
-Grande Ré ouverture"
+Grande Réouverture"
 label_settings = SubResource("LabelSettings_7vrkn")
 
 [node name="Bouton_Play" type="Button" parent="Ecran_Accueil"]
@@ -585,6 +586,7 @@ offset_left = 94.0
 offset_top = 800.0
 offset_right = 312.0
 offset_bottom = 868.0
+focus_mode = 0
 theme_override_colors/icon_disabled_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("1_06t4h")
 theme_override_font_sizes/font_size = 50
@@ -711,6 +713,26 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+
+[node name="ColorRect" type="ColorRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Ecran_Intro_Nuit1" type="TextureRect" parent="ColorRect"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("8_8qtwp")
 
 [connection signal="pressed" from="Ecran_Accueil/Bouton_Play" to="." method="_on_aller_vers_selection"]
 [connection signal="pressed" from="Ecran_Accueil/Bouton_Quitter" to="." method="_on_bouton_quitter_pressed"]

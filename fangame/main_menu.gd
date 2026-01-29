@@ -21,6 +21,8 @@ extends Control
 @onready var label_trans_nuit = $Ecran_Transition/Label_Nuit_Transition
 @onready var audio_transition = $Ecran_Transition/Audio_Transition
 
+@onready var ecran_intro_nuit_1 = $ColorRect/Ecran_Intro_Nuit1
+
 @onready var audio_hover = $Audio_Hover
 
 @onready var ecran_succes = $Ecran_Succes
@@ -40,6 +42,9 @@ func _ready():
 		
 	if ecran_succes: 
 		ecran_succes.visible = false
+		
+	if ecran_intro_nuit_1: 
+		ecran_intro_nuit_1.visible = false
 		
 	if container_custom:
 		container_custom.visible = false
@@ -450,6 +455,32 @@ func _on_lancer_nuit():
 	print("Lancement de la transition pour la nuit ", nuit_selectionnee_temp)
 	
 	GameData.current_night_played = nuit_selectionnee_temp
+	
+	if nuit_selectionnee_temp == 1:
+		if ecran_intro_nuit_1:
+			# 1. On prépare l'image : Visible mais totalement transparente
+			$ColorRect.visible = true
+			ecran_intro_nuit_1.modulate.a = 0.0 
+			ecran_intro_nuit_1.visible = true
+			
+			# 2. On crée le Tween (l'animateur)
+			var tween = create_tween()
+			
+			# ÉTAPE A : Fondu d'entrée (passe de 0 à 1 en 1.0 seconde)
+			tween.tween_property(ecran_intro_nuit_1, "modulate:a", 1.0, 1.0)
+			
+			# ÉTAPE B : On attend 3 secondes (temps de lecture)
+			tween.tween_interval(3.0)
+			
+			# ÉTAPE C : Fondu de sortie (passe de 1 à 0 en 1.0 seconde)
+			tween.tween_property(ecran_intro_nuit_1, "modulate:a", 0.0, 1.0)
+			
+			# 3. On attend que TOUTE l'animation soit finie
+			await tween.finished
+			
+			# 4. On cache l'écran pour la propreté
+			ecran_intro_nuit_1.visible = false
+			$ColorRect.visible = false
 	
 	if label_trans_nuit:
 		label_trans_nuit.text = "Nuit " + str(nuit_selectionnee_temp)

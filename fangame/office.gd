@@ -11,6 +11,7 @@ extends Node2D
 @onready var audio_leurre = $Audio_Leurre
 @onready var audio_flash_foxy = $Audio_Flash_Foxy
 @onready var audio_honk = $Audio_Honk
+@onready var audio_power_down = $Audio_PowerDown
 
 var heat_timer_accumulated : float = 0.0
 
@@ -166,7 +167,7 @@ func _on_nez_freddy_pressed():
 func lancer_appel_telephonique():
 	if phone_calls.has(night_index):
 		var chemin = phone_calls[night_index]
-		if FileAccess.file_exists(chemin):
+		if ResourceLoader.exists(chemin):
 			audio_phone_call.stream = load(chemin)
 			audio_phone_call.play()
 			if btn_mute_call: btn_mute_call.visible = true
@@ -202,61 +203,57 @@ func toggle_silent_ventilateur():
 		print("Ventilateur Silencieux : INACTIF")
 
 func _process(delta):
-	if est_coupure_courant or game_over: return 
-		
-	if Input.is_action_just_pressed("ui_accept"): 
-		if systeme_camera.has_method("toggle_monitor"):
-			systeme_camera.toggle_monitor()
-			if audio_monitor.stream: audio_monitor.play()
-			
-			if systeme_camera.est_ouvert:
-				if porte_gauche.has_method("_on_light_stop"): porte_gauche._on_light_stop()
-				if porte_droite.has_method("_on_light_stop"): porte_droite._on_light_stop()
-				
-	if night_index >= 3:
-		
-		if Input.is_action_just_pressed("toggle_fan"):
-			toggle_ventilateur()
-			
-		if Input.is_action_just_pressed("toggle_silent_fan"):
-			toggle_silent_ventilateur()
-	else:
-		
-		if not ventilateur_actif:
-			ventilateur_actif = true
-			if audio_fan and not audio_fan.playing: audio_fan.play()
-			
-		if silent_ventilateur_active:
-			silent_ventilateur_active = false
+	# Si Game Over, on arrête tout
+	if game_over: return 
 	
+	# --- 1. INPUTS (Bloqués si coupure de courant) ---
+	if not est_coupure_courant:
+		if Input.is_action_just_pressed("ui_accept"): 
+			if systeme_camera.has_method("toggle_monitor"):
+				systeme_camera.toggle_monitor()
+				if audio_monitor.stream: audio_monitor.play()
+				
+				if systeme_camera.est_ouvert:
+					if porte_gauche.has_method("_on_light_stop"): porte_gauche._on_light_stop()
+					if porte_droite.has_method("_on_light_stop"): porte_droite._on_light_stop()
+					
+		if night_index >= 3:
+			if Input.is_action_just_pressed("toggle_fan"): toggle_ventilateur()
+			if Input.is_action_just_pressed("toggle_silent_fan"): toggle_silent_ventilateur()
+		else:
+			# Logique auto pour nuits 1-2
+			if not ventilateur_actif:
+				ventilateur_actif = true
+				if audio_fan and not audio_fan.playing: audio_fan.play()
+			if silent_ventilateur_active:
+				silent_ventilateur_active = false
+	
+	# --- 2. CAMERA SCROLL (Autorisé même sans courant !) ---
+	# On peut regarder autour de soi dans le noir
 	if systeme_camera and not systeme_camera.est_ouvert:
 		gestion_camera_scroll(delta)
 	
-	# --- GESTION DU TEMPS ---
+	# --- 3. GESTION DU TEMPS (Autorisé sans courant pour pouvoir gagner à 6AM) ---
 	timer_seconds += delta
 	if timer_seconds >= hour_duration:
 		timer_seconds = 0.0
 		passer_heure_suivante()
 
-	# --- GESTION BATTERIE/TEMP ---
-	calculer_drain_batterie(delta)
-	calculer_temperature(delta)
+	# --- 4. SYSTEMES (Batterie, Temp, IA) ---
+	# On ne calcule le drain et la temp que s'il y a du courant
+	if not est_coupure_courant:
+		calculer_drain_batterie(delta)
+		calculer_temperature(delta)
 	
-	# --- GESTION IA ROBOTS ---
+	# L'IA continue de tourner (pour que Freddy s'approche pendant le blackout)
+	# Mais on peut limiter les autres si on veut. Ici on laisse tourner.
 	for i in range(animatronics_instances.size()):
 		var bot = animatronics_instances[i]
-		
 		var ai_level_to_use = 0
-		
 		if night_index == 7:
-			
-			ai_level_to_use = bot.current_ai_level # (Niveau défini dans le menu)
-				
+			ai_level_to_use = bot.current_ai_level
 		else:
-			# NUITS NORMALES (1-6)
 			ai_level_to_use = GameData.get_ai_level(bot.json_index, night_index, current_hour)
-			bot.current_ai_level = ai_level_to_use
-		
 		bot.process_ai(delta, ai_level_to_use)
 		
 	process_golden_freddy(delta)
@@ -324,7 +321,7 @@ func calculer_temperature(delta):
 		silent_fan_timer += delta
 		if silent_fan_timer >= 0.5:
 			silent_fan_timer = 0.0
-			if randf() < 0.7:
+			if randf() < 0.6:
 				temperature -= 1.0
 				
 	else:
@@ -440,17 +437,67 @@ func calculer_drain_batterie(delta):
 	if batterie <= 0: trigger_blackout()
 
 func trigger_blackout():
+	if est_coupure_courant or game_over: return
 	print("PLUS DE COURANT !")
-	est_coupure_courant = true
-	batterie = 0
-	label_batterie.text = "0%"
-	ventilateur_actif = false
-	if audio_fan: audio_fan.stop()
 	
+	est_coupure_courant = true
+	batterie = 0.0
+	
+	# 1. Couper les systèmes
+	ventilateur_actif = false
+	silent_ventilateur_active = false
+	light_left_on = false
+	light_right_on = false
+	
+	if audio_fan: audio_fan.stop()
+	if audio_ambiance: audio_ambiance.stop()
+	
+	# Fermer le moniteur de force
+	if systeme_camera.est_ouvert:
+		systeme_camera.toggle_monitor()
+	
+	# Couper les portes
 	for porte in portes:
 		if porte.has_method("couper_courant"): porte.couper_courant()
 	if systeme_camera.has_method("couper_courant_camera"): systeme_camera.couper_courant_camera()
+	
+	# 2. Mise à jour visuelle (Tout noir)
+	label_batterie.text = "0%"
+	game_ui.visible = false # Cache l'interface
+	
+	# On met l'image normale mais très sombre
+	background.texture = tex_normal
+	background.modulate = Color(0.1, 0.1, 0.1, 1) # Assombri presque totalement
+	
+	# 3. Lancer la séquence audio/jumpscare
+	sequence_blackout_freddy()
 
+func sequence_blackout_freddy():
+	# A. Son de coupure ("Bzzzt")
+	if audio_power_down:
+		audio_power_down.play()
+		await audio_power_down.finished
+	
+	# B. Petit délai d'attente dans le noir (Tension)
+	await get_tree().create_timer(randf_range(3.0, 5.0)).timeout
+	if game_over: return # Si 6AM a sonné entre temps, on arrête
+	
+	# C. Musique de Freddy (Toreador March)
+	if audio_music_box:
+		audio_music_box.volume_db = 0.0 # On remet le volume normal
+		audio_music_box.play()
+		
+		# La musique joue pendant un temps aléatoire (ex: 5 à 10 secondes)
+		await get_tree().create_timer(randf_range(5.0, 10.0)).timeout
+		
+		audio_music_box.stop()
+	
+	# D. Silence final (Avant la mort)
+	await get_tree().create_timer(randf_range(1.0, 3.0)).timeout
+	
+	# E. JUMPSCARE
+	if not game_over: # Vérification finale si on a gagné
+		trigger_jumpscare("Freddy")
 
 func spawn_animatronics():
 	for i in range(GameData.animatronics_data.size()):
@@ -554,6 +601,16 @@ func trigger_jumpscare(nom_tueur : String):
 func trigger_victory():
 	game_over = true
 	
+	if game_ui: game_ui.visible = true
+	
+	# Par contre, on cache les textes pour ne pas les voir par dessus la vidéo
+	if label_heure: label_heure.visible = false
+	if label_batterie: label_batterie.visible = false
+	if map_container: map_container.visible = false
+	
+	# On remet la lumière normale (au cas où le modulate du blackout affecte la vidéo)
+	if background: background.modulate = Color(1, 1, 1, 1)
+	
 	if batterie >= 20.0:
 		GameData.unlock_achievement("battery_master")
 		
@@ -581,6 +638,7 @@ func trigger_victory():
 	
 	GameData.win_night(night_index)
 	audio_fan.stop()
+	audio_power_down.stop()
 	audio_music_box.volume_db = -80.0
 	audio_music_box.stop()
 	audio_ambiance.stop()
@@ -590,7 +648,7 @@ func trigger_victory():
 	if label_batterie: label_batterie.visible = false
 	
 	if video_victoire:
-		video_victoire.z_index = 100 
+		video_victoire.z_index = 4000 
 		video_victoire.visible = true
 		video_victoire.play()
 		await video_victoire.finished

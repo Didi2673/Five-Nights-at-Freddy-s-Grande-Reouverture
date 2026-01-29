@@ -2,7 +2,7 @@
 	{
 		"id": 1,
 		"title": "Nuit 1",
-		"description": "Nuit d'introduction pour que vous vous appropriez les méchaniques du jeu.",
+		"description": "Nuit d'introduction pour que vous vous appropriez les \nméchaniques du jeu.",
 		"difficulty_label": "Facile",
 		"display_duration_text": "6 minutes",
 		"hour_duration_seconds": 60, 
@@ -61,7 +61,7 @@
 	},
 	{
 		"id": 7,
-		"title": "Nuit 7",
+		"title": "Nuit 7", 
 		"description": "Personnalisez l'IA des animatroniques.",
 		"difficulty_label": "???",
 		"display_duration_text": "9 minutes",
