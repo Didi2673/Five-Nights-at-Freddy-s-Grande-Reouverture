@@ -1,6 +1,6 @@
 [gd_scene load_steps=24 format=3 uid="uid://dvj4ixdew2cl5"]
 
-[ext_resource type="Script" uid="uid://dfukqvi7p8lin" path="res://remote_cctv.gd" id="1_og2t3"]
+[ext_resource type="Script" uid="uid://dfukqvi7p8lin" path="res://Scripts/remote_cctv.gd" id="1_og2t3"]
 [ext_resource type="Texture2D" uid="uid://cqi8pfb27eur0" path="res://map.png" id="1_r7ydr"]
 [ext_resource type="Texture2D" uid="uid://cqs0towftcxht" path="res://Cameras/Cam01_Bonnie_Chica_Freddy.png" id="2_dshet"]
 [ext_resource type="Texture2D" uid="uid://b22hkjv40xtxy" path="res://1.png" id="2_og2t3"]

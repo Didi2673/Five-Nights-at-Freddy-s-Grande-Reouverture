@@ -9,4 +9,4 @@ func _input(event):
 		charger_menu()
 
 func charger_menu():
-	get_tree().change_scene_to_file("res://main_menu.tscn")
+	get_tree().change_scene_to_file("res://Scenes/main_menu.tscn")

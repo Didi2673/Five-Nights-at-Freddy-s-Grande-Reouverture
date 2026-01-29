@@ -1,6 +1,6 @@
 [gd_scene load_steps=8 format=3 uid="uid://cfrhyxgrw488v"]
 
-[ext_resource type="Script" uid="uid://bqrnpcqqo0x77" path="res://camera.gd" id="1_xhfnw"]
+[ext_resource type="Script" uid="uid://bqrnpcqqo0x77" path="res://Scripts/camera.gd" id="1_rpqav"]
 
 [sub_resource type="Gradient" id="Gradient_xhfnw"]
 colors = PackedColorArray(0.22545668, 0.6897815, 0.97626144, 1, 1, 1, 1, 1)
@@ -24,7 +24,7 @@ ambient_light_source = 2
 ambient_light_energy = 0.46
 
 [node name="Player" type="Node3D"]
-script = ExtResource("1_xhfnw")
+script = ExtResource("1_rpqav")
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)

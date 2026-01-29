@@ -494,4 +494,4 @@ func _on_lancer_nuit():
 	
 	await get_tree().create_timer(2.5).timeout
 	
-	get_tree().change_scene_to_file("res://office.tscn")
+	get_tree().change_scene_to_file("res://Scenes/office.tscn")

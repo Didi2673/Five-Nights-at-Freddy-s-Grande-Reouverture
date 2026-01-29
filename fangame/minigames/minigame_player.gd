@@ -15,4 +15,4 @@ func _physics_process(delta):
 # Fonction pour finir le mini-jeu (à connecter à un signal)
 func terminer_minijeu():
 	print("Mini-jeu terminé, retour au titre.")
-	get_tree().change_scene_to_file("res://main_menu.tscn")
+	get_tree().change_scene_to_file("res://Scenes/main_menu.tscn")

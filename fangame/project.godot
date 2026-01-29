@@ -17,8 +17,8 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-GameData="*res://GameData.gd"
-GameManager="*res://GameManager.gd"
+GameData="*res://Scripts/GameData.gd"
+GameManager="*res://Scripts/GameManager.gd"
 
 [display]
 

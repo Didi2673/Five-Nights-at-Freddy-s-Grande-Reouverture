@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://b5qb1htp8x58"]
 
 [ext_resource type="FontFile" uid="uid://83xb00w7vpum" path="res://vcr_osd_mono.ttf" id="1_rf0o2"]
-[ext_resource type="Script" uid="uid://bumqjpk0n771t" path="res://warning_scene.gd" id="1_yyug2"]
+[ext_resource type="Script" uid="uid://bumqjpk0n771t" path="res://Scripts/warning_scene.gd" id="1_yyug2"]
 
 [node name="WarningScene" type="Control"]
 layout_mode = 3

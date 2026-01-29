@@ -1,212 +1,212 @@
 [gd_scene load_steps=71 format=3 uid="uid://d1jvp74qdhp23"]
 
-[ext_resource type="FontFile" uid="uid://83xb00w7vpum" path="res://vcr_osd_mono.ttf" id="1_06t4h"]
-[ext_resource type="Script" uid="uid://bbqvbkh1q8p0h" path="res://main_menu.gd" id="1_7vrkn"]
-[ext_resource type="Shader" uid="uid://hhifebkgqjh8" path="res://moniteur_cctv.gdshader" id="2_glbon"]
-[ext_resource type="FontFile" uid="uid://dh5jtdq4vw75k" path="res://LcdSolid.ttf" id="3_jix8l"]
-[ext_resource type="AudioStream" uid="uid://f1m0j2lgiypg" path="res://Sounds/camera_change.wav" id="4_glbon"]
-[ext_resource type="Texture2D" uid="uid://d05y5ylad3fdn" path="res://star.png" id="4_nlkkf"]
-[ext_resource type="Texture2D" uid="uid://bn0yyf1714mg" path="res://freddy.png" id="4_qe12f"]
-[ext_resource type="Texture2D" uid="uid://ctymrjpc6bnc3" path="res://night1.png" id="8_8qtwp"]
+[ext_resource type="Script" uid="uid://bbqvbkh1q8p0h" path="res://Scripts/main_menu.gd" id="1_yhxw7"]
+[ext_resource type="Texture2D" uid="uid://bn0yyf1714mg" path="res://freddy.png" id="2_trj04"]
+[ext_resource type="FontFile" uid="uid://83xb00w7vpum" path="res://vcr_osd_mono.ttf" id="3_16hvj"]
+[ext_resource type="Texture2D" uid="uid://d05y5ylad3fdn" path="res://star.png" id="4_vr1f0"]
+[ext_resource type="FontFile" uid="uid://dh5jtdq4vw75k" path="res://LcdSolid.ttf" id="5_t1dhk"]
+[ext_resource type="AudioStream" uid="uid://f1m0j2lgiypg" path="res://Sounds/camera_change.wav" id="6_5egv6"]
+[ext_resource type="Shader" uid="uid://hhifebkgqjh8" path="res://moniteur_cctv.gdshader" id="7_vtepg"]
+[ext_resource type="Texture2D" uid="uid://ctymrjpc6bnc3" path="res://night1.png" id="8_8dnnj"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_8qtwp"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(0, 0, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_dy7ct"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(600, 0, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_0o4t1"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(1200, 0, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_0k4wn"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(1800, 0, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_j5v2v"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(2400, 0, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_iotk1"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(3000, 0, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_w44g7"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(3600, 0, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_cm266"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(4200, 0, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_g8g3n"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(0, 338, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_8u0te"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(600, 338, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_oiatc"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(1200, 338, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_mg3m2"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(1800, 338, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_ojb7r"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(2400, 338, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_e5qqf"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(3000, 338, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_7bbuq"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(3600, 338, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_saq78"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(4200, 338, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_8uw0o"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(0, 676, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_ql5ya"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(600, 676, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_ka3nr"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(1200, 676, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_48knj"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(1800, 676, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_m2y5l"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(2400, 676, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_imjy1"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(3000, 676, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_u5051"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(3600, 676, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_v2sba"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(4200, 676, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_ai24q"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(0, 1014, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_qby1g"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(600, 1014, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_04soa"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(1200, 1014, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_u6vjd"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(1800, 1014, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_swr0i"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(2400, 1014, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_2urq5"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(3000, 1014, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_ix6bv"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(3600, 1014, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_2kjvi"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(4200, 1014, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_kvjq3"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(0, 1352, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_h1gbt"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(600, 1352, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_km3bq"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(1200, 1352, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_7r7u4"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(1800, 1352, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_gqv7n"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(2400, 1352, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_hkf1x"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(3000, 1352, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_e64eg"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(3600, 1352, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_wh67g"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(4200, 1352, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_v2pes"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(0, 1690, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_cy76q"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(600, 1690, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_w3tfb"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(1200, 1690, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_dfeea"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(1800, 1690, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_kojkm"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(2400, 1690, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_m3v73"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(3000, 1690, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_ivaxt"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(3600, 1690, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_ia58x"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(4200, 1690, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_f6p64"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(0, 2028, 600, 338)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_1gtdl"]
-atlas = ExtResource("4_qe12f")
+atlas = ExtResource("2_trj04")
 region = Rect2(600, 2028, 600, 338)
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_nbjkp"]
@@ -368,26 +368,26 @@ animations = [{
 }]
 
 [sub_resource type="LabelSettings" id="LabelSettings_7vrkn"]
-font = ExtResource("1_06t4h")
+font = ExtResource("3_16hvj")
 font_size = 100
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8qtwp"]
 bg_color = Color(0.16565639, 0.16565642, 0.16565639, 1)
 
 [sub_resource type="LabelSettings" id="LabelSettings_fu7sn"]
-font = ExtResource("1_06t4h")
+font = ExtResource("3_16hvj")
 font_size = 91
 
 [sub_resource type="LabelSettings" id="LabelSettings_nlkkf"]
-font = ExtResource("1_06t4h")
+font = ExtResource("3_16hvj")
 font_size = 34
 
 [sub_resource type="LabelSettings" id="LabelSettings_jix8l"]
-font = ExtResource("1_06t4h")
+font = ExtResource("3_16hvj")
 font_size = 34
 
 [sub_resource type="LabelSettings" id="LabelSettings_glbon"]
-font = ExtResource("1_06t4h")
+font = ExtResource("3_16hvj")
 font_size = 34
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_glbon"]
@@ -400,11 +400,11 @@ bg_color = Color(0.61229926, 1.504086e-06, 5.7756904e-07, 1)
 bg_color = Color(0.6117647, 0, 0, 1)
 
 [sub_resource type="LabelSettings" id="LabelSettings_qe12f"]
-font = ExtResource("3_jix8l")
+font = ExtResource("5_t1dhk")
 font_size = 70
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_nlkkf"]
-shader = ExtResource("2_glbon")
+shader = ExtResource("7_vtepg")
 shader_parameter/quantite_bruit = 0.2590000123025
 shader_parameter/densite = 0.626000029735
 
@@ -415,7 +415,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_7vrkn")
+script = ExtResource("1_yhxw7")
 
 [node name="Fond_Ecran" type="ColorRect" parent="."]
 layout_mode = 0
@@ -458,7 +458,7 @@ offset_top = 634.0
 offset_right = 350.0
 offset_bottom = 704.0
 theme_type_variation = &"FlatButton"
-theme_override_fonts/font = ExtResource("1_06t4h")
+theme_override_fonts/font = ExtResource("3_16hvj")
 theme_override_font_sizes/font_size = 70
 text = "Jouer"
 text_direction = 3
@@ -470,7 +470,7 @@ offset_top = 800.0
 offset_right = 436.0
 offset_bottom = 870.0
 theme_type_variation = &"FlatButton"
-theme_override_fonts/font = ExtResource("1_06t4h")
+theme_override_fonts/font = ExtResource("3_16hvj")
 theme_override_font_sizes/font_size = 70
 text = "Quitter"
 
@@ -481,7 +481,7 @@ offset_top = 1061.0
 offset_right = 354.0
 offset_bottom = 1149.0
 scale = Vector2(0.2, 0.2)
-theme_override_fonts/font = ExtResource("1_06t4h")
+theme_override_fonts/font = ExtResource("3_16hvj")
 theme_override_font_sizes/font_size = 10
 text = "v0.0.1"
 label_settings = SubResource("LabelSettings_7vrkn")
@@ -493,7 +493,7 @@ offset_top = 717.0
 offset_right = 395.0
 offset_bottom = 787.0
 theme_type_variation = &"FlatButton"
-theme_override_fonts/font = ExtResource("1_06t4h")
+theme_override_fonts/font = ExtResource("3_16hvj")
 theme_override_font_sizes/font_size = 70
 text = "Succès"
 text_direction = 3
@@ -510,17 +510,17 @@ alignment = 1
 [node name="Etoile_1" type="TextureRect" parent="Ecran_Accueil/Container_Etoiles"]
 visible = false
 layout_mode = 2
-texture = ExtResource("4_nlkkf")
+texture = ExtResource("4_vr1f0")
 
 [node name="Etoile_2" type="TextureRect" parent="Ecran_Accueil/Container_Etoiles"]
 visible = false
 layout_mode = 2
-texture = ExtResource("4_nlkkf")
+texture = ExtResource("4_vr1f0")
 
 [node name="Etoile_3" type="TextureRect" parent="Ecran_Accueil/Container_Etoiles"]
 visible = false
 layout_mode = 2
-texture = ExtResource("4_nlkkf")
+texture = ExtResource("4_vr1f0")
 
 [node name="Ecran_Selection" type="Control" parent="."]
 visible = false
@@ -588,7 +588,7 @@ offset_right = 312.0
 offset_bottom = 868.0
 focus_mode = 0
 theme_override_colors/icon_disabled_color = Color(1, 1, 1, 1)
-theme_override_fonts/font = ExtResource("1_06t4h")
+theme_override_fonts/font = ExtResource("3_16hvj")
 theme_override_font_sizes/font_size = 50
 theme_override_styles/normal = SubResource("StyleBoxFlat_glbon")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_nlkkf")
@@ -619,7 +619,7 @@ offset_top = 890.0
 offset_right = 966.0
 offset_bottom = 957.0
 theme_type_variation = &"FlatButton"
-theme_override_fonts/font = ExtResource("1_06t4h")
+theme_override_fonts/font = ExtResource("3_16hvj")
 theme_override_font_sizes/font_size = 50
 text = "Retour"
 
@@ -653,7 +653,7 @@ offset_top = 573.0
 offset_right = 191.0
 offset_bottom = 607.0
 theme_type_variation = &"FlatButton"
-theme_override_fonts/font = ExtResource("1_06t4h")
+theme_override_fonts/font = ExtResource("3_16hvj")
 theme_override_font_sizes/font_size = 20
 text = "Retour"
 
@@ -699,10 +699,10 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Audio_Transition" type="AudioStreamPlayer" parent="Ecran_Transition"]
-stream = ExtResource("4_glbon")
+stream = ExtResource("6_5egv6")
 
 [node name="Audio_Hover" type="AudioStreamPlayer" parent="."]
-stream = ExtResource("4_glbon")
+stream = ExtResource("6_5egv6")
 
 [node name="Effet_Static" type="ColorRect" parent="."]
 material = SubResource("ShaderMaterial_nlkkf")
@@ -732,7 +732,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-texture = ExtResource("8_8qtwp")
+texture = ExtResource("8_8dnnj")
 
 [connection signal="pressed" from="Ecran_Accueil/Bouton_Play" to="." method="_on_aller_vers_selection"]
 [connection signal="pressed" from="Ecran_Accueil/Bouton_Quitter" to="." method="_on_bouton_quitter_pressed"]

@@ -23,4 +23,4 @@ func _input(event):
 func retour_menu():
 	# On remet la variable à vide pour la propreté
 	GameData.image_fin_a_afficher = ""
-	get_tree().change_scene_to_file("res://main_menu.tscn")
+	get_tree().change_scene_to_file("res://Scenes/main_menu.tscn")

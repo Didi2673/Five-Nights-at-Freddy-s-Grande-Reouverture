@@ -596,7 +596,7 @@ func trigger_jumpscare(nom_tueur : String):
 		ecran_jumpscare.stop()
 		$Layer_Jumpscare.visible = false
 	
-	get_tree().change_scene_to_file("res://main_menu.tscn")
+	get_tree().change_scene_to_file("res://Scenes/main_menu.tscn")
 
 func trigger_victory():
 	game_over = true
@@ -671,7 +671,7 @@ func trigger_victory():
 		GameData.image_fin_a_afficher = chemin_image_fin
 		
 		# On charge la scène de fin
-		get_tree().change_scene_to_file("res://ending_screen.tscn")
+		get_tree().change_scene_to_file("res://Scenes/ending_screen.tscn")
 		return # On arrête la fonction ici, on ne lance pas de mini-jeu
 		
 	var nom_scene_minijeu = "res://minigames/Minigame_" + str(night_index) + ".tscn"
@@ -683,7 +683,7 @@ func trigger_victory():
 	else:
 		# Si pas de mini-jeu pour cette nuit (ex: Nuit 7), retour au menu
 		print("Pas de mini-jeu trouvé, retour menu.")
-		get_tree().change_scene_to_file("res://main_menu.tscn")
+		get_tree().change_scene_to_file("res://Scenes/main_menu.tscn")
 
 func process_golden_freddy(delta):
 	if game_over or est_coupure_courant: return
