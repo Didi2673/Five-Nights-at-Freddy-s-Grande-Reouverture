@@ -55,7 +55,7 @@ func _ready():
 	
 	if container_challenges:
 		generer_liste_challenges()
-		
+		container_challenges.visible = false
 		
 	ecran_accueil.visible = true
 	ecran_selection.visible = false
@@ -497,6 +497,7 @@ func update_details_panel(numero_nuit):
 			label_difficulte.visible = false
 			label_duree.visible = false
 			if container_custom: container_custom.visible = true
+			if container_challenges: container_challenges.visible = true
 			
 			# On reset les valeurs à 0 ou on garde les précédentes
 			# Pour l'instant on garde les valeurs précédentes
@@ -507,6 +508,7 @@ func update_details_panel(numero_nuit):
 			label_duree.visible = true
 			label_desc.text = info["description"]
 			if container_custom: container_custom.visible = false
+			if container_challenges: container_challenges.visible = false
 		
 		# Récupération du texte de difficulté
 		var diff_text = info["difficulty_label"]
