@@ -620,6 +620,14 @@ func trigger_victory():
 		
 	# --- SUCCÈS : 7/20 MODE ---
 	if night_index == 7:
+		if GameData.active_challenge_id != "custom":
+			var id_chal = GameData.active_challenge_id
+			
+			# Si pas déjà validé, on l'ajoute
+			if not id_chal in GameData.completed_challenges:
+				GameData.completed_challenges.append(id_chal)
+				GameData.save_game() # On sauvegarde immédiatemen
+				
 		var tous_a_20 = true
 		# On vérifie si un seul robot est en dessous de 20
 		# Attention : On vérifie TOUS les robots disponibles

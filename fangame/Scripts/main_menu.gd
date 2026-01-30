@@ -32,6 +32,8 @@ extends Control
 
 @onready var container_custom = $Ecran_Selection/Panneau_Details/Grid_Custom_Night
 
+@onready var container_challenges = $Ecran_Selection/Panneau_Details/Liste_Challenges
+
 var font_custom = load("res://vcr_osd_mono.ttf")
 
 var nuit_selectionnee_temp : int = 1
@@ -46,9 +48,14 @@ func _ready():
 	if ecran_intro_nuit_1: 
 		ecran_intro_nuit_1.visible = false
 		
+	
 	if container_custom:
 		container_custom.visible = false
 		preparer_interface_custom()
+	
+	if container_challenges:
+		generer_liste_challenges()
+		
 		
 	ecran_accueil.visible = true
 	ecran_selection.visible = false
@@ -85,6 +92,75 @@ func _ready():
 	btn_lancer.pressed.connect(_on_lancer_nuit)
 	verifier_etoiles()
 	update_details_panel(0) 
+	
+func generer_liste_challenges():
+	# Nettoyage
+	for child in container_challenges.get_children():
+		child.queue_free()
+	
+	for challenge in GameData.challenges_list:
+		var btn = Button.new()
+		
+		# --- MODIFICATIONS ICI ---
+		# 1. Application de la police importée (.ttf)
+		if font_custom:
+			btn.add_theme_font_override("font", font_custom)
+		
+		# 2. Augmentation de la taille de la police (Changez 24 par ce que vous voulez)
+		btn.add_theme_font_size_override("font_size", 35) 
+		
+		# Optionnel : Augmenter un peu la hauteur du bouton pour que le gros texte rentre bien
+		btn.custom_minimum_size.y = 40 
+		# -------------------------
+		
+		btn.text = challenge["name"]
+		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		
+		# Si le challenge est réussi
+		if challenge["id"] in GameData.completed_challenges:
+			#btn.text += " [★]"
+			btn.modulate = Color.GREEN
+		
+		# Connexion du signal
+		btn.pressed.connect(_on_challenge_clicked.bind(challenge))
+		
+		# Curseur main au survol (plus joli)
+		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		
+		container_challenges.add_child(btn)
+
+func _on_challenge_clicked(challenge_data):
+	print("Challenge sélectionné : ", challenge_data["name"])
+	GameData.active_challenge_id = challenge_data["id"]
+	
+	# 1. Mise à jour des données (Logique)
+	if challenge_data["id"] == "custom":
+		# Reset à 0
+		for key in GameData.custom_night_levels:
+			GameData.custom_night_levels[key] = 0
+	else:
+		# Applique les niveaux du challenge
+		# D'abord reset à 0 pour ceux qui ne sont pas dans le challenge
+		for key in GameData.custom_night_levels:
+			GameData.custom_night_levels[key] = 0
+			
+		var niveaux_impose = challenge_data["levels"]
+		for robot_nom in niveaux_impose:
+			GameData.custom_night_levels[robot_nom] = niveaux_impose[robot_nom]
+	
+	# 2. Reconstruire l'interface visuelle
+	# Cela va appeler preparer_interface_custom qui va lire les nouvelles données
+	# et appliquer les bons chiffres et l'état désactivé/activé des boutons.
+	rafraichir_valeurs_visuelles()
+
+func rafraichir_valeurs_visuelles():
+	# Cette fonction parcourt ton interface pour mettre à jour les textes "0", "10", "20"
+	# en lisant GameData.custom_night_levels.
+	# Tu devras peut-être adapter ton code existant pour retrouver les Labels.
+	# Une astuce est de nommer les labels "Label_NomDuRobot" ou de les mettre dans un dictionnaire lors de la création.
+	
+	# Exemple simple si tu refais la boucle de création :
+	preparer_interface_custom()
 	
 func _on_aller_vers_succes():
 	ecran_accueil.visible = false
@@ -185,45 +261,37 @@ func preparer_interface_custom():
 	for child in container_custom.get_children():
 		child.queue_free()
 	
-	# --- 1. CONFIGURATION DE LA GRILLE ---
-	container_custom.columns = 4
+	container_custom.columns = 4 
 	container_custom.add_theme_constant_override("h_separation", 30)
 	container_custom.add_theme_constant_override("v_separation", 50)
+	
+	# Est-ce qu'on est dans un challenge ? (Si oui, on désactive les boutons)
+	var est_en_challenge = (GameData.active_challenge_id != "custom")
 	
 	for data in GameData.animatronics_data:
 		var nom_bot = data["name"]
 		
-		# On ignore Springtrap (comme prévu) [cite: 29]
-		if nom_bot == "Springtrap": 
-			continue
+		if nom_bot == "Springtrap": continue
 			
-		# --- 2. LE CONTENEUR DU ROBOT ---
 		var boite_robot = VBoxContainer.new()
-		boite_robot.custom_minimum_size = Vector2(180, 150) # J'ai augmenté un peu la hauteur
+		boite_robot.custom_minimum_size = Vector2(180, 150)
 		boite_robot.alignment = BoxContainer.ALIGNMENT_CENTER
 		
-		# --- A. IMAGE DE L'ANIMATRONIQUE (Remplacement du Label) ---
+		# --- IMAGE ---
 		var icon_robot = TextureRect.new()
-		
-		# Taille de l'image (ajuste selon tes besoins, ex: 100x100)
 		icon_robot.custom_minimum_size = Vector2(200, 200) 
 		icon_robot.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon_robot.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		
-		# Construction du chemin : "res://ui/custom_icons/Bonnie.png"
-		# Assure-toi que ce chemin correspond à ton dossier !
 		var chemin_image = "res://IconesAnimatroniques/" + nom_bot + ".webp"
-		
 		if ResourceLoader.exists(chemin_image):
 			icon_robot.texture = load(chemin_image)
 		else:
-			# Si l'image n'existe pas, on met l'icône par défaut [cite: 24]
-			print("Image manquante pour : ", nom_bot)
 			icon_robot.texture = icon_defaut 
 			
 		boite_robot.add_child(icon_robot)
 		
-		# --- B. SÉLECTEUR (HBox) ---
+		# --- SÉLECTEUR ---
 		var boite_selecteur = HBoxContainer.new()
 		boite_selecteur.alignment = BoxContainer.ALIGNMENT_CENTER
 		boite_selecteur.add_theme_constant_override("separation", 15) 
@@ -234,15 +302,31 @@ func preparer_interface_custom():
 		btn_minus.custom_minimum_size = Vector2(40, 40) 
 		btn_minus.pressed.connect(_on_change_ai.bind(nom_bot, -1, boite_selecteur))
 		btn_minus.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		btn_minus.add_to_group("boutons_ai")
 		
-		# Label Valeur (0)
+		# --- CORRECTION 1 : Désactiver si challenge ---
+		btn_minus.disabled = est_en_challenge 
+		
+		# Label Valeur
 		var lbl_val = Label.new()
-		lbl_val.text = "0"
 		lbl_val.name = "Label_AI"
+		
+		# --- CORRECTION 2 : Lire la valeur actuelle au lieu de mettre "0" ---
+		var niveau_actuel = 0
+		if GameData.custom_night_levels.has(nom_bot):
+			niveau_actuel = GameData.custom_night_levels[nom_bot]
+		else:
+			GameData.custom_night_levels[nom_bot] = 0 # Init si inexistant
+			
+		lbl_val.text = str(niveau_actuel)
+		
+		# Couleur du texte selon la difficulté
+		update_label_color(lbl_val, niveau_actuel)
+		# -------------------------------------------------------------------
+
 		lbl_val.custom_minimum_size.x = 40 
 		lbl_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		
-		# Police du chiffre
 		if font_custom: 
 			lbl_val.add_theme_font_override("font", font_custom)
 			lbl_val.add_theme_font_size_override("font_size", 40) 
@@ -255,38 +339,37 @@ func preparer_interface_custom():
 		btn_plus.custom_minimum_size = Vector2(40, 40)
 		btn_plus.pressed.connect(_on_change_ai.bind(nom_bot, 1, boite_selecteur))
 		btn_plus.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		btn_plus.add_to_group("boutons_ai")
+		
+		# --- CORRECTION 1 : Désactiver si challenge ---
+		btn_plus.disabled = est_en_challenge
 		
 		boite_selecteur.add_child(btn_minus)
 		boite_selecteur.add_child(lbl_val)
 		boite_selecteur.add_child(btn_plus)
 		
 		boite_robot.add_child(boite_selecteur)
-		
-		# Ajout à la grille
 		container_custom.add_child(boite_robot)
-		
-		# Initialiser la valeur
-		if not GameData.custom_night_levels.has(nom_bot):
-			GameData.custom_night_levels[nom_bot] = 0
+
+# Petite fonction utilitaire pour ne pas dupliquer le code des couleurs
+func update_label_color(label, valeur):
+	if valeur == 0: label.modulate = Color.WHITE
+	elif valeur <= 10: label.modulate = Color.YELLOW
+	elif valeur < 20: label.modulate = Color.ORANGE
+	else: label.modulate = Color.RED
 
 # --- 2. GESTION DU CLIC (+ / -) ---
 func _on_change_ai(nom_bot, changement, conteneur_ref):
-	# 1. Calcul de la nouvelle valeur
 	var valeur_actuelle = GameData.custom_night_levels[nom_bot]
 	var nouvelle_valeur = clamp(valeur_actuelle + changement, 0, 20)
 	
-	# 2. Sauvegarde
 	GameData.custom_night_levels[nom_bot] = nouvelle_valeur
 	
-	# 3. Mise à jour visuelle
 	var label = conteneur_ref.get_node("Label_AI")
 	label.text = str(nouvelle_valeur)
 	
-	# Couleur selon difficulté
-	if nouvelle_valeur == 0: label.modulate = Color.WHITE
-	elif nouvelle_valeur <= 10: label.modulate = Color.YELLOW
-	elif nouvelle_valeur < 20: label.modulate = Color.ORANGE
-	else: label.modulate = Color.RED # 20 = Rouge
+	# Utilisation de la fonction utilitaire créée plus haut
+	update_label_color(label, nouvelle_valeur)
 
 
 # --- NAVIGATION ---
@@ -390,8 +473,8 @@ func verifier_etoiles():
 		
 	# --- ETOILE 3 : Le défi 20/20/20/20 ---
 	# On vérifie si le succès spécifique a été débloqué
-	if GameData.unlocked_achievements.has("20_20_mode"):
-		if etoile_3: etoile_3.visible = true
+	if GameData.completed_challenges.size() > 0:
+		etoile_3.visible = true
 
 func update_details_panel(numero_nuit):
 	if numero_nuit == 0:

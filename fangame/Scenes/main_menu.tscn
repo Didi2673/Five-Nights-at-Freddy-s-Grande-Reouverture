@@ -612,6 +612,16 @@ theme_override_constants/h_separation = 50
 theme_override_constants/v_separation = 30
 columns = 4
 
+[node name="Liste_Challenges" type="VBoxContainer" parent="Ecran_Selection/Panneau_Details"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+grow_horizontal = 0
+grow_vertical = 2
+
 [node name="Bouton_Retour" type="Button" parent="Ecran_Selection"]
 layout_mode = 0
 offset_left = 748.0

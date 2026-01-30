@@ -4,25 +4,78 @@ extends Node
 var nights_data = []
 var animatronics_data = []
 
-var index_nuit_selectionnee : int = 0
+# --- VARIABLES CHALLENGES ---
+var active_challenge_id : String = "custom" 
+var completed_challenges : Array = [] # Liste des ID réussis (ex: ["bear_attack", "ladies_night"])
 
+var challenges_list = [
+	{
+		"id": "custom",
+		"name": "Custom Night",
+		"description": "Configurez votre nuit.",
+		"levels": {} # Vide car c'est manuel
+	},
+	{
+		"id": "bear_attack",
+		"name": "Bear Attack",
+		"description": "Freddy et Golden Freddy.",
+		"levels": {"Freddy": 20, "Golden-Freddy": 20, "Mangle": 0, "Puppet": 0, "Bonnie": 0, "Chica": 0, "Foxy": 0}
+	},
+	{
+		"id": "ladies_night",
+		"name": "Ladies Night",
+		"description": "Chica, Puppet et Mangle sont actives.",
+		"levels": {"Chica": 20, "Mangle": 20, "Puppet": 20, "Freddy": 0, "Bonnie": 0, "Foxy": 0, "Golden-Freddy": 0}
+	},
+	{
+		"id": "foxy_foxy",
+		"name": "Foxy Foxy",
+		"description": "Foxy et Mangle",
+		"levels": {"Chica": 0, "Mangle": 20, "Puppet": 0, "Freddy": 0, "Bonnie": 0, "Foxy": 20, "Golden-Freddy": 0}
+	},
+	{
+		"id": "mad_bonnie",
+		"name": "Mad Bonnie",
+		"description": "Bonnie",
+		"levels": {"Chica": 0, "Mangle": 0, "Puppet": 0, "Freddy": 0, "Bonnie": 20, "Foxy": 0, "Golden-Freddy": 0}
+	},
+	{
+		"id": "20_20_20_20",
+		"name": "4/20 Mode",
+		"description": "4/20",
+		"levels": {"Freddy": 20, "Bonnie": 20, "Golden-Freddy": 0, "Puppet": 0, "Chica": 20, "Foxy": 20, "Mangle": 0}
+	},
+	{
+		"id": "fazbear_fever",
+		"name": "Fazbear Fever",
+		"description": "Tout le monde à 10",
+		"levels": {"Chica": 10, "Mangle": 10, "Puppet": 10, "Freddy": 10, "Bonnie": 10, "Foxy": 10, "Golden-Freddy": 10}
+	},
+	{
+		"id": "golden_freddy",
+		"name": "Golden Freddy",
+		"description": "Tout le monde",
+		"levels": {"Chica": 20, "Mangle": 20, "Puppet": 20, "Freddy": 20, "Bonnie": 20, "Foxy": 20, "Golden-Freddy": 20}
+	}
+]
+
+var index_nuit_selectionnee : int = 0
 var image_fin_a_afficher : String = ""
 
-var achievements_data = [] # Le contenu du JSON
+var achievements_data = [] 
 var unlocked_achievements = [] # Liste des IDs débloqués ["night_1", "honk"]
 
 # --- DONNÉES GLOBALES ---
-var save_path = "user://savegame.save" # Le chemin du fichier (caché dans l'ordi du joueur)
-var nights_json_path = "res://data/nights.json" # Chemin vers ton fichier
+var save_path = "user://savegame.save"
+var nights_json_path = "res://data/nights.json"
 
 # Par défaut, on est à la nuit 1
 var unlocked_night : int = 1 
-var current_night_played : int = 1 # Celle qu'on va lancer
+var current_night_played : int = 1 
 
 var custom_night_levels : Dictionary = {} 
 
 func reset_custom_levels():
-	# Par défaut, on met tout le monde à 0
 	custom_night_levels.clear()
 	for anim in animatronics_data:
 		custom_night_levels[anim["name"]] = 0
@@ -31,9 +84,8 @@ func _ready():
 	load_nights_data()
 	load_data()
 	achievements_data = load_json_file("res://data/achievements.json")
-	load_game()
-	
-	
+	load_game() # Charge la sauvegarde au démarrage
+
 # --- CHARGEMENT DU JSON ---
 func load_nights_data():
 	if FileAccess.file_exists(nights_json_path):
@@ -50,23 +102,24 @@ func load_nights_data():
 	else:
 		print("ERREUR CRITIQUE : Fichier nights.json introuvable !")
 
-# Fonction utilitaire pour récupérer les infos d'une nuit précise
 func get_night_info(night_number : int):
-	# Les tableaux commencent à 0, donc Nuit 1 est à l'index 0
 	var index = night_number - 1
 	if index >= 0 and index < nights_data.size():
 		return nights_data[index]
 	return null
-	
+
+# --- SYSTÈME DE SAUVEGARDE (MODIFIÉ) ---
 func save_game():
 	var file = FileAccess.open(save_path, FileAccess.WRITE)
 	if file:
 		var data = {
 			"unlocked": unlocked_night,
-			"achievements": unlocked_achievements # On sauvegarde la liste
+			"achievements": unlocked_achievements,
+			"completed_challenges": completed_challenges # <--- ON SAUVEGARDE LES CHALLENGES ICI
 		}
 		file.store_string(JSON.stringify(data))
 		file.close()
+		print("Jeu sauvegardé avec succès.")
 
 func load_game():
 	if FileAccess.file_exists(save_path):
@@ -74,30 +127,29 @@ func load_game():
 		var json = JSON.new()
 		if json.parse(file.get_as_text()) == OK:
 			var data = json.get_data()
+			
 			if data.has("unlocked"): unlocked_night = data["unlocked"]
 			
-			# Chargement des succès
 			if data.has("achievements"):
 				unlocked_achievements = data["achievements"]
+				
+			# <--- ON CHARGE LES CHALLENGES ICI
+			if data.has("completed_challenges"):
+				completed_challenges = data["completed_challenges"]
+				print("Challenges chargés : ", completed_challenges)
+		file.close()
 
 func unlock_achievement(ach_id : String):
-	# Si on l'a déjà, on ne fait rien
 	if unlocked_achievements.has(ach_id): return
 	
-	# Sinon, on l'ajoute et on sauvegarde
 	print(">>> SUCCÈS DÉBLOQUÉ : ", ach_id)
 	unlocked_achievements.append(ach_id)
 	save_game()
-	
-	# Optionnel : Tu pourrais émettre un signal ici pour afficher une popup en jeu
-	# signal achievement_unlocked(ach_id)
 
 func win_night(n_terminee : int):
 	print("Victoire validée pour la nuit : ", n_terminee)
 	
-	# Si on vient de finir la nuit qu'on devait débloquer
 	if n_terminee == unlocked_night:
-		# On vérifie qu'il existe une nuit suivante
 		if unlocked_night < nights_data.size():
 			unlocked_night += 1
 			save_game()
@@ -112,7 +164,6 @@ func load_data():
 	animatronics_data = load_json_file("res://data/animatronics.json")
 	print("Données chargées : ", nights_data.size(), " nuits et ", animatronics_data.size(), " animatroniques.")
 
-# Fonction utilitaire pour lire un JSON
 func load_json_file(path : String):
 	if not FileAccess.file_exists(path):
 		print("ERREUR: Fichier introuvable ", path)
@@ -129,30 +180,20 @@ func load_json_file(path : String):
 		print("ERREUR JSON dans ", path, " : ", json.get_error_message())
 		return []
 
-# Fonction pour récupérer l'IA d'un animatronique pour une nuit et une heure précise
 func get_ai_level(animatronic_index: int, night_index: int, hour: int) -> int:
-	# Sécurité de base
 	if animatronics_data.size() == 0 or animatronic_index >= animatronics_data.size():
 		return 0
 		
 	var data = animatronics_data[animatronic_index]
-	
-	# Conversion : Nuit 1 (Humain) devient Index 0 (Tableau)
 	var real_night_index = max(0, night_index - 1)
 	
-	# --- CORRECTION ICI ---
-	# On vérifie si l'index dépasse la taille du tableau.
-	# Si j'ai 5 nuits, les index vont de 0 à 4.
-	# Si je demande la nuit 5 (index 4), 4 >= 5 est FAUX, donc ça passe. C'est bon !
 	if real_night_index >= data["ai_levels"].size():
 		print("ATTENTION : Pas de données IA pour la nuit ", night_index, ". IA forcée à 0.")
 		return 0 
 	
 	var night_ai = data["ai_levels"][real_night_index]
 	
-	# Sécurité pour l'heure
 	if hour >= night_ai.size(): 
 		return night_ai[night_ai.size() - 1]
 	
 	return night_ai[hour]
-	

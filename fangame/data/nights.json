@@ -64,8 +64,8 @@
 		"title": "Nuit 7", 
 		"description": "Personnalisez l'IA des animatroniques.",
 		"difficulty_label": "???",
-		"display_duration_text": "9 minutes",
-		"hour_duration_seconds": 90,
+		"display_duration_text": "7 minutes 30",
+		"hour_duration_seconds": 75,
 		"start_hour": 0,
 		"end_hour": 6,
 		"type": "custom"
