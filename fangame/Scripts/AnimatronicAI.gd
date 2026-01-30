@@ -137,15 +137,23 @@ func attempt_logic(ai_level):
 	
 	if nom == "Freddy":
 		if current_path_index == 0:
-			var occupants_scene = camera_system_ref.etat_salles["Cam01"]
-			
-			if occupants_scene.has("Bonnie") or occupants_scene.has("Chica"):
-				return 
+			# --- MODIFICATION ICI : GESTION DU CHALLENGE ---
+			# Par défaut, Freddy respecte la règle.
+			# MAIS si on est dans le challenge "bear_attack", il l'ignore.
+			if GameData.active_challenge_id != "bear_attack":
 				
+				var occupants_scene = camera_system_ref.etat_salles["Cam01"]
+				
+				# Si Bonnie OU Chica sont sur la scène, Freddy attend.
+				if occupants_scene.has("Bonnie") or occupants_scene.has("Chica"):
+					return 
+			# -----------------------------------------------
+
+		# 2. CONDITION VENTILATEUR
 		if not office_ref.ventilateur_actif:
 			return 
 
-		# Si ventilateur BRUYANT allumé, on tente le mouvement
+		# 3. TENTATIVE DE MOUVEMENT
 		var roll = randi_range(1, 20)
 		if roll <= ai_level:
 			if current_path_index == path_list.size() - 1:
