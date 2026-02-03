@@ -69,7 +69,7 @@ var videos_jumpscares = {
 @onready var container_barres = $UI/Barres_Container
 @onready var ventilateur = $Ventilateur
 
-var taux_drain = [0.15, 0.23, 0.40, 0.60, 0.80, 1.0]
+var taux_drain = [0.16, 0.33, 0.66, 1.0, 1.33, 1.66]
 var temperature : float = 60.0
 var temperature_min : float = 60.0
 var temperature_max : float = 120.0
@@ -80,8 +80,8 @@ var silent_fan_timer : float = 0.0
 
 @export var textures_barres : Array[Texture2D] 
 @onready var indicateur_usage = $UI/Indicateur_Usage
-var vitesse_chauffe : float = 1.5
-var vitesse_refroidissement : float = 0.5 
+var vitesse_chauffe : float = 4.5
+var vitesse_refroidissement : float = 1.5 
 @onready var label_temp = $UI/Label_Temperature 
 
 # --- LUMIERES ---
@@ -301,7 +301,7 @@ func _process(delta):
 	
 	
 func gestion_puppet(delta):
-	if game_over: return
+	if game_over or est_coupure_courant: return
 
 	var puppet_bot = null
 	for bot in animatronics_instances:
@@ -359,9 +359,9 @@ func calculer_temperature(delta):
 			temperature += vitesse_chauffe * delta
 			
 		silent_fan_timer += delta
-		if silent_fan_timer >= 0.5:
+		if silent_fan_timer >= 0.2:
 			silent_fan_timer = 0.0
-			if randf() < 0.6:
+			if randf() < 0.7:
 				temperature -= 1.0
 				
 	else:
@@ -519,18 +519,8 @@ func sequence_blackout_freddy():
 		await audio_power_down.finished
 	
 	# B. Petit délai d'attente dans le noir (Tension)
-	await get_tree().create_timer(randf_range(3.0, 5.0)).timeout
+	await get_tree().create_timer(randf_range(1.0, 3.0)).timeout
 	if game_over: return # Si 6AM a sonné entre temps, on arrête
-	
-	# C. Musique de Freddy (Toreador March)
-	if audio_music_box:
-		audio_music_box.volume_db = 0.0 # On remet le volume normal
-		audio_music_box.play()
-		
-		# La musique joue pendant un temps aléatoire (ex: 5 à 10 secondes)
-		await get_tree().create_timer(randf_range(5.0, 10.0)).timeout
-		
-		audio_music_box.stop()
 	
 	# D. Silence final (Avant la mort)
 	await get_tree().create_timer(randf_range(1.0, 3.0)).timeout

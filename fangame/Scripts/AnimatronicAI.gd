@@ -105,7 +105,7 @@ func reculer_sur_chemin(index_cible):
 func process_ai(delta, current_ai_level_arg):
 	current_ai_level = current_ai_level_arg
 	
-	if office_ref.game_over: return
+	if office_ref.game_over or office_ref.est_coupure_courant: return
 	
 	
 	if nom == "Chica":
@@ -137,12 +137,14 @@ func process_ai(delta, current_ai_level_arg):
 		attempt_logic(current_ai_level)	
 		
 func verifier_porte_ouverte():
+	if office_ref.est_coupure_courant: return
 	if porte_cible and not porte_cible.est_fermee:
 		if randf() < 0.05: 
 			print("CHICA EST RENTRÉE !")
 			office_ref.trigger_jumpscare("Chica")
 
 func attempt_logic(ai_level):
+	if office_ref.est_coupure_courant: return
 	if nom == "Foxy":
 		gerer_foxy(ai_level)
 		return
@@ -245,6 +247,7 @@ func attempt_logic(ai_level):
 
 # --- MANGLE ---
 func attempt_mangle_move(ai_level):
+	if office_ref.est_coupure_courant: return
 	# 1. EST-ELLE À LA POSITION D'ATTAQUE ?
 	if current_path_index == path_list.size() - 1:
 		
@@ -379,6 +382,7 @@ func jouer_rire_freddy():
 		office_ref.get_node("Audio_Freddy_Laugh").play()
 
 func tenter_attaque():
+	if office_ref.est_coupure_courant: return
 	# Freddy tue s'il arrive à la fin de son chemin (Office_Vent_Pos)
 	if nom == "Freddy":
 		office_ref.trigger_jumpscare("Freddy")
@@ -410,7 +414,7 @@ func lancer_attaque_foxy():
 	knock_door_foxy()
 
 func knock_door_foxy():
-	if office_ref.game_over: return
+	if office_ref.game_over or office_ref.est_coupure_courant: return
 	if porte_cible and porte_cible.est_fermee:
 		print("FOXY BLOQUÉ")
 		office_ref.batterie -= 5.0
@@ -455,6 +459,7 @@ func process_springtrap_logic(ai_level):
 			attaquer_porte("right")
 
 func verifier_attaque_ventilation():
+	if office_ref.est_coupure_courant: return
 	if camera_system_ref.vent_scelle:
 		print("BLOCKED! Springtrap heurte la grille.")
 		if office_ref.has_node("Audio_Vent_Bang"):

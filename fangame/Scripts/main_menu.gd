@@ -57,6 +57,8 @@ var font_custom = load("res://vcr_osd_mono.ttf")
 var nuit_selectionnee_temp : int = 1
 
 func _ready():
+	get_window().content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
+	get_window().content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
 	if ecran_transition:
 		ecran_transition.visible = false
 		
