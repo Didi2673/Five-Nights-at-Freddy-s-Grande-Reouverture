@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3 uid="uid://dvj4ixdew2cl5"]
+[gd_scene load_steps=25 format=3 uid="uid://dvj4ixdew2cl5"]
 
 [ext_resource type="Script" uid="uid://dfukqvi7p8lin" path="res://Scripts/remote_cctv.gd" id="1_og2t3"]
 [ext_resource type="Texture2D" uid="uid://cqi8pfb27eur0" path="res://map.png" id="1_r7ydr"]
@@ -9,6 +9,7 @@
 [ext_resource type="Texture2D" uid="uid://tnikqqej4jmu" path="res://4.png" id="5_ocw4j"]
 [ext_resource type="Texture2D" uid="uid://b1u67my7h6au6" path="res://5.png" id="6_73acr"]
 [ext_resource type="Texture2D" uid="uid://bdet8cuo1lm86" path="res://6.png" id="7_b4apj"]
+[ext_resource type="Texture2D" uid="uid://d3r2x3e0q0qpc" path="res://TheWarningSign.webp" id="8_87cd1"]
 [ext_resource type="Texture2D" uid="uid://df4fmx07l2okw" path="res://7.png" id="8_job2a"]
 [ext_resource type="Texture2D" uid="uid://dhhv52ide45p" path="res://8.png" id="9_71ynp"]
 [ext_resource type="Texture2D" uid="uid://uigeyji6fnad" path="res://9.png" id="10_nsts7"]
@@ -99,6 +100,16 @@ offset_bottom = 1050.0
 scale = Vector2(0.2, 0.2)
 icon = ExtResource("5_ocw4j")
 
+[node name="Icone_Danger" type="TextureRect" parent="Container_Boutons/Bouton_CAM04"]
+visible = false
+layout_mode = 0
+offset_left = -300.0
+offset_right = 300.0
+offset_bottom = 500.0
+scale = Vector2(0.5, 0.5)
+mouse_filter = 2
+texture = ExtResource("8_87cd1")
+
 [node name="Bouton_CAM05" type="Button" parent="Container_Boutons"]
 layout_mode = 0
 offset_left = 1790.0
@@ -107,6 +118,16 @@ offset_right = 2198.0
 offset_bottom = 940.0
 scale = Vector2(0.2, 0.2)
 icon = ExtResource("6_73acr")
+
+[node name="Icone_Danger" type="TextureRect" parent="Container_Boutons/Bouton_CAM05"]
+visible = false
+layout_mode = 0
+offset_left = -300.0
+offset_right = 300.0
+offset_bottom = 500.0
+scale = Vector2(0.5, 0.5)
+mouse_filter = 2
+texture = ExtResource("8_87cd1")
 
 [node name="Bouton_CAM06" type="Button" parent="Container_Boutons"]
 layout_mode = 0
@@ -126,6 +147,16 @@ offset_bottom = 1172.0
 scale = Vector2(0.2, 0.2)
 icon = ExtResource("8_job2a")
 
+[node name="Icone_Danger" type="TextureRect" parent="Container_Boutons/Bouton_CAM07"]
+visible = false
+layout_mode = 0
+offset_left = -300.0
+offset_right = 300.0
+offset_bottom = 500.0
+scale = Vector2(0.5, 0.5)
+mouse_filter = 2
+texture = ExtResource("8_87cd1")
+
 [node name="Bouton_CAM08" type="Button" parent="Container_Boutons"]
 layout_mode = 0
 offset_left = 1549.0
@@ -134,6 +165,16 @@ offset_right = 1957.0
 offset_bottom = 1139.0
 scale = Vector2(0.2, 0.2)
 icon = ExtResource("9_71ynp")
+
+[node name="Icone_Danger" type="TextureRect" parent="Container_Boutons/Bouton_CAM08"]
+visible = false
+layout_mode = 0
+offset_left = -300.0
+offset_right = 300.0
+offset_bottom = 500.0
+scale = Vector2(0.5, 0.5)
+mouse_filter = 2
+texture = ExtResource("8_87cd1")
 
 [node name="Bouton_CAM09" type="Button" parent="Container_Boutons"]
 layout_mode = 0

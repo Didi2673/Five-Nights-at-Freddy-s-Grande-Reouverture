@@ -24,8 +24,8 @@
 		"title": "Nuit 3",
 		"description": "Foxy et Freddy vont ajouter une nouvelle pression",
 		"difficulty_label": "Normal",
-		"display_duration_text": "8 minutes",
-		"hour_duration_seconds": 80, 
+		"display_duration_text": "9 minutes",
+		"hour_duration_seconds": 90, 
 		"start_hour": 0,
 		"end_hour": 6
 	},

@@ -7,6 +7,12 @@ var json_index : int = 0
 var path_list : Array = []
 var current_path_index : int = 0
 
+var sb_active : bool = false        # Est-il apparu ?
+var sb_kill_timer : float = 8.0    # Le joueur a 10s pour réagir
+var sb_stare_timer : float = 0.0    # Le joueur doit le regarder 3s
+var sb_room : String = ""
+
+
 # --- RÉFÉRENCES ---
 var camera_system_ref : Node 
 var porte_cible : Node2D 
@@ -30,6 +36,9 @@ func setup(data, _camera_system_ref, _porte_cible, _office_ref, _real_index):
 	camera_system_ref = _camera_system_ref
 	porte_cible = _porte_cible
 	office_ref = _office_ref
+	
+	if nom == "Shadow-Bonnie":
+		return
 	
 	# INITIALISATION SÉCURISÉE
 	var salle_depart = path_list[0]
@@ -103,17 +112,29 @@ func process_ai(delta, current_ai_level_arg):
 		if current_path_index == path_list.size() - 1:
 			verifier_porte_ouverte()
 			return
-
-	if nom == "Freddy":
-		if not office_ref.ventilateur_actif:
-			reset_timer(current_ai_level)
+			
+	if nom == "Shadow-Bonnie" and sb_active:
+		
+		# 1. KILL TIMER (Le joueur a 30s pour réagir)
+		sb_kill_timer -= delta
+		if sb_kill_timer <= 0:
+			office_ref.trigger_jumpscare(nom)
 			return
 
+		if camera_system_ref.est_ouvert and camera_system_ref.camera_actuelle == sb_room:
+			sb_stare_timer += delta
+			
+			if sb_stare_timer >= 1.0: 
+				desactiver_shadow_bonnie()
+		else:
+			pass
+
+	
 	move_timer -= delta
 	
 	if move_timer <= 0:
 		reset_timer(current_ai_level)
-		attempt_logic(current_ai_level)
+		attempt_logic(current_ai_level)	
 		
 func verifier_porte_ouverte():
 	if porte_cible and not porte_cible.est_fermee:
@@ -136,37 +157,74 @@ func attempt_logic(ai_level):
 
 	
 	if nom == "Freddy":
-		if current_path_index == 0:
-			# --- MODIFICATION ICI : GESTION DU CHALLENGE ---
-			# Par défaut, Freddy respecte la règle.
-			# MAIS si on est dans le challenge "bear_attack", il l'ignore.
-			if GameData.active_challenge_id != "bear_attack":
+		if current_path_index == path_list.size() - 1:
+			
+			# CONDITION DE DÉFENSE : Ventilateur éteint
+			if not office_ref.ventilateur_actif:
+				print("Ventilateur éteint : Freddy repart forcement.")
 				
-				var occupants_scene = camera_system_ref.etat_salles["Cam01"]
-				
-				# Si Bonnie OU Chica sont sur la scène, Freddy attend.
-				if occupants_scene.has("Bonnie") or occupants_scene.has("Chica"):
-					return 
-			# -----------------------------------------------
-
-		# 2. CONDITION VENTILATEUR
-		if not office_ref.ventilateur_actif:
-			return 
-
-		# 3. TENTATIVE DE MOUVEMENT
+				# On force le départ sans lancer de dés !
+				var index_retour = 1 # Caméra de repli (vérifie ton index)
+				changer_position(index_retour)
+				office_ref.jouer_rire_freddy()
+				return
+		# 1. On lance le dé (RNG)
 		var roll = randi_range(1, 20)
-		if roll <= ai_level:
-			if current_path_index == path_list.size() - 1:
+		
+		# Si le jet échoue, Freddy ne fait rien
+		if roll > ai_level:
+			return
+
+		# 2. EST-IL À LA DERNIÈRE CAMÉRA ? (La Ventilation)
+		# On vérifie s'il est au bout de son chemin
+		if current_path_index == path_list.size() - 1:
+			
+			# C'est ici que la mécanique du ventilateur entre en jeu !
+			if office_ref.ventilateur_actif:
+				# A. Le ventilateur fait du bruit -> Freddy entend et ATTAQUE
+				print("Freddy attaque car le ventilateur est allumé !")
 				tenter_attaque()
+				
 			else:
-				avancer_sur_chemin()
-		return
+				# B. Le ventilateur est coupé -> Freddy pense qu'il n'y a personne
+				print("Ventilateur éteint : Freddy repart.")
+				
+				# Il recule vers la Caméra 2
+				# ATTENTION : Il faut trouver l'index de la Cam 02 dans ta liste.
+				# Souvent : 0=Scène, 1=Dining, 2=Cam02... A toi de vérifier ton JSON/Liste.
+				# Disons que c'est l'index 2 pour l'exemple :
+				var index_retour = 1 
+				
+				changer_position(index_retour)
+				office_ref.jouer_rire_freddy() # Il rit en partant
+				
+		else:
+			# 3. MOUVEMENT NORMAL (Il avance vers l'office)
+			# Il avance d'une case
+			avancer_sur_chemin()
+			
+			# Il rit à chaque mouvement
+			office_ref.jouer_rire_freddy()
+			
+		return # Fin de la logique Freddy pour ce tour
 
 	# --- LOGIQUE CHICA ---
 	if nom == "Chica":
 		var roll = randi_range(1, 20)
 		if roll <= ai_level:
 			avancer_sur_chemin()
+		return
+		
+	if nom == "Shadow-Bonnie":
+		# Si il est déjà là, on ne fait rien (on attend que le joueur gère la situation)
+		if sb_active:
+			return
+
+		# Jet de dés classique pour voir s'il décide d'attaquer
+		var roll = randi_range(1, 20)
+		if roll <= ai_level:
+			faire_apparaitre_shadow_bonnie()
+		
 		return
 		
 	# --- LOGIQUE PUPPET ---
@@ -187,20 +245,77 @@ func attempt_logic(ai_level):
 
 # --- MANGLE ---
 func attempt_mangle_move(ai_level):
-	var roll = randi_range(1, 20)
-	if roll > ai_level: return
-
+	# 1. EST-ELLE À LA POSITION D'ATTAQUE ?
 	if current_path_index == path_list.size() - 1:
+		
+		# CONDITION DE DÉFENSE : Vent scellé
 		if camera_system_ref.vent_scelle:
-			print("BLOCKED! Mangle heurte la ventilation scellée.")
+			print("BLOCKED! Mangle heurte la ventilation scellée (Départ Forcé).")
 			tenter_jouer_son_vent()
-			changer_position(0)
-		else:
-			print("MANGLE ENTRE DANS LE BUREAU !")
-			office_ref.trigger_jumpscare("Mangle")
+			changer_position(0) # Retour départ
+			return # On s'arrête là, pas besoin de dés
+			
+		# Si vent non scellé, on continue (risque de jumpscare)
+	
+	# 2. LOGIQUE NORMALE (Déplacement ou Attaque si vent ouvert)
+	var roll = randi_range(1, 20)
+	if roll > ai_level: return # Echec du dé
+
+	# Mouvement ou Attaque standard
+	if current_path_index == path_list.size() - 1:
+		# Si on arrive ici, c'est que le vent n'était PAS scellé
+		print("MANGLE ENTRE DANS LE BUREAU !")
+		office_ref.trigger_jumpscare("Mangle")
 	else:
 		avancer_sur_chemin()
+
+func faire_apparaitre_shadow_bonnie():
+	if path_list.size() == 0: return
+	
+	# 1. Choisir une salle au hasard
+	sb_room = path_list.pick_random()
+	
+	# 2. Activer les stats (avec les valeurs corrigées précédemment)
+	sb_active = true
+	sb_kill_timer = 8.0 
+	sb_stare_timer = 0.0
+	
+	# 3. L'ajouter visuellement à la caméra
+	if camera_system_ref.etat_salles.has(sb_room):
 		
+		# --- CORRECTION ICI : ON VÉRIFIE AVANT D'AJOUTER ---
+		# On n'ajoute le nom QUE s'il n'est pas déjà dans la liste
+		if not camera_system_ref.etat_salles[sb_room].has(nom):
+			camera_system_ref.etat_salles[sb_room].append(nom)
+			
+		camera_system_ref.mettre_a_jour_image()
+		
+		if camera_system_ref.has_method("afficher_danger"):
+			camera_system_ref.afficher_danger(sb_room, true)
+		
+	print("SHADOW BONNIE EST APPARU EN ", sb_room)
+
+func desactiver_shadow_bonnie():
+	print("SHADOW BONNIE REPOUSSÉ !")
+	
+	if camera_system_ref.has_method("afficher_danger"):
+		camera_system_ref.afficher_danger(sb_room, false)
+	
+	# 1. Retirer visuellement
+	if camera_system_ref.etat_salles.has(sb_room):
+		camera_system_ref.etat_salles[sb_room].erase(nom)
+		camera_system_ref.mettre_a_jour_image()
+	
+	# 2. Reset des variables
+	sb_active = false
+	sb_room = ""
+	sb_kill_timer = 8.0
+	sb_stare_timer = 0.0
+	
+	# 3. Reset du timer principal pour lui donner un temps de pause avant de pouvoir revenir
+	reset_timer(0)
+
+	
 func changer_position(nouvel_index):
 	var ancienne_salle = path_list[current_path_index]
 	if camera_system_ref.etat_salles.has(ancienne_salle):
@@ -354,8 +469,9 @@ func verifier_attaque_ventilation():
 
 func deplacer_springtrap(nom_cible : String):
 	var nouvel_index = path_list.find(nom_cible)
+	
 	if nouvel_index != -1:
-		changer_position(nouvel_index) 
+		changer_position(nouvel_index)
 
 func attaquer_porte(cote : String):
 	print("SPRINGTRAP TENTE D'ENTRER PAR : ", cote)

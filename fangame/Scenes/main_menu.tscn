@@ -466,13 +466,24 @@ text_direction = 3
 [node name="Bouton_Quitter" type="Button" parent="Ecran_Accueil"]
 layout_mode = 0
 offset_left = 141.0
+offset_top = 883.0
+offset_right = 436.0
+offset_bottom = 953.0
+theme_type_variation = &"FlatButton"
+theme_override_fonts/font = ExtResource("3_16hvj")
+theme_override_font_sizes/font_size = 70
+text = "Quitter"
+
+[node name="Bouton_Options" type="Button" parent="Ecran_Accueil"]
+layout_mode = 0
+offset_left = 141.0
 offset_top = 800.0
 offset_right = 436.0
 offset_bottom = 870.0
 theme_type_variation = &"FlatButton"
 theme_override_fonts/font = ExtResource("3_16hvj")
 theme_override_font_sizes/font_size = 70
-text = "Quitter"
+text = "Options"
 
 [node name="version" type="Label" parent="Ecran_Accueil"]
 layout_mode = 0
@@ -676,6 +687,61 @@ offset_bottom = 140.0
 text = "Succès débloqués"
 label_settings = SubResource("LabelSettings_fu7sn")
 
+[node name="Ecran_Options" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="Panel" parent="Ecran_Options"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="Ecran_Options/Panel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -307.5
+offset_right = 307.5
+offset_bottom = 132.0
+grow_horizontal = 2
+theme_override_fonts/font = ExtResource("3_16hvj")
+theme_override_font_sizes/font_size = 150
+text = "OPTIONS"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Ecran_Options/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Container_Touches" type="VBoxContainer" parent="Ecran_Options/Panel/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 6
+size_flags_vertical = 6
+
+[node name="Bouton_Retour" type="Button" parent="Ecran_Options/Panel"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -8.0
+offset_right = 8.0
+grow_vertical = 0
+theme_override_fonts/font = ExtResource("3_16hvj")
+theme_override_font_sizes/font_size = 75
+text = "Retour"
+
 [node name="Ecran_Transition" type="ColorRect" parent="."]
 visible = false
 layout_mode = 1
@@ -746,7 +812,9 @@ texture = ExtResource("8_8dnnj")
 
 [connection signal="pressed" from="Ecran_Accueil/Bouton_Play" to="." method="_on_aller_vers_selection"]
 [connection signal="pressed" from="Ecran_Accueil/Bouton_Quitter" to="." method="_on_bouton_quitter_pressed"]
+[connection signal="pressed" from="Ecran_Accueil/Bouton_Options" to="." method="_on_bouton_options_pressed"]
 [connection signal="pressed" from="Ecran_Accueil/Bouton_Succes" to="." method="_on_aller_vers_succes"]
 [connection signal="pressed" from="Ecran_Selection/Panneau_Details/Bouton_Lancer_Nuit" to="." method="_on_bouton_lancer_nuit_pressed"]
 [connection signal="pressed" from="Ecran_Selection/Bouton_Retour" to="." method="_on_bouton_retour_pressed"]
 [connection signal="pressed" from="Ecran_Succes/Bouton_Retour" to="." method="_on_retour_accueil_depuis_succes"]
+[connection signal="pressed" from="Ecran_Options/Panel/Bouton_Retour" to="." method="_on_bouton_retour_pressed"]

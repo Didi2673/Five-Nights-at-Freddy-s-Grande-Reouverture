@@ -3,7 +3,11 @@ extends Control
 # --- REFERENCES ---
 @onready var ecran_accueil = $Ecran_Accueil
 @onready var ecran_selection = $Ecran_Selection
+@onready var ecran_options = $Ecran_Options
 @onready var liste_nuits_container = $Ecran_Selection/Liste_Nuits
+
+@onready var container_touches = $Ecran_Options/Panel/ScrollContainer/Container_Touches
+@onready var btn_retour = $Ecran_Options/Panel/Bouton_Retour
 
 @onready var label_duree = $Ecran_Selection/Panneau_Details/Label_Duree 
 
@@ -34,6 +38,20 @@ extends Control
 
 @onready var container_challenges = $Ecran_Selection/Panneau_Details/Liste_Challenges
 
+var actions_a_mapper = {
+	"input_light_left": "Lumière Gauche",
+	"input_light_right": "Lumière Droite",
+	"input_door_left": "Porte Gauche",
+	"input_door_right": "Porte Droite",
+	"input_seal_vent": "Sceller Ventilation",
+	"toggle_monitor": "Moniteur (Ouvrir/Fermer)",
+	"toggle_fan": "Ventilateur (On/Off)",
+	"toggle_silent_fan": "Ventilo Silencieux",
+	"toggle_fullscreen": "Plein Écran"
+}
+var action_en_cours_de_modif : String = ""
+var bouton_en_cours_de_modif : Button = null
+
 var font_custom = load("res://vcr_osd_mono.ttf")
 
 var nuit_selectionnee_temp : int = 1
@@ -59,6 +77,7 @@ func _ready():
 		
 	ecran_accueil.visible = true
 	ecran_selection.visible = false
+	ecran_options.visible = false
 	
 	if btn_lancer:
 		btn_lancer.mouse_entered.connect(_jouer_son_hover)
@@ -72,6 +91,11 @@ func _ready():
 	if btn_quit:
 		btn_quit.mouse_entered.connect(_jouer_son_hover)
 		btn_quit.pressed.connect(_on_bouton_quitter_pressed)
+		
+	var btn_options = ecran_accueil.find_child("Bouton_Options", true, false)
+	if btn_options:
+		btn_options.mouse_entered.connect(_jouer_son_hover)
+		btn_options.pressed.connect(_on_bouton_options_pressed)
 		
 	var btn_play = ecran_accueil.find_child("Bouton_Play", true, false)
 	if btn_play:
@@ -89,10 +113,127 @@ func _ready():
 		btn_retour_succes.pressed.connect(_on_retour_accueil_depuis_succes)
 		btn_retour_succes.mouse_entered.connect(_jouer_son_hover)
 		
+	if btn_retour:
+		btn_retour.pressed.connect(_on_retour_pressed)
+	
+	creer_liste_boutons()
+		
 	btn_lancer.pressed.connect(_on_lancer_nuit)
 	verifier_etoiles()
 	update_details_panel(0) 
 	
+	
+func creer_liste_boutons():
+	# 1. On nettoie la liste existante
+	for child in container_touches.get_children():
+		child.queue_free()
+	
+	# 2. On crée une ligne pour chaque action
+	for action_id in actions_a_mapper:
+		var nom_lisible = actions_a_mapper[action_id]
+		
+		# Création d'un conteneur horizontal
+		var hbox = HBoxContainer.new()
+		hbox.custom_minimum_size.y = 50 # Un peu plus de hauteur pour aérer
+		
+		# A. Le Nom de l'action
+		var lbl = Label.new()
+		lbl.text = nom_lisible
+		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		
+		# --- AJOUT STYLE ---
+		if font_custom:
+			lbl.add_theme_font_override("font", font_custom)
+			lbl.add_theme_font_size_override("font_size", 24)
+		# -------------------
+		
+		hbox.add_child(lbl)
+		
+		# B. Le Bouton avec la touche actuelle
+		var btn = Button.new()
+		btn.custom_minimum_size.x = 200 # Bouton un peu plus large
+		btn.toggle_mode = true
+		btn.text = recuperer_nom_touche_actuelle(action_id)
+		
+		# --- AJOUT STYLE ---
+		if font_custom:
+			btn.add_theme_font_override("font", font_custom)
+			btn.add_theme_font_size_override("font_size", 24)
+		# -------------------
+		
+		btn.pressed.connect(_on_remap_button_pressed.bind(action_id, btn))
+		
+		hbox.add_child(btn)
+		container_touches.add_child(hbox)
+
+func recuperer_nom_touche_actuelle(action_id):
+	var events = InputMap.action_get_events(action_id)
+	if events.size() > 0:
+		# On prend le premier événement (souvent une touche clavier)
+		var event = events[0]
+		if event is InputEventKey:
+			return OS.get_keycode_string(event.keycode)
+		elif event is InputEventMouseButton:
+			return "Souris " + str(event.button_index)
+	return "Aucune"
+
+func _on_remap_button_pressed(action_id, bouton_ref):
+	# Si on clique sur un bouton, on passe en mode "Écoute"
+	action_en_cours_de_modif = action_id
+	bouton_en_cours_de_modif = bouton_ref
+	
+	bouton_ref.text = "Appuyez..."
+	
+	# On désactive les autres boutons pour éviter les conflits
+	set_process_input(true)
+	
+func _input(event):
+	# Si on n'est pas en train de modifier, on ne fait rien
+	if action_en_cours_de_modif == "": return
+	
+	# On cherche une pression de touche clavier
+	if event is InputEventKey and event.pressed:
+		
+		# Annulation avec ECHAP
+		if event.keycode == KEY_ESCAPE:
+			cancel_remap()
+			return
+			
+		# --- APPLICATION DE LA NOUVELLE TOUCHE ---
+		
+		# 1. On supprime l'ancienne touche
+		InputMap.action_erase_events(action_en_cours_de_modif)
+		
+		# 2. On ajoute la nouvelle
+		InputMap.action_add_event(action_en_cours_de_modif, event)
+		
+		# 3. Mise à jour visuelle
+		bouton_en_cours_de_modif.text = OS.get_keycode_string(event.keycode)
+		bouton_en_cours_de_modif.button_pressed = false # Relâche le bouton visuellement
+		
+		# 4. Sauvegarde
+		GameData.save_keybinds() 
+		
+		# 5. Reset
+		action_en_cours_de_modif = ""
+		bouton_en_cours_de_modif = null
+		
+		# On "consomme" l'événement pour qu'il ne déclenche rien d'autre dans le jeu
+		get_viewport().set_input_as_handled()
+
+func cancel_remap():
+	if bouton_en_cours_de_modif:
+		bouton_en_cours_de_modif.text = recuperer_nom_touche_actuelle(action_en_cours_de_modif)
+		bouton_en_cours_de_modif.button_pressed = false
+	
+	action_en_cours_de_modif = ""
+	bouton_en_cours_de_modif = null
+
+func _on_retour_pressed():
+	# Masquer le menu options et réafficher le menu principal
+	ecran_options.visible = false
+	ecran_accueil.visible = true
+
 func generer_liste_challenges():
 	# Nettoyage
 	for child in container_challenges.get_children():
@@ -166,6 +307,7 @@ func _on_aller_vers_succes():
 	ecran_accueil.visible = false
 	ecran_selection.visible = false # Au cas où
 	ecran_succes.visible = true
+	ecran_options.visible = false
 	
 	generer_liste_succes() # On génère la liste à l'ouverture
 
@@ -580,3 +722,18 @@ func _on_lancer_nuit():
 	await get_tree().create_timer(2.5).timeout
 	
 	get_tree().change_scene_to_file("res://Scenes/office.tscn")
+
+
+func _on_bouton_options_pressed() -> void:
+	ecran_accueil.visible = false
+	ecran_selection.visible = false # Au cas où
+	ecran_succes.visible = false
+	ecran_options.visible = true
+	creer_liste_boutons()
+
+
+func _on_bouton_retour_pressed() -> void:
+	ecran_accueil.visible = true	
+	ecran_selection.visible = false # Au cas où
+	ecran_succes.visible = false
+	ecran_options.visible = false

@@ -12,6 +12,7 @@ extends Node2D
 @onready var audio_flash_foxy = $Audio_Flash_Foxy
 @onready var audio_honk = $Audio_Honk
 @onready var audio_power_down = $Audio_PowerDown
+@onready var audio_freddy = $Audio_Freddy_Laugh
 
 var heat_timer_accumulated : float = 0.0
 
@@ -29,11 +30,11 @@ var puppet_est_en_position : bool = false
 
 var phone_calls = {
 	1: "res://phone/night1.wav",
-	2: "res://phone/night2.ogg",
-	3: "res://phone/night3.ogg",
-	4: "res://phone/night4.ogg",
-	5: "res://phone/night5.ogg",
-	6: "res://phone/night6.ogg" 
+	2: "res://phone/night2.wav",
+	3: "res://phone/night3.wav",
+	4: "res://phone/night4.wav",
+	5: "res://phone/night5.wav",
+	6: "res://phone/night6.wav" 
 }
 
 var gf_active : bool = false          
@@ -60,6 +61,7 @@ var videos_jumpscares = {
 	"Puppet": "res://Puppet.ogv",
 	"Mangle": "res://Mangle.ogv",
 	"Golden-Freddy": "res://Golden-Freddy.ogv",
+	"Shadow-Bonnie": "res://Shadow-Bonnie.ogv",
 	"Springtrap": "res://Springtrap.ogv",
 	"Heat": "res://Heat.ogv"
 }
@@ -67,7 +69,7 @@ var videos_jumpscares = {
 @onready var container_barres = $UI/Barres_Container
 @onready var ventilateur = $Ventilateur
 
-var taux_drain = [0.1, 0.23, 0.40, 0.60, 0.80, 1.0]
+var taux_drain = [0.15, 0.23, 0.40, 0.60, 0.80, 1.0]
 var temperature : float = 60.0
 var temperature_min : float = 60.0
 var temperature_max : float = 120.0
@@ -78,8 +80,8 @@ var silent_fan_timer : float = 0.0
 
 @export var textures_barres : Array[Texture2D] 
 @onready var indicateur_usage = $UI/Indicateur_Usage
-var vitesse_chauffe : float = 2
-var vitesse_refroidissement : float = 3
+var vitesse_chauffe : float = 1.5
+var vitesse_refroidissement : float = 0.5 
 @onready var label_temp = $UI/Label_Temperature 
 
 # --- LUMIERES ---
@@ -202,20 +204,58 @@ func toggle_silent_ventilateur():
 	else:
 		print("Ventilateur Silencieux : INACTIF")
 
+func gestion_inputs_clavier():
+	# --- 1. GESTION DES LUMIÈRES (Toggle : On appuie pour allumer/éteindre) ---
+	if Input.is_action_just_pressed("input_light_left"):
+		porte_gauche._on_light_start()
+	elif Input.is_action_just_released("input_light_left"):
+		porte_gauche._on_light_stop()
+		
+	# LUMIÈRE DROITE
+	if Input.is_action_just_pressed("input_light_right"):
+		porte_droite._on_light_start()
+	elif Input.is_action_just_released("input_light_right"):
+		porte_droite._on_light_stop()
+
+	# --- 2. GESTION DES PORTES ---
+	# Note : Assurez-vous que vos scripts de portes ont une fonction "toggle" ou "interagir"
+	if Input.is_action_just_pressed("input_door_left"):
+		if porte_gauche.has_method("_on_door_toggle"): 
+			porte_gauche._on_door_toggle()
+		
+			
+	if Input.is_action_just_pressed("input_door_right"):
+		if porte_droite.has_method("_on_door_toggle"): 
+			porte_droite._on_door_toggle()
+		
+	# --- 3. GESTION DU VENTILATION SEAL ---
+	if Input.is_action_just_pressed("input_seal_vent"):
+		# On appelle la fonction dans le système caméra
+		if systeme_camera.has_method("_on_toggle_vent"):
+			systeme_camera._on_toggle_vent()
+			
+	if Input.is_action_just_pressed("toggle_monitor"): # <--- On utilise le nouveau nom
+		if systeme_camera.has_method("toggle_monitor"):
+			systeme_camera.toggle_monitor()
+			if audio_monitor.stream: audio_monitor.play()
+			
+			# Si on ouvre, on éteint les lumières des portes pour économiser/logique
+			if systeme_camera.est_ouvert:
+				if porte_gauche.has_method("_on_light_stop"): porte_gauche._on_light_stop()
+				if porte_droite.has_method("_on_light_stop"): porte_droite._on_light_stop()
+
+
+
+
+
+
 func _process(delta):
 	# Si Game Over, on arrête tout
 	if game_over: return 
 	
 	# --- 1. INPUTS (Bloqués si coupure de courant) ---
 	if not est_coupure_courant:
-		if Input.is_action_just_pressed("ui_accept"): 
-			if systeme_camera.has_method("toggle_monitor"):
-				systeme_camera.toggle_monitor()
-				if audio_monitor.stream: audio_monitor.play()
-				
-				if systeme_camera.est_ouvert:
-					if porte_gauche.has_method("_on_light_stop"): porte_gauche._on_light_stop()
-					if porte_droite.has_method("_on_light_stop"): porte_droite._on_light_stop()
+		gestion_inputs_clavier()
 					
 		if night_index >= 3:
 			if Input.is_action_just_pressed("toggle_fan"): toggle_ventilateur()
@@ -749,3 +789,6 @@ func desactiver_golden_freddy():
 	gf_active = false
 	sprite_gf.visible = false
 	gf_cooldown = randf_range(10.0, 20.0)
+
+func jouer_rire_freddy():
+	audio_freddy.play()

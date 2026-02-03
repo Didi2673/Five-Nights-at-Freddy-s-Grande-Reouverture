@@ -19,43 +19,43 @@ var challenges_list = [
 		"id": "bear_attack",
 		"name": "Bear Attack",
 		"description": "Freddy et Golden Freddy.",
-		"levels": {"Freddy": 20, "Golden-Freddy": 20, "Mangle": 0, "Puppet": 0, "Bonnie": 0, "Chica": 0, "Foxy": 0}
+		"levels": {"Freddy": 20, "Golden-Freddy": 20, "Mangle": 0, "Puppet": 0, "Bonnie": 0, "Chica": 0, "Foxy": 0, "Shadow-Bonnie": 0}
 	},
 	{
 		"id": "ladies_night",
 		"name": "Ladies Night",
 		"description": "Chica, Puppet et Mangle sont actives.",
-		"levels": {"Chica": 20, "Mangle": 20, "Puppet": 20, "Freddy": 0, "Bonnie": 0, "Foxy": 0, "Golden-Freddy": 0}
+		"levels": {"Chica": 20, "Mangle": 20, "Puppet": 20, "Freddy": 0, "Bonnie": 0, "Foxy": 0, "Golden-Freddy": 0, "Shadow-Bonnie": 0}
 	},
 	{
 		"id": "foxy_foxy",
 		"name": "Foxy Foxy",
 		"description": "Foxy et Mangle",
-		"levels": {"Chica": 0, "Mangle": 20, "Puppet": 0, "Freddy": 0, "Bonnie": 0, "Foxy": 20, "Golden-Freddy": 0}
+		"levels": {"Chica": 0, "Mangle": 20, "Puppet": 0, "Freddy": 0, "Bonnie": 0, "Foxy": 20, "Golden-Freddy": 0, "Shadow-Bonnie": 0}
 	},
 	{
 		"id": "mad_bonnie",
 		"name": "Mad Bonnie",
 		"description": "Bonnie",
-		"levels": {"Chica": 0, "Mangle": 0, "Puppet": 0, "Freddy": 0, "Bonnie": 20, "Foxy": 0, "Golden-Freddy": 0}
+		"levels": {"Chica": 0, "Mangle": 0, "Puppet": 0, "Freddy": 0, "Bonnie": 20, "Foxy": 0, "Golden-Freddy": 0, "Shadow-Bonnie": 20}
 	},
 	{
 		"id": "20_20_20_20",
 		"name": "4/20 Mode",
 		"description": "4/20",
-		"levels": {"Freddy": 20, "Bonnie": 20, "Golden-Freddy": 0, "Puppet": 0, "Chica": 20, "Foxy": 20, "Mangle": 0}
+		"levels": {"Freddy": 20, "Bonnie": 20, "Golden-Freddy": 0, "Puppet": 0, "Chica": 20, "Foxy": 20, "Mangle": 0, "Shadow-Bonnie": 0}
 	},
 	{
 		"id": "fazbear_fever",
 		"name": "Fazbear Fever",
 		"description": "Tout le monde à 10",
-		"levels": {"Chica": 10, "Mangle": 10, "Puppet": 10, "Freddy": 10, "Bonnie": 10, "Foxy": 10, "Golden-Freddy": 10}
+		"levels": {"Chica": 10, "Mangle": 10, "Puppet": 10, "Freddy": 10, "Bonnie": 10, "Foxy": 10, "Golden-Freddy": 10, "Shadow-Bonnie": 10}
 	},
 	{
 		"id": "golden_freddy",
 		"name": "Golden Freddy",
 		"description": "Tout le monde",
-		"levels": {"Chica": 20, "Mangle": 20, "Puppet": 20, "Freddy": 20, "Bonnie": 20, "Foxy": 20, "Golden-Freddy": 20}
+		"levels": {"Chica": 20, "Mangle": 20, "Puppet": 20, "Freddy": 20, "Bonnie": 20, "Foxy": 20, "Golden-Freddy": 20, "Shadow-Bonnie": 20}
 	}
 ]
 
@@ -75,6 +75,54 @@ var current_night_played : int = 1
 
 var custom_night_levels : Dictionary = {} 
 
+var keybinds_path = "user://keybinds.cfg"
+
+# Liste des actions qu'on veut sauvegarder
+var actions_a_sauvegarder = [
+	"toggle_fan", "toggle_fullscreen", "toggle_silent_fan",
+	"input_light_left", "input_light_right", 
+	"input_door_left", "input_door_right", "input_seal_vent","toggle_monitor"
+]
+
+func save_keybinds():
+	var config = ConfigFile.new()
+	
+	for action in actions_a_sauvegarder:
+		var events = InputMap.action_get_events(action)
+		if events.size() > 0:
+			# On sauvegarde le keycode de la première touche trouvée
+			if events[0] is InputEventKey:
+				config.set_value("keybinds", action, events[0].keycode)
+	
+	config.save(keybinds_path)
+	print("Touches sauvegardées !")
+
+func load_keybinds():
+	var config = ConfigFile.new()
+	var err = config.load(keybinds_path)
+	
+	if err != OK:
+		print("Pas de fichier de config trouvé. Création des touches par défaut...")
+		
+		# --- AJOUT IMPORTANT ICI ---
+		# On sauvegarde immédiatement les touches actuelles (qui sont celles par défaut définies dans Godot)
+		save_keybinds() 
+		return
+		
+	for action in actions_a_sauvegarder:
+		if config.has_section_key("keybinds", action):
+			var keycode = config.get_value("keybinds", action)
+			
+			# Création du nouvel événement
+			var new_event = InputEventKey.new()
+			new_event.keycode = keycode
+			
+			# Remplacement dans l'InputMap
+			InputMap.action_erase_events(action)
+			InputMap.action_add_event(action, new_event)
+			
+	print("Touches chargées !")
+
 func reset_custom_levels():
 	custom_night_levels.clear()
 	for anim in animatronics_data:
@@ -85,6 +133,7 @@ func _ready():
 	load_data()
 	achievements_data = load_json_file("res://data/achievements.json")
 	load_game() # Charge la sauvegarde au démarrage
+	load_keybinds()
 
 # --- CHARGEMENT DU JSON ---
 func load_nights_data():

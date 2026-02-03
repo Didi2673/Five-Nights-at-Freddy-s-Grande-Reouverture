@@ -86,6 +86,23 @@ func _process(_delta):
 			audio_switch.stop()
 
 # --- INPUT UTILISATEUR ---
+func afficher_danger(nom_camera : String, est_visible : bool):
+	# On cherche le bouton qui correspond à la caméra (ex: "Bouton_Cam04")
+	# Adaptez le nom "Bouton_" selon comment vous avez nommé vos nœuds !
+	# Si vos boutons s'appellent juste "Cam01", retirez le "Bouton_" dans le code ci-dessous.
+	var nom_bouton = "Bouton_" + nom_camera.to_upper()
+	
+	# On cherche le nœud dans l'arbre
+	var bouton = find_child(nom_bouton, true, false)
+	
+	if bouton:
+		# On cherche l'icone qu'on a créée à l'étape 1
+		var icon = bouton.get_node_or_null("Icone_Danger")
+		if icon:
+			icon.visible = est_visible
+	else:
+		print("ERREUR : Impossible de trouver le bouton pour ", nom_camera)
+
 
 func _on_toggle_vent():
 	# On inverse l'état
@@ -219,10 +236,6 @@ func mettre_a_jour_image():
 	# --- GESTION AUDIO MANGLE ---
 	gestion_audio_mangle(occupants_reels)
 	
-	# 2. FILTRE D'INVISIBILITÉ (Puppet)
-	# La Puppet est là physiquement, mais on l'efface de la liste visuelle
-	if occupants_reels.has("Puppet"):
-		occupants_reels.erase("Puppet")
 	
 	# 3. Construction du nom de l'image
 	var suffixe = ""
