@@ -708,7 +708,6 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Panel_Connexion" type="Panel" parent="Ecran_Multi"]
-visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -736,9 +735,9 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -125.0
+offset_left = -250.0
 offset_top = -240.0
-offset_right = 125.0
+offset_right = 250.0
 offset_bottom = -188.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -753,16 +752,15 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -125.0
+offset_left = -250.0
 offset_top = -165.0
-offset_right = 125.0
+offset_right = 250.0
 offset_bottom = -113.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_fonts/font = ExtResource("3_16hvj")
 theme_override_font_sizes/font_size = 50
-text = "127.0.0.1"
-placeholder_text = "127.0.0.1"
+placeholder_text = "Entrez une ip"
 
 [node name="VBoxContainer_Boutons" type="VBoxContainer" parent="Ecran_Multi/Panel_Connexion"]
 layout_mode = 1
@@ -803,6 +801,7 @@ theme_override_font_sizes/font_size = 75
 text = "Retour"
 
 [node name="Panel_Lobby" type="Panel" parent="Ecran_Multi"]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -914,6 +913,85 @@ grow_vertical = 0
 theme_override_fonts/font = ExtResource("3_16hvj")
 theme_override_font_sizes/font_size = 50
 text = "192.168.1.1"
+
+[node name="Panel_Selection_Nuit" type="Panel" parent="Ecran_Multi"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label_Titre" type="Label" parent="Ecran_Multi/Panel_Selection_Nuit"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.0
+offset_right = 20.0
+offset_bottom = 23.0
+grow_horizontal = 2
+theme_override_fonts/font = ExtResource("3_16hvj")
+theme_override_font_sizes/font_size = 50
+text = "L'hôte choisit la nuit..."
+
+[node name="Grid_Nuits" type="GridContainer" parent="Ecran_Multi/Panel_Selection_Nuit"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+columns = 3
+
+[node name="HBox_Challenge" type="HBoxContainer" parent="Ecran_Multi/Panel_Selection_Nuit"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -176.0
+offset_top = 140.0
+offset_right = 176.0
+offset_bottom = 180.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="Ecran_Multi/Panel_Selection_Nuit/HBox_Challenge"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_16hvj")
+theme_override_font_sizes/font_size = 30
+text = "Challenge nuit 7 :"
+
+[node name="OptionButton_Challenges" type="OptionButton" parent="Ecran_Multi/Panel_Selection_Nuit/HBox_Challenge"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_16hvj")
+theme_override_font_sizes/font_size = 30
+
+[node name="Label_Info_Client" type="Label" parent="Ecran_Multi/Panel_Selection_Nuit"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -307.5
+offset_top = -22.0
+offset_right = 307.5
+offset_bottom = 22.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/font = ExtResource("3_16hvj")
+theme_override_font_sizes/font_size = 50
+text = "Veuillez patienter..."
 
 [node name="Ecran_Options" type="Control" parent="."]
 visible = false

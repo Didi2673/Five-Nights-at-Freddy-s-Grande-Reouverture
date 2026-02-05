@@ -7,9 +7,16 @@ extends Control
 @onready var liste_nuits_container = $Ecran_Selection/Liste_Nuits
 @onready var label_ip_info = $Ecran_Multi/Panel_Lobby/Label_IP_Info
 
+@onready var option_challenge = $Ecran_Multi/Panel_Selection_Nuit/HBox_Challenge/OptionButton_Challenges
+@onready var container_challenge_ui = $Ecran_Multi/Panel_Selection_Nuit/HBox_Challenge
+
 @onready var ecran_multi = $Ecran_Multi
 @onready var panel_connexion = $Ecran_Multi/Panel_Connexion
 @onready var panel_lobby = $Ecran_Multi/Panel_Lobby
+
+@onready var panel_selection_nuit = $Ecran_Multi/Panel_Selection_Nuit
+@onready var grid_nuits_multi = $Ecran_Multi/Panel_Selection_Nuit/Grid_Nuits
+@onready var label_info_client = $Ecran_Multi/Panel_Selection_Nuit/Label_Info_Client
 
 @onready var input_pseudo = $Ecran_Multi/Panel_Connexion/LineEdit_Pseudo
 @onready var input_ip = $Ecran_Multi/Panel_Connexion/LineEdit_IP
@@ -163,6 +170,120 @@ func _ready():
 	verifier_etoiles()
 	update_details_panel(0) 
 	
+	NetworkGlobal.start_night_selection.connect(_on_start_night_selection)
+	
+	if option_challenge:
+		option_challenge.clear()
+		for chal in GameData.challenges_list:
+			option_challenge.add_item(chal["name"])
+			option_challenge.set_item_metadata(option_challenge.item_count - 1, chal["id"])
+		
+		option_challenge.item_selected.connect(_on_challenge_multi_selected)
+	
+	# Connexion réseau
+	NetworkGlobal.challenge_changed.connect(_on_network_challenge_changed)
+	
+	# Si on revient du jeu (Game Over / Win), on veut réafficher le lobby direct
+	if NetworkGlobal.is_in_game == false and NetworkGlobal.players.size() > 0:
+		# On est connecté mais pas en jeu -> Retour Lobby
+		_on_bouton_multi_pressed()
+		_enter_lobby()
+		
+	
+
+
+
+
+func _on_start_night_selection():
+	# On cache le lobby, on montre la sélection
+	panel_lobby.visible = false
+	panel_selection_nuit.visible = true
+	
+	if multiplayer.is_server():
+		# --- HÔTE ---
+		label_info_client.visible = false
+		grid_nuits_multi.visible = true
+		
+		# On affiche le sélecteur de challenge et on l'active
+		container_challenge_ui.visible = true
+		option_challenge.disabled = false
+		
+		generer_boutons_nuits_multi()
+	else:
+		# --- CLIENT ---
+		label_info_client.visible = true
+		grid_nuits_multi.visible = false
+		
+		# Le client voit le sélecteur pour savoir ce qui est choisi, mais ne peut pas toucher
+		container_challenge_ui.visible = true
+		option_challenge.disabled = true
+		
+		label_info_client.text = "L'HÔTE CHOISIT LA NUIT..."
+
+func _on_challenge_multi_selected(index):
+	if multiplayer.is_server():
+		var id_choisi = option_challenge.get_item_metadata(index)
+		# On synchronise le choix avec tout le monde
+		NetworkGlobal.rpc("sync_challenge_selection", id_choisi)
+	else:
+		# Si un client essaie de tricher/cliquer, on remet la valeur du serveur
+		_on_network_challenge_changed(NetworkGlobal.active_challenge_multi_id)
+
+func _on_network_challenge_changed(challenge_id):
+	# Met à jour l'interface visuelle quand l'hôte change le challenge
+	if not option_challenge: return
+	for i in range(option_challenge.item_count):
+		if option_challenge.get_item_metadata(i) == challenge_id:
+			option_challenge.selected = i
+			break
+
+
+func generer_boutons_nuits_multi():
+	# 1. Configuration de la Grille (Espacement)
+	grid_nuits_multi.columns = 3 # Force 3 colonnes pour un affichage propre
+	grid_nuits_multi.add_theme_constant_override("h_separation", 25)
+	grid_nuits_multi.add_theme_constant_override("v_separation", 25)
+	
+	# Nettoyage
+	for child in grid_nuits_multi.get_children():
+		child.queue_free()
+		
+	# On génère les nuits 1 à 7
+	for i in range(1, 8):
+		var btn = Button.new()
+		btn.text = "NUIT " + str(i)
+		
+		# --- STYLE VISUEL ---
+		if font_custom:
+			btn.add_theme_font_override("font", font_custom)
+		
+		# Taille du texte (30 est bien lisible)
+		btn.add_theme_font_size_override("font_size", 30)
+		
+		# Taille du bouton (Plus large et plus haut)
+		btn.custom_minimum_size = Vector2(180, 80)
+		
+		# --- INTERACTIVITÉ ---
+		# Le curseur devient une main
+		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		
+		# Son au survol (Cohérence avec le reste du menu)
+		btn.mouse_entered.connect(_jouer_son_hover)
+		
+		# Connexion du clic
+		btn.pressed.connect(_on_nuit_multi_choisie.bind(i))
+		
+		# Optionnel : Couleur spécifique pour la Nuit 7 (Rouge ?)
+		if i == 7:
+			btn.modulate = Color(1, 0.3, 0.3) # Teinte rouge pour la Custom Night
+		
+		grid_nuits_multi.add_child(btn)
+
+func _on_nuit_multi_choisie(nuit):
+	# L'hôte a cliqué. On lance la partie pour tout le monde !
+	NetworkGlobal.rpc("launch_game_scene", nuit)
+
+
 func _on_bouton_multi_pressed():
 	ecran_accueil.visible = false
 	ecran_multi.visible = true

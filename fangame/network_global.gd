@@ -5,16 +5,19 @@ signal player_list_changed
 signal connection_failed
 signal connection_success
 signal game_started
+signal challenge_changed(challenge_id)
 
 signal start_night_selection # Pour dire au menu d'afficher le choix
 signal game_ended # Pour dire au menu de réafficher le lobby au retour
+
+var active_challenge_multi_id : String = "custom" # ID par défaut
 
 var selected_night_multi : int = 1
 var is_in_game : bool = false
 
 var peer = ENetMultiplayerPeer.new()
 var PORT = 9999
-var MAX_PLAYERS = 2 # Limité à 2 pour l'instant (Coop ou VS)
+var MAX_PLAYERS = 4 # Limité à 2 pour l'instant (Coop ou VS)
 
 # Structure : { id_unique : { "name": "Pseudo", "ready": false } }
 var players = {}
@@ -54,10 +57,25 @@ func _ready():
 	multiplayer.connection_failed.connect(_on_connected_fail)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
 
+
+@rpc("authority", "call_local", "reliable")
+func sync_challenge_selection(challenge_id : String):
+	active_challenge_multi_id = challenge_id
+	print("Challenge Multi changé pour : ", challenge_id)
+	
+	# C'est ici qu'on émet le signal.
+	# Si le signal n'est pas déclaré en haut, ça plante ici aussi !
+	challenge_changed.emit(challenge_id)
+
+
 # --- FONCTIONS DE CONNEXION ---
 
 func host_game(pseudo : String, mode : String):
-	peer.create_server(PORT, MAX_PLAYERS)
+	var err = peer.create_server(PORT, MAX_PLAYERS - 1)
+	if err != OK:
+		print("Impossible de créer le serveur : " + str(err))
+		return
+		
 	multiplayer.multiplayer_peer = peer
 	
 	player_info["name"] = pseudo
@@ -91,8 +109,15 @@ func _on_player_disconnected(id):
 func _on_connected_ok():
 	print("Connecté au serveur avec succès !")
 	connection_success.emit()
-	# On envoie nos infos à l'hôte
-	var id = multiplayer.get_unique_id()
+	
+	var my_id = multiplayer.get_unique_id()
+	
+	# --- AJOUT ICI : On s'ajoute soi-même à notre liste locale ---
+	players[my_id] = player_info
+	player_list_changed.emit()
+	# -------------------------------------------------------------
+	
+	# On envoie nos infos à l'hôte (ça, c'était déjà là)
 	rpc_id(1, "register_player", player_info)
 
 func _on_connected_fail():
@@ -179,9 +204,15 @@ func launch_game_scene(nuit : int):
 @rpc("any_peer", "call_local", "reliable")
 func return_to_lobby_multi():
 	is_in_game = false
-	get_tree().change_scene_to_file("res://Scenes/main_menu.tscn")
-	# On reset le statut "Prêt" pour éviter que ça relance direct
+	
+	# 1. On remet tout le monde en "Pas Prêt"
+	# Sinon, si les joueurs reviennent et sont encore marqués "Prêts", le jeu redémarre direct !
 	player_info["ready"] = false
+	
 	if multiplayer.is_server():
 		for id in players:
 			players[id]["ready"] = false
+	
+	# 2. On charge la scène du menu
+	# Comme NetworkGlobal est un Autoload, la connexion NE COUPE PAS ici.
+	get_tree().change_scene_to_file("res://Scenes/main_menu.tscn")

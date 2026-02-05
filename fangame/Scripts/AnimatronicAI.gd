@@ -91,6 +91,7 @@ func recevoir_audio(camera_source : String):
 		
 func reculer_sur_chemin(index_cible):
 	var ancienne_salle = path_list[current_path_index]
+	
 	if camera_system_ref.etat_salles.has(ancienne_salle):
 		camera_system_ref.etat_salles[ancienne_salle].erase(nom)
 	
@@ -100,9 +101,17 @@ func reculer_sur_chemin(index_cible):
 	if camera_system_ref.etat_salles.has(nouvelle_salle):
 		camera_system_ref.etat_salles[nouvelle_salle].append(nom)
 	
+	# --- AJOUT SYNCHRO ---
+	var office = get_parent()
+	if office.has_method("sync_move_client"):
+		office.sync_move_client(ancienne_salle, nouvelle_salle)
+	# ---------------------
+	
 	camera_system_ref.mettre_a_jour_image()
 
 func process_ai(delta, current_ai_level_arg):
+	if NetworkGlobal.players.size() > 0 and not multiplayer.is_server():
+		return
 	current_ai_level = current_ai_level_arg
 	
 	if office_ref.game_over or office_ref.est_coupure_courant: return
@@ -159,17 +168,45 @@ func attempt_logic(ai_level):
 
 	
 	if nom == "Freddy":
+		
+		# ====================================================================
+		# AJOUT : RÈGLE DE PRIORITÉ (ATTENDRE BONNIE ET CHICA)
+		# ====================================================================
+		if current_path_index == 0: # Si Freddy est toujours sur la Scène (Cam01)
+			
+			# 1. Est-ce que le challenge "Bear Attack" est actif ?
+			var est_bear_attack = false
+			if NetworkGlobal.players.size() > 0:
+				# En Multi, on regarde la variable du réseau
+				if NetworkGlobal.active_challenge_multi_id == "bear_attack": est_bear_attack = true
+			else:
+				# En Solo, on regarde GameData
+				if GameData.active_challenge_id == "bear_attack": est_bear_attack = true
+			
+			# 2. Si ce N'EST PAS Bear Attack, on applique la restriction
+			if not est_bear_attack:
+				var salle_scene = path_list[0] # Normalement "Cam01"
+				if camera_system_ref.etat_salles.has(salle_scene):
+					var occupants = camera_system_ref.etat_salles[salle_scene]
+					
+					# Si Bonnie OU Chica est encore sur la scène, Freddy attend.
+					if occupants.has("Bonnie") or occupants.has("Chica"):
+						# On annule tout mouvement pour ce tour
+						return 
+		# ====================================================================
+
+		# --- SUITE DE LA LOGIQUE FREDDY (INCHANGÉE) ---
+		
 		if current_path_index == path_list.size() - 1:
 			
 			# CONDITION DE DÉFENSE : Ventilateur éteint
 			if not office_ref.ventilateur_actif:
 				print("Ventilateur éteint : Freddy repart forcement.")
-				
-				# On force le départ sans lancer de dés !
-				var index_retour = 1 # Caméra de repli (vérifie ton index)
+				var index_retour = 1 # Caméra de repli (Dining Area souvent)
 				changer_position(index_retour)
 				office_ref.jouer_rire_freddy()
 				return
+				
 		# 1. On lance le dé (RNG)
 		var roll = randi_range(1, 20)
 		
@@ -178,34 +215,23 @@ func attempt_logic(ai_level):
 			return
 
 		# 2. EST-IL À LA DERNIÈRE CAMÉRA ? (La Ventilation)
-		# On vérifie s'il est au bout de son chemin
 		if current_path_index == path_list.size() - 1:
 			
-			# C'est ici que la mécanique du ventilateur entre en jeu !
 			if office_ref.ventilateur_actif:
 				# A. Le ventilateur fait du bruit -> Freddy entend et ATTAQUE
 				print("Freddy attaque car le ventilateur est allumé !")
 				tenter_attaque()
 				
 			else:
-				# B. Le ventilateur est coupé -> Freddy pense qu'il n'y a personne
+				# B. Le ventilateur est coupé -> Freddy repart
 				print("Ventilateur éteint : Freddy repart.")
-				
-				# Il recule vers la Caméra 2
-				# ATTENTION : Il faut trouver l'index de la Cam 02 dans ta liste.
-				# Souvent : 0=Scène, 1=Dining, 2=Cam02... A toi de vérifier ton JSON/Liste.
-				# Disons que c'est l'index 2 pour l'exemple :
 				var index_retour = 1 
-				
 				changer_position(index_retour)
-				office_ref.jouer_rire_freddy() # Il rit en partant
+				office_ref.jouer_rire_freddy() 
 				
 		else:
 			# 3. MOUVEMENT NORMAL (Il avance vers l'office)
-			# Il avance d'une case
 			avancer_sur_chemin()
-			
-			# Il rit à chaque mouvement
 			office_ref.jouer_rire_freddy()
 			
 		return # Fin de la logique Freddy pour ce tour
@@ -321,6 +347,8 @@ func desactiver_shadow_bonnie():
 	
 func changer_position(nouvel_index):
 	var ancienne_salle = path_list[current_path_index]
+	
+	# Mise à jour locale
 	if camera_system_ref.etat_salles.has(ancienne_salle):
 		camera_system_ref.etat_salles[ancienne_salle].erase(nom)
 	
@@ -329,9 +357,16 @@ func changer_position(nouvel_index):
 	
 	if camera_system_ref.etat_salles.has(nouvelle_salle):
 		camera_system_ref.etat_salles[nouvelle_salle].append(nom)
+		
+	# --- AJOUT CRUCIAL DE LA SYNCHRO ICI ---
+	var office = get_parent()
+	if office.has_method("sync_move_client"):
+		office.sync_move_client(ancienne_salle, nouvelle_salle)
+	# ---------------------------------------
 	
 	print(nom, " a été déplacé vers ", nouvelle_salle)
 	
+	# Gestion du brouillage
 	var cam_joueur = camera_system_ref.camera_actuelle
 	if camera_system_ref.est_ouvert and (cam_joueur == ancienne_salle or cam_joueur == nouvelle_salle):
 		if camera_system_ref.has_method("declencher_brouillage"):
@@ -358,21 +393,29 @@ func gerer_foxy(ai_level):
 
 func avancer_sur_chemin():
 	var ancienne_salle = path_list[current_path_index]
+	
+	# Mise à jour locale (Serveur)
 	if camera_system_ref.etat_salles.has(ancienne_salle):
 		camera_system_ref.etat_salles[ancienne_salle].erase(nom)
 
 	current_path_index += 1
 	var nouvelle_salle = path_list[current_path_index]
 	
+	if camera_system_ref.etat_salles.has(nouvelle_salle):
+		camera_system_ref.etat_salles[nouvelle_salle].append(nom)
+	
+	# --- SYNCHRONISATION (CORRIGÉE) ---
+	var office = get_parent() 
+	if office.has_method("sync_move_client"):
+		# On envoie les deux salles pour nettoyer l'ancienne et afficher la nouvelle
+		office.sync_move_client(ancienne_salle, nouvelle_salle)
+	# ----------------------------------
+	
 	if "Cam09" in ancienne_salle or "Cam13" in nouvelle_salle:
 		tenter_jouer_son_vent()
 	
-	# --- SON SPÉCIFIQUE FREDDY ---
 	if nom == "Freddy": 
 		jouer_rire_freddy()
-	
-	if camera_system_ref.etat_salles.has(nouvelle_salle):
-		camera_system_ref.etat_salles[nouvelle_salle].append(nom)
 	
 	print(nom, " a bougé vers ", nouvelle_salle)
 	camera_system_ref.mettre_a_jour_image()
@@ -383,27 +426,32 @@ func jouer_rire_freddy():
 
 func tenter_attaque():
 	if office_ref.est_coupure_courant: return
+	
 	# Freddy tue s'il arrive à la fin de son chemin (Office_Vent_Pos)
 	if nom == "Freddy":
 		office_ref.trigger_jumpscare("Freddy")
 		return
 	
+	# --- LOGIQUE BONNIE / CHICA ---
 	if porte_cible and porte_cible.est_fermee:
 		print("BLOCKED! ", nom, " repart.")
-		var salle_porte = path_list[current_path_index]
-		if camera_system_ref.etat_salles.has(salle_porte):
-			camera_system_ref.etat_salles[salle_porte].erase(nom)
 		
-		current_path_index = 0 
-		if nom == "Bonnie": current_path_index = path_list.find("Cam02") 
-		if current_path_index == -1: current_path_index = 0
+		# On détermine l'index de repli (où le robot doit repartir)
+		var index_repli = 0 # Par défaut : Retour au début (Cam 01)
 		
-		var salle_repli = path_list[current_path_index]
-		if camera_system_ref.etat_salles.has(salle_repli):
-			camera_system_ref.etat_salles[salle_repli].append(nom)
+		if nom == "Bonnie": 
+			# Bonnie repart souvent en Cam 02 (Dining Area) au lieu de tout recommencer
+			var idx = path_list.find("Cam02") 
+			if idx != -1:
+				index_repli = idx
 			
-		camera_system_ref.mettre_a_jour_image()
+		# --- CORRECTION MAJEURE ICI ---
+		# Au lieu de modifier les listes à la main, on appelle la fonction
+		# qui gère déjà le déplacement ET le réseau (RPC).
+		changer_position(index_repli)
+		
 	else:
+		# La porte est ouverte -> Jumpscare
 		office_ref.trigger_jumpscare(nom)
 
 func lancer_attaque_foxy():

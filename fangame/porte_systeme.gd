@@ -3,7 +3,7 @@ extends Node2D
 # --- CONFIGURATION ---
 @export_enum("left", "right") var cote : String = "left"
 
-# --- IMAGES (A assigner dans la scène Office pour différencier gauche/droite) ---
+# --- IMAGES ---
 @export_group("Visuels")
 @export var tex_porte_metal : Texture2D    # Image porte fermée
 @export var tex_panel_vert : Texture2D     # Panneau bouton VERT
@@ -24,7 +24,7 @@ extends Node2D
 var est_fermee : bool = false
 var est_allumee : bool = false
 
-# On récupère le parent (Office) pour lui dire de changer le fond
+# On récupère le parent (Office)
 @onready var office_ref = get_owner() 
 
 func _ready():
@@ -39,19 +39,43 @@ func _ready():
 	if son_door: audio_porte.stream = son_door
 	if son_light: audio_light.stream = son_light
 	
-	# 3. Connexion des boutons invisibles
-	$Zone_Clic_Door.pressed.connect(_on_door_toggle)
+	# 3. Connexion des boutons (MODIFIÉ)
+	# On connecte le clic à des fonctions "INPUT" qui envoient l'ordre au bureau
+	$Zone_Clic_Door.pressed.connect(_on_input_door_clicked)
 	
-	# Pour la lumière, on veut l'effet "Maintenir appuyé"
-	$Zone_Clic_Light.button_down.connect(_on_light_start)
-	$Zone_Clic_Light.button_up.connect(_on_light_stop)
+	$Zone_Clic_Light.button_down.connect(_on_input_light_down)
+	$Zone_Clic_Light.button_up.connect(_on_input_light_up)
 	
 	# Sécurité visuelle
 	sprite_porte.visible = false
 
-# --- ACTION PORTE ---
+# ============================================================
+# PARTIE 1 : INPUTS (Le joueur clique avec la souris)
+# Ces fonctions ne font RIEN d'autre que demander au bureau
+# ============================================================
+
+func _on_input_door_clicked():
+	# On ne change rien ici, on envoie l'ordre au "Cerveau" (Office)
+	if office_ref and office_ref.has_method("commander_porte"):
+		office_ref.commander_porte(cote)
+
+func _on_input_light_down():
+	if office_ref and office_ref.has_method("commander_lumiere"):
+		office_ref.commander_lumiere(cote, true)
+
+func _on_input_light_up():
+	if office_ref and office_ref.has_method("commander_lumiere"):
+		office_ref.commander_lumiere(cote, false)
+
+
+# ============================================================
+# PARTIE 2 : ACTIONS (Exécutées par le bureau / Réseau)
+# Ces fonctions sont appelées par office.gd (via RPC ou local)
+# ============================================================
+
+# Appelée par office.gd -> commander_porte()
 func _on_door_toggle():
-	if est_coupure_courant(): return # Pas d'action si plus de jus
+	if est_coupure_courant(): return 
 	
 	est_fermee = !est_fermee
 	
@@ -65,35 +89,37 @@ func _on_door_toggle():
 		if tex_panel_vert: sprite_panel.texture = tex_panel_vert
 	
 	# Son
-	# Vérification du son avant de jouer
-	if audio_porte.stream == null:
-		print("ERREUR : Pas de fichier son dans Audio_Porte !")
-	else:
-		print("Lecture du son...")
+	if audio_porte.stream:
 		audio_porte.play()
 
-# --- ACTION LUMIERE ---
+# Appelée par office.gd -> commander_lumiere(true)
 func _on_light_start():
 	if est_coupure_courant(): return
 	
 	est_allumee = true
-	audio_light.play()
+	if not audio_light.playing:
+		audio_light.play()
 	
-	# On dit à Office.gd : "Change le fond d'écran !"
+	# Note : Le changement de fond d'écran est maintenant géré par office.gd
+	# dans sa fonction update_office_background(), mais on peut garder ça
+	# pour la compatibilité solo si besoin.
 	if office_ref and office_ref.has_method("set_light_state"):
 		office_ref.set_light_state(cote, true)
 
+# Appelée par office.gd -> commander_lumiere(false)
 func _on_light_stop():
 	est_allumee = false
 	audio_light.stop()
 	
-	# On dit à Office.gd : "Remets le fond éteint"
 	if office_ref and office_ref.has_method("set_light_state"):
 		office_ref.set_light_state(cote, false)
 
-# --- SECURITES ---
+
+# ============================================================
+# SECURITES & BLACKOUT
+# ============================================================
+
 func est_coupure_courant() -> bool:
-	# On vérifie si l'office a du jus
 	if office_ref and "est_coupure_courant" in office_ref:
 		return office_ref.est_coupure_courant
 	return false
@@ -112,5 +138,6 @@ func couper_courant():
 	$Zone_Clic_Door.disabled = true
 	$Zone_Clic_Light.disabled = true
 	
-	# On force l'extinction visuelle
-	if office_ref: office_ref.set_light_state(cote, false)
+	# Force visuelle
+	if office_ref and office_ref.has_method("set_light_state"):
+		office_ref.set_light_state(cote, false)

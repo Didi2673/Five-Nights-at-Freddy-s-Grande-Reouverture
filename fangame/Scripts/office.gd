@@ -79,6 +79,8 @@ var ventilateur_actif : bool = true
 var silent_ventilateur_active : bool = false
 var silent_fan_timer : float = 0.0
 
+var joueurs_sur_moniteur = {}
+
 @export var textures_barres : Array[Texture2D] 
 @onready var indicateur_usage = $UI/Indicateur_Usage
 var vitesse_chauffe : float = 4.5
@@ -128,7 +130,12 @@ func _ready():
 		var taille_image = background.texture.get_width() * background.scale.x 
 		limite_droite = taille_image - ecran_largeur
 	
-	night_index = GameData.current_night_played 
+	if NetworkGlobal.players.size() > 0: # Détection simple qu'on est en ligne
+		night_index = NetworkGlobal.selected_night_multi
+		print("Mode Multi détecté : Lancement Nuit ", night_index)
+	else:
+		# Mode Solo classique
+		night_index = GameData.current_night_played
 	print("Lancement Nuit : ", night_index)
 	
 	if label_nuit:
@@ -217,49 +224,156 @@ func toggle_silent_ventilateur():
 			anim_ventilateur.speed_scale = 10.0
 		print("Ventilateur Silencieux : INACTIF")
 
-func gestion_inputs_clavier():
-	# --- 1. GESTION DES LUMIÈRES (Toggle : On appuie pour allumer/éteindre) ---
-	if Input.is_action_just_pressed("input_light_left"):
-		porte_gauche._on_light_start()
-	elif Input.is_action_just_released("input_light_left"):
-		porte_gauche._on_light_stop()
-		
-	# LUMIÈRE DROITE
-	if Input.is_action_just_pressed("input_light_right"):
-		porte_droite._on_light_start()
-	elif Input.is_action_just_released("input_light_right"):
-		porte_droite._on_light_stop()
+# Dans office.gd
 
-	# --- 2. GESTION DES PORTES ---
-	# Note : Assurez-vous que vos scripts de portes ont une fonction "toggle" ou "interagir"
+func sync_move_client(ancienne_salle : String, nouvelle_salle : String):
+	if NetworkGlobal.players.size() > 0 and multiplayer.is_server():
+		# 1. On envoie l'état de l'ANCIENNE salle (pour effacer le robot du client)
+		# On vérifie que la salle existe bien dans le système
+		if systeme_camera.etat_salles.has(ancienne_salle):
+			var occupants_old = systeme_camera.etat_salles[ancienne_salle]
+			systeme_camera.rpc("sync_etat_salle", ancienne_salle, occupants_old)
+		
+		# 2. On envoie l'état de la NOUVELLE salle (pour afficher le robot)
+		if systeme_camera.etat_salles.has(nouvelle_salle):
+			var occupants_new = systeme_camera.etat_salles[nouvelle_salle]
+			systeme_camera.rpc("sync_etat_salle", nouvelle_salle, occupants_new)
+
+@rpc("any_peer", "call_remote", "reliable")
+func server_update_camera_usage(est_ouvert : bool):
+	# Seul le serveur exécute ça
+	if not multiplayer.is_server(): return
+	
+	var id_expediteur = multiplayer.get_remote_sender_id()
+	
+	# On enregistre l'état de ce joueur spécifique
+	joueurs_sur_moniteur[id_expediteur] = est_ouvert
+	
+	# On force le recalcul de la batterie (qui utilisera la nouvelle logique "au moins un")
+	calculer_drain_batterie(0)
+
+func gestion_inputs_clavier():
+	# --- A. LES PORTES (Appui simple / Toggle) ---
 	if Input.is_action_just_pressed("input_door_left"):
-		if porte_gauche.has_method("_on_door_toggle"): 
-			porte_gauche._on_door_toggle()
+		commander_porte("left")
 		
-			
 	if Input.is_action_just_pressed("input_door_right"):
-		if porte_droite.has_method("_on_door_toggle"): 
-			porte_droite._on_door_toggle()
+		commander_porte("right")
 		
-	# --- 3. GESTION DU VENTILATION SEAL ---
+	# --- B. LES LUMIÈRES (Maintenir appuyé) ---
+	# GAUCHE
+	if Input.is_action_just_pressed("input_light_left"):
+		commander_lumiere("left", true)
+	elif Input.is_action_just_released("input_light_left"):
+		commander_lumiere("left", false)
+	
+	# DROITE
+	if Input.is_action_just_pressed("input_light_right"):
+		commander_lumiere("right", true)
+	elif Input.is_action_just_released("input_light_right"):
+		commander_lumiere("right", false)
+		
+	# --- C. VENTILATION ---
 	if Input.is_action_just_pressed("input_seal_vent"):
-		# On appelle la fonction dans le système caméra
+		commander_ventilation()
+		
+	# --- D. MONITEUR ---
+	if Input.is_action_just_pressed("toggle_monitor"):
+		commander_moniteur()
+
+func commander_porte(cote : String):
+	# Vérification Multi
+	if NetworkGlobal.players.size() > 0:
+		rpc("sync_action_door", cote)
+	else:
+		# Solo
+		if cote == "left": porte_gauche._on_door_toggle()
+		elif cote == "right": porte_droite._on_door_toggle()
+
+func commander_lumiere(cote : String, est_allume : bool):
+	if NetworkGlobal.players.size() > 0:
+		rpc("sync_action_light", cote, est_allume)
+	else:
+		if cote == "left":
+			if est_allume: porte_gauche._on_light_start()
+			else: porte_gauche._on_light_stop()
+		elif cote == "right":
+			if est_allume: porte_droite._on_light_start()
+			else: porte_droite._on_light_stop()
+			
+func commander_ventilation():
+	if NetworkGlobal.players.size() > 0:
+		rpc("sync_action_vent")
+	else:
 		if systeme_camera.has_method("_on_toggle_vent"):
 			systeme_camera._on_toggle_vent()
 			
-	if Input.is_action_just_pressed("toggle_monitor"): # <--- On utilise le nouveau nom
-		if systeme_camera.has_method("toggle_monitor"):
-			systeme_camera.toggle_monitor()
-			if audio_monitor.stream: audio_monitor.play()
-			
-			# Si on ouvre, on éteint les lumières des portes pour économiser/logique
-			if systeme_camera.est_ouvert:
-				if porte_gauche.has_method("_on_light_stop"): porte_gauche._on_light_stop()
-				if porte_droite.has_method("_on_light_stop"): porte_droite._on_light_stop()
+func commander_moniteur():
+	# 1. ACTION LOCALE (Visuelle)
+	if systeme_camera.has_method("toggle_monitor"):
+		systeme_camera.toggle_monitor()
+		if audio_monitor.stream: audio_monitor.play()
+		
+		# Si j'ouvre mon moniteur, j'éteins mes lumières locales
+		if systeme_camera.est_ouvert:
+			if porte_gauche.has_method("_on_light_stop"): porte_gauche._on_light_stop()
+			if porte_droite.has_method("_on_light_stop"): porte_droite._on_light_stop()
+
+	# 2. LOGIQUE RÉSEAU (Pour la batterie)
+	if NetworkGlobal.players.size() > 0:
+		var mon_statut = systeme_camera.est_ouvert
+		
+		if multiplayer.is_server():
+			# JE SUIS L'HÔTE : Je mets à jour mon propre dictionnaire directement
+			joueurs_sur_moniteur[1] = mon_statut
+			calculer_drain_batterie(0) # Recalcul immédiat
+		else:
+			# JE SUIS CLIENT : J'envoie ma facture au serveur
+			rpc_id(1, "server_update_camera_usage", mon_statut)
 
 
 
+@rpc("any_peer", "call_local", "reliable")
+func sync_action_door(cote):
+	if cote == "left":
+		porte_gauche._on_door_toggle()
+	elif cote == "right":
+		porte_droite._on_door_toggle()
+		
+	# On force la mise à jour immédiate de l'usage pour le serveur
+	if multiplayer.is_server():
+		calculer_drain_batterie(0)
 
+@rpc("any_peer", "call_local", "reliable")
+func sync_action_light(cote, est_allume):
+	# On met à jour les variables locales pour que tout le monde ait le même état
+	if cote == "left":
+		light_left_on = est_allume
+		if est_allume: porte_gauche._on_light_start()
+		else: porte_gauche._on_light_stop()
+	elif cote == "right":
+		light_right_on = est_allume
+		if est_allume: porte_droite._on_light_start()
+		else: porte_droite._on_light_stop()
+	
+	# Mise à jour visuelle (Fond d'écran) pour voir la lumière chez l'autre
+	update_office_background()
+		
+@rpc("any_peer", "call_local", "reliable")
+func sync_action_vent():
+	if systeme_camera.has_method("_on_toggle_vent"):
+		systeme_camera._on_toggle_vent()
+
+@rpc("any_peer", "call_local", "reliable")
+func sync_action_monitor():
+	if systeme_camera.has_method("toggle_monitor"):
+		systeme_camera.toggle_monitor()
+		if audio_monitor.stream: audio_monitor.play()
+		
+		# Si on ouvre, on éteint les lumières des portes pour économiser/logique
+		if systeme_camera.est_ouvert:
+			if porte_gauche.has_method("_on_light_stop"): porte_gauche._on_light_stop()
+			if porte_droite.has_method("_on_light_stop"): porte_droite._on_light_stop()
 
 
 func _process(delta):
@@ -271,8 +385,17 @@ func _process(delta):
 		gestion_inputs_clavier()
 					
 		if night_index >= 3:
-			if Input.is_action_just_pressed("toggle_fan"): toggle_ventilateur()
-			if Input.is_action_just_pressed("toggle_silent_fan"): toggle_silent_ventilateur()
+			if Input.is_action_just_pressed("toggle_fan"):
+				if NetworkGlobal.players.size() > 0:
+					rpc("sync_fan_normal") # On prévient tout le monde
+				else:
+					toggle_ventilateur() # Solo
+					
+			if Input.is_action_just_pressed("toggle_silent_fan"):
+				if NetworkGlobal.players.size() > 0:
+					rpc("sync_fan_silent") # On prévient tout le monde
+				else:
+					toggle_silent_ventilateur() # Solo
 		else:
 			# Logique auto pour nuits 1-2
 			if not ventilateur_actif:
@@ -280,6 +403,7 @@ func _process(delta):
 				if audio_fan and not audio_fan.playing: audio_fan.play()
 			if silent_ventilateur_active:
 				silent_ventilateur_active = false
+	
 	
 	# --- 2. CAMERA SCROLL (Autorisé même sans courant !) ---
 	# On peut regarder autour de soi dans le noir
@@ -313,6 +437,20 @@ func _process(delta):
 	gestion_puppet(delta)
 	
 	
+@rpc("any_peer", "call_local", "reliable")
+func sync_fan_normal():
+	toggle_ventilateur()
+	# En bonus : l'hôte force une mise à jour immédiate de l'usage batterie
+	if multiplayer.is_server():
+		calculer_drain_batterie(0)
+
+@rpc("any_peer", "call_local", "reliable")
+func sync_fan_silent():
+	toggle_silent_ventilateur()
+	if multiplayer.is_server():
+		calculer_drain_batterie(0)
+
+
 func gestion_puppet(delta):
 	if game_over or est_coupure_courant: return
 
@@ -363,42 +501,70 @@ func renvoyer_puppet(bot):
 	puppet_timer_reset = 5.0
 
 func calculer_temperature(delta):
-	if ventilateur_actif:
-		if temperature > temperature_min:
-			temperature -= vitesse_refroidissement * delta
-			
-	elif silent_ventilateur_active:
-		if temperature < temperature_max:
-			temperature += vitesse_chauffe * delta
-			
-		silent_fan_timer += delta
-		if silent_fan_timer >= 0.2:
-			silent_fan_timer = 0.0
-			if randf() < 0.7:
-				temperature -= 1.0
+	# --- LOGIQUE SERVEUR (Autorité) OU SOLO ---
+	var dois_calculer = true
+	
+	if NetworkGlobal.players.size() > 0:
+		if not multiplayer.is_server():
+			dois_calculer = false # Le client ne calcule rien, il attend le RPC
+	
+	if dois_calculer:
+		# 1. Calcul de la physique (Chauffe / Refroidit)
+		if ventilateur_actif:
+			if temperature > temperature_min:
+				temperature -= vitesse_refroidissement * delta
 				
-	else:
-		if temperature < temperature_max:
-			temperature += vitesse_chauffe * delta
+		elif silent_ventilateur_active:
+			if temperature < temperature_max:
+				temperature += vitesse_chauffe * delta
+				
+			silent_fan_timer += delta
+			if silent_fan_timer >= 0.2:
+				silent_fan_timer = 0.0
+				if randf() < 0.7:
+					temperature -= 1.0
+					
+		else:
+			if temperature < temperature_max:
+				temperature += vitesse_chauffe * delta
+		
+		temperature = clamp(temperature, temperature_min, temperature_max)
+		
+		# 2. Envoi aux clients (Si on est en multi)
+		if NetworkGlobal.players.size() > 0:
+			rpc("sync_temperature_data", temperature)
+
+	# --- AFFICHAGE (Commun à tout le monde) ---
+	mettre_a_jour_affichage_temp()
 	
-	temperature = clamp(temperature, temperature_min, temperature_max)
-	
+	# --- LOGIQUE DE MORT (Seul l'hôte ou le solo déclenche le Game Over) ---
+	if dois_calculer:
+		if temperature >= 120.0:
+			trigger_game_over_heat()
+			
+		if temperature >= 110.0 and not game_over:
+			heat_timer_accumulated += delta
+			if heat_timer_accumulated >= 10.0:
+				GameData.unlock_achievement("heat_survivor")
+		else:
+			heat_timer_accumulated = 0.0
+
+# Fonction pour mettre à jour le texte et la couleur (extrait de votre ancien code)
+func mettre_a_jour_affichage_temp():
 	if label_temp:
 		label_temp.text = "Temp : " + str(int(temperature)) + "°"
 		if temperature > 100:
 			label_temp.modulate = Color.RED
 		else:
 			label_temp.modulate = Color.GREEN
-			
-	if temperature >= 120.0:
-		trigger_game_over_heat()
-		
-	if temperature >= 110.0 and not game_over:
-		heat_timer_accumulated += delta
-		if heat_timer_accumulated >= 10.0:
-			GameData.unlock_achievement("heat_survivor")
-	else:
-		heat_timer_accumulated = 0.0
+
+# Le RPC que le client reçoit
+@rpc("authority", "call_remote", "unreliable")
+func sync_temperature_data(temp_recue):
+	temperature = temp_recue
+	mettre_a_jour_affichage_temp()
+
+
 
 func trigger_game_over_heat():
 	trigger_jumpscare("Heat")
@@ -460,34 +626,84 @@ func gestion_camera_scroll(delta):
 func calculer_drain_batterie(delta):
 	var usage_level : int = 0 
 	
+	# Usage de base (Portes, lumières, etc.)
 	if silent_ventilateur_active: usage_level += 1
 	for porte in portes:
 		if porte.est_fermee: usage_level += 1
-	if systeme_camera and systeme_camera.est_ouvert: usage_level += 1
-	if "vent_scelle" in systeme_camera and systeme_camera.vent_scelle: usage_level += 1
 	if light_left_on: usage_level += 1
 	if light_right_on: usage_level += 1
 	
-	if container_barres:
-		var barres = container_barres.get_children()
-		for i in range(barres.size()):
-			if i < usage_level: barres[i].visible = true 
-			else: barres[i].visible = false
+	# --- MODIFICATION : USAGE CAMÉRA (NON CUMULATIF) ---
+	var camera_est_active_globalement = false
+	
+	if NetworkGlobal.players.size() > 0:
+		if multiplayer.is_server():
+			# Le serveur vérifie si AU MOINS UN joueur a la caméra ouverte
+			for id in joueurs_sur_moniteur:
+				if joueurs_sur_moniteur[id] == true:
+					camera_est_active_globalement = true
+					break # On a trouvé quelqu'un, pas besoin de compter les autres !
+		else:
+			# Le client ne calcule rien, il attend le RPC
+			pass
+	else:
+		# Mode Solo
+		if systeme_camera and systeme_camera.est_ouvert:
+			camera_est_active_globalement = true
 			
-	#if usage_level == 0: return 
+	# Si la caméra est active (par 1 ou 2 joueurs), on ajoute 1 barre
+	if camera_est_active_globalement:
+		usage_level += 1
+	# -----------------------------------------------------
+
+	# Bonus vent scellé
+	if "vent_scelle" in systeme_camera and systeme_camera.vent_scelle: 
+		usage_level += 1
 	
 	usage_level = clampi(usage_level, 0, 5) 
-	var drain_de_base = taux_drain[usage_level] if usage_level < taux_drain.size() else 5.0
-	var ratio_duree = 60.0 / hour_duration
-	var drain_reel = drain_de_base * ratio_duree
-	batterie -= drain_reel * delta
-	
-	if batterie < 0: batterie = 0
+
+	# --- LOGIQUE SERVEUR / CLIENT (inchangée) ---
+	if NetworkGlobal.players.size() > 0:
+		if multiplayer.is_server():
+			var drain_de_base = taux_drain[usage_level] if usage_level < taux_drain.size() else 5.0
+			var ratio_duree = 60.0 / hour_duration
+			var drain_reel = drain_de_base * ratio_duree
+			batterie -= drain_reel * delta
+			if batterie < 0: batterie = 0
+			
+			# On envoie la batterie ET le niveau d'usage calculé
+			rpc("sync_battery_data", batterie, usage_level)
+			update_usage_bars_visual(usage_level)
+			
+	else:
+		# Solo
+		update_usage_bars_visual(usage_level)
+		var drain_de_base = taux_drain[usage_level] if usage_level < taux_drain.size() else 5.0
+		var drain_reel = drain_de_base * (60.0 / hour_duration)
+		batterie -= drain_reel * delta
+		if batterie < 0: batterie = 0
+
 	if label_batterie:
 		label_batterie.text = "Power : " + str(int(batterie)) + "%"
 		if batterie <= 20: label_batterie.modulate = Color.RED
 		
 	if batterie <= 0: trigger_blackout()
+
+# --- NOUVELLE FONCTION VISUELLE ---
+func update_usage_bars_visual(level : int):
+	if container_barres:
+		var barres = container_barres.get_children()
+		for i in range(barres.size()):
+			if i < level: barres[i].visible = true 
+			else: barres[i].visible = false
+
+# --- NOUVEAU RPC POUR LA BATTERIE ET L'USAGE ---
+@rpc("authority", "call_remote", "unreliable")
+func sync_battery_data(batterie_recue, usage_recu):
+	# Le client met à jour sa batterie
+	batterie = batterie_recue
+	# ET ses barres d'usage
+	update_usage_bars_visual(usage_recu)
 
 func trigger_blackout():
 	if est_coupure_courant or game_over: return
@@ -543,6 +759,24 @@ func sequence_blackout_freddy():
 		trigger_jumpscare("Freddy")
 
 func spawn_animatronics():
+	if NetworkGlobal.players.size() > 0:
+		# En multi, on utilise l'ID qui a été synchronisé via NetworkGlobal
+		var challenge_id = NetworkGlobal.active_challenge_multi_id
+		print("Lancement Nuit Multi. Challenge actif : ", challenge_id)
+		
+		# Si on joue la nuit 7, on applique les IA du challenge
+		if night_index == 7:
+			var challenge_data = null
+			for c in GameData.challenges_list:
+				if c["id"] == challenge_id:
+					challenge_data = c
+					break
+			
+			if challenge_data and challenge_data["id"] != "custom":
+				# On remplace les niveaux par ceux du challenge (Bear Attack, etc.)
+				GameData.custom_night_levels = challenge_data["levels"].duplicate()
+	
+	
 	for i in range(GameData.animatronics_data.size()):
 		var data = GameData.animatronics_data[i]
 		var nom_bot = data["name"]
@@ -554,6 +788,7 @@ func spawn_animatronics():
 		
 		# CREATION
 		var bot = AnimatronicAI.new()
+		add_child(bot)
 		var porte_a_attaquer = null
 		
 		if nom_bot != "Springtrap" and data.has("door_side"):
@@ -639,7 +874,11 @@ func trigger_jumpscare(nom_tueur : String):
 		ecran_jumpscare.stop()
 		$Layer_Jumpscare.visible = false
 	
-	get_tree().change_scene_to_file("res://Scenes/main_menu.tscn")
+	if NetworkGlobal.players.size() > 0:
+		if multiplayer.is_server():
+			NetworkGlobal.rpc("return_to_lobby_multi")
+	else:
+		get_tree().change_scene_to_file("res://Scenes/main_menu.tscn")
 
 func trigger_victory():
 	game_over = true
@@ -722,7 +961,13 @@ func trigger_victory():
 		GameData.image_fin_a_afficher = chemin_image_fin
 		
 		# On charge la scène de fin
-		get_tree().change_scene_to_file("res://Scenes/ending_screen.tscn")
+		if NetworkGlobal.players.size() > 0:
+		# RETOUR LOBBY EN MULTI
+			if multiplayer.is_server():
+				NetworkGlobal.rpc("return_to_lobby_multi")
+		else:
+			# RETOUR MENU EN SOLO
+			get_tree().change_scene_to_file("res://Scenes/main_menu.tscn")
 		return # On arrête la fonction ici, on ne lance pas de mini-jeu
 		
 	var nom_scene_minijeu = "res://minigames/Minigame_" + str(night_index) + ".tscn"

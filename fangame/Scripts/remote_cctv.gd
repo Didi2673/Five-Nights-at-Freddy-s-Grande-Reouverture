@@ -2,14 +2,14 @@ extends Control
 
 # --- RÉFÉRENCES VISUELLES ---
 @export var ecran_visuel : TextureRect 
-@export var ecran_brouillage : ColorRect # Assigne-le dans l'inspecteur si possible
+@export var ecran_brouillage : ColorRect 
 
 var flash_count_session : int = 0
 
 # --- RÉFÉRENCES AUDIO ---
 @onready var audio_switch = $Audio_Switch_Cam
 @onready var audio_flash_foxy = $Audio_Flash_Foxy
-@onready var audio_mangle_static = $Audio_Mangle_Static # <-- AJOUTE ÇA
+@onready var audio_mangle_static = $Audio_Mangle_Static
 
 # --- BOUTONS ---
 var btn_audio : BaseButton
@@ -25,7 +25,7 @@ var vent_scelle : bool = false
 # --- ZONES SPÉCIALES ---
 var chemin_chica_audio = ["Cam12", "Cam10", "Cam06", "Cam05", "Cam02"]
 
-# --- FOXY (Gardé pour le flash) ---
+# --- FOXY ---
 var ui_foxy : Control
 var peut_flasher : bool = true
 var foxy_max_rage : int = 5
@@ -38,8 +38,8 @@ var etat_salles = {
 	"Cam01": [], "Cam02": [], "Cam03": [], "Cam04": [],
 	"Cam05": [], "Cam06": [], "Cam07": [], "Cam08": [], 
 	"Cam09": [], "Cam10": [], "Cam11": [], "Cam12": [], "Cam13": [],
-	"Left_Door_Pos": [],   # Position finale (invisible)
-	"Right_Door_Pos": [],  # Position finale (invisible)
+	"Left_Door_Pos": [],   
+	"Right_Door_Pos": [],  
 }
 
 func _ready():
@@ -48,24 +48,24 @@ func _ready():
 	# --- 1. CONFIGURATION AUDIO (CHICA) ---
 	btn_audio = find_child("Bouton_Audio", true, false)
 	if btn_audio:
-		if not btn_audio.pressed.is_connected(_on_audio_pressed):
-			btn_audio.pressed.connect(_on_audio_pressed)
+		if not btn_audio.pressed.is_connected(_on_input_audio_pressed):
+			btn_audio.pressed.connect(_on_input_audio_pressed) # Modifié
 		btn_audio.visible = false
 	
 	# --- 2. CONFIGURATION VENTILATION (SPRINGTRAP/MANGLE) ---
 	btn_vent = find_child("Bouton_Vent", true, false)
 	if btn_vent:
 		btn_vent.visible = false 
-		if not btn_vent.pressed.is_connected(_on_toggle_vent):
-			btn_vent.pressed.connect(_on_toggle_vent)
+		if not btn_vent.pressed.is_connected(_on_input_vent_pressed):
+			btn_vent.pressed.connect(_on_input_vent_pressed) # Modifié
 			
 	# --- 3. CONFIGURATION FOXY (FLASH) ---
 	ui_foxy = find_child("Foxy_UI", true, false)
 	if ui_foxy:
 		btn_flash = ui_foxy.find_child("Bouton_Flash", true, false)
 		if btn_flash:
-			if not btn_flash.pressed.is_connected(_on_flash_foxy):
-				btn_flash.pressed.connect(_on_flash_foxy)
+			if not btn_flash.pressed.is_connected(_on_input_flash_pressed):
+				btn_flash.pressed.connect(_on_input_flash_pressed) # Modifié
 
 	# --- 4. BROUILLAGE ---
 	if ecran_brouillage:
@@ -73,82 +73,115 @@ func _ready():
 	
 	mettre_a_jour_image()
 
-# --- AJOUT PRINCIPAL : LA SÉCURITÉ AUDIO CONTINUE ---
 func _process(_delta):
-	# Si le moniteur n'est pas visible (fermé par le joueur ou par le jeu)
 	if not visible:
-		# On force l'arrêt du static de Mangle s'il joue encore
 		if audio_mangle_static and audio_mangle_static.playing:
 			audio_mangle_static.stop()
-			
-		# Optionnel : On coupe aussi le bruit de switch caméra pour être propre
 		if audio_switch and audio_switch.playing:
 			audio_switch.stop()
 
-# --- INPUT UTILISATEUR ---
-func afficher_danger(nom_camera : String, est_visible : bool):
-	# On cherche le bouton qui correspond à la caméra (ex: "Bouton_Cam04")
-	# Adaptez le nom "Bouton_" selon comment vous avez nommé vos nœuds !
-	# Si vos boutons s'appellent juste "Cam01", retirez le "Bouton_" dans le code ci-dessous.
-	var nom_bouton = "Bouton_" + nom_camera.to_upper()
-	
-	# On cherche le nœud dans l'arbre
-	var bouton = find_child(nom_bouton, true, false)
-	
-	if bouton:
-		# On cherche l'icone qu'on a créée à l'étape 1
-		var icon = bouton.get_node_or_null("Icone_Danger")
-		if icon:
-			icon.visible = est_visible
-	else:
-		print("ERREUR : Impossible de trouver le bouton pour ", nom_camera)
+# ============================================================
+# PARTIE 1 : INPUTS (CLICS SOURIS)
+# Ces fonctions envoient l'ordre au serveur via RPC
+# ============================================================
 
+func _on_input_vent_pressed():
+	if NetworkGlobal.players.size() > 0:
+		rpc("sync_action_vent_cctv") # On envoie l'ordre
+	else:
+		_executer_toggle_vent() # Solo
+
+func _on_input_audio_pressed():
+	if not a_du_courant: return
+	if NetworkGlobal.players.size() > 0:
+		rpc("sync_action_audio_lure", camera_actuelle)
+	else:
+		_executer_audio_lure(camera_actuelle)
+
+func _on_input_flash_pressed():
+	if not peut_flasher or not a_du_courant: return
+	if NetworkGlobal.players.size() > 0:
+		rpc("sync_action_flash")
+	else:
+		_executer_flash_foxy()
+
+# ============================================================
+# PARTIE 2 : ACTIONS RÉELLES (RPC)
+# Exécutées chez TOUT LE MONDE (Serveur + Clients)
+# ============================================================
+
+# --- A. VENTILATION ---
+@rpc("any_peer", "call_local", "reliable")
+func sync_action_vent_cctv():
+	# Si ça vient de la caméra, on exécute
+	_executer_toggle_vent()
+	
+	# IMPORTANT : Si le bureau a aussi un bouton physique ou une variable d'état,
+	# il faut s'assurer qu'Office.gd soit au courant.
+	# Normalement Office.gd gère la logique "vent_scelle" principale.
+	var office = get_owner()
+	if office and office.has_method("commander_ventilation"):
+		# On informe l'office sans recréer une boucle infinie RPC
+		# (Ici on suppose que c'est juste visuel/bouton CCTV)
+		if office.has_method("_on_toggle_vent"): # Si office a une méthode interne
+			pass 
 
 func _on_toggle_vent():
-	# On inverse l'état
+	_executer_toggle_vent()
+
+# La vraie logique qui change la variable et le texte
+func _executer_toggle_vent():
 	vent_scelle = !vent_scelle
-	
 	if btn_vent:
-		if vent_scelle:
-			btn_vent.text = "OUVRIR VENT"
-		else:
-			btn_vent.text = "SCELLER VENT"
-			
+		if vent_scelle: btn_vent.text = "OUVRIR VENT"
+		else: btn_vent.text = "SCELLER VENT"
+	
+	# On informe l'Office pour qu'il mette à jour ses variables de jeu
+	var office = get_owner()
+	if office and "vent_scelle" in office.systeme_camera:
+		office.systeme_camera.vent_scelle = vent_scelle
+		
 	print("Système Vent scellé : ", vent_scelle)
 
-func _on_audio_pressed():
-	if not a_du_courant: return
+
+# --- B. AUDIO LEURRE ---
+@rpc("any_peer", "call_local", "reliable")
+func sync_action_audio_lure(cam_cible):
+	_executer_audio_lure(cam_cible)
+
+func _executer_audio_lure(cam_cible):
+	print("Audio leurre reçu sur : ", cam_cible)
 	
-	var cam_cible = camera_actuelle
-	print("Audio leurre envoyé sur : ", cam_cible)
-	
-	# On envoie l'info à l'Office (qui transmettra aux robots)
-	var office = get_owner() # Cherche la racine de la scène (Office)
+	var office = get_owner()
 	if office and office.has_method("jouer_audio_leurre"):
 		office.jouer_audio_leurre(cam_cible)
 	
-	# Cooldown du bouton
+	# Cooldown visuel du bouton
 	if btn_audio:
 		btn_audio.disabled = true
 		await get_tree().create_timer(3.0).timeout 
 		if btn_audio: btn_audio.disabled = false
 
-func _on_flash_foxy():
-	if not peut_flasher or not a_du_courant: return
-	
-	# Le flash ne marche que sur la Cam03
+
+# --- C. FLASH FOXY ---
+@rpc("any_peer", "call_local", "reliable")
+func sync_action_flash():
+	_executer_flash_foxy()
+
+func _executer_flash_foxy():
 	if camera_actuelle == "Cam03" and not foxy_attacking:
 		if audio_flash_foxy: audio_flash_foxy.play()
 		
-		# On calme Foxy (mécanique visuelle et logique)
 		foxy_rage -= 1
 		if foxy_rage < 0: foxy_rage = 0
 		
-		flash_count_session += 1
-		if flash_count_session >= 10:
-			GameData.unlock_achievement("foxy_flasher")
+		# On prévient aussi Office.gd qui gère la "vraie" rage de l'IA
+		var office = get_owner()
+		if office and office.has_method("update_foxy_rage"): 
+			office.update_foxy_rage(foxy_rage) # Fonction hypothétique dans office
 		
-		# Feedback visuel
+		flash_count_session += 1
+		
 		flash_screen_effect()
 		mettre_a_jour_image()
 		
@@ -158,8 +191,37 @@ func _on_flash_foxy():
 		await get_tree().create_timer(temps_recharge_flash).timeout
 		peut_flasher = true
 		if btn_flash: btn_flash.disabled = false
-		
-		# Note : C'est office.gd qui gère le "Vrai" reset de Foxy via une fonction aussi
+
+
+# ============================================================
+# PARTIE 3 : SYNCHRONISATION VISUELLE (LES ROBOTS)
+# Cette fonction doit être appelée par Office.gd quand un robot bouge
+# ============================================================
+
+@rpc("authority", "call_remote", "reliable")
+func sync_etat_salle(nom_salle : String, liste_occupants : Array):
+	# 1. Mise à jour des données
+	etat_salles[nom_salle] = liste_occupants
+	
+	# 2. Si on regarde cette salle sur la tablette, on met à jour l'image
+	if camera_actuelle == nom_salle:
+		mettre_a_jour_image()
+
+	# 3. AJOUT IMPORTANT : On prévient le bureau de vérifier ses lumières/portes
+	# C'est ce qui permet d'effacer Bonnie de la fenêtre immédiatement
+	var office = get_owner()
+	if office and office.has_method("update_office_background"):
+		office.update_office_background()
+
+# --- INPUT UTILISATEUR LOCAL (Boutons Caméras) ---
+# Ces boutons restent locaux car chaque joueur regarde la caméra qu'il veut
+
+func afficher_danger(nom_camera : String, est_visible : bool):
+	var nom_bouton = "Bouton_" + nom_camera.to_upper()
+	var bouton = find_child(nom_bouton, true, false)
+	if bouton:
+		var icon = bouton.get_node_or_null("Icone_Danger")
+		if icon: icon.visible = est_visible
 
 # --- GESTION DU MONITEUR ---
 
@@ -174,9 +236,6 @@ func toggle_monitor():
 func fermer_moniteur():
 	est_ouvert = false
 	visible = false
-	
-	# Au lieu de baisser le volume, on stop proprement
-	# (Le _process est une double sécurité, mais on le fait ici aussi)
 	if audio_mangle_static: audio_mangle_static.stop()
 
 func declencher_brouillage():
@@ -188,7 +247,6 @@ func declencher_brouillage():
 
 # --- NAVIGATION CAMÉRAS ---
 
-# Relie tes boutons UI à ces fonctions :
 func _on_cam_01_pressed(): changer_camera("Cam01")
 func _on_cam_02_pressed(): changer_camera("Cam02")
 func _on_cam_03_pressed(): changer_camera("Cam03")
@@ -207,54 +265,37 @@ func changer_camera(nom_cam : String):
 	camera_actuelle = nom_cam
 	if audio_switch: audio_switch.play()
 	
-	# 1. Gestion Bouton AUDIO (Chica)
-	if btn_audio:
-		# Visible seulement si utile pour Chica
-		btn_audio.visible = (nom_cam in chemin_chica_audio)
-
-	# 2. Gestion Bouton VENT (Springtrap / Mangle)
-	if btn_vent:
-		# Visible seulement sur la caméra de ventilation
-		btn_vent.visible = (nom_cam == "Cam13")
-	
-	# 3. Gestion UI Foxy
-	if ui_foxy:
-		ui_foxy.visible = (nom_cam == "Cam03" and not foxy_attacking)
+	if btn_audio: btn_audio.visible = (nom_cam in chemin_chica_audio)
+	if btn_vent: btn_vent.visible = (nom_cam == "Cam13")
+	if ui_foxy: ui_foxy.visible = (nom_cam == "Cam03" and not foxy_attacking)
 		
 	mettre_a_jour_image()
 
-# --- SYSTÈME D'IMAGES (LE COEUR DU CODE) ---
+# --- SYSTÈME D'IMAGES ---
 
 func mettre_a_jour_image():
 	if ecran_visuel == null: return
 	
-	# 1. On récupère qui est dans la salle
 	var occupants_reels = []
 	if etat_salles.has(camera_actuelle):
-		occupants_reels = etat_salles[camera_actuelle].duplicate() # Important : duplicate pour ne pas modifier la vraie liste
+		occupants_reels = etat_salles[camera_actuelle].duplicate()
 	
-	# --- GESTION AUDIO MANGLE ---
 	gestion_audio_mangle(occupants_reels)
 	
-	
-	# 3. Construction du nom de l'image
 	var suffixe = ""
 	
 	if occupants_reels.is_empty():
 		suffixe = "_Vide"
 	else:
-		occupants_reels.sort() # Trie par ordre alphabétique (ex: Bonnie_Chica)
+		occupants_reels.sort()
 		for nom_monstre in occupants_reels:
 			suffixe += "_" + nom_monstre
 			
-	# --- CAS SPÉCIAL : FOXY (Cam03) ---
 	if camera_actuelle == "Cam03":
 		if foxy_attacking:
-			# Foxy est parti attaquer, la salle est vide (ou avec d'autres robots)
 			ecran_visuel.texture = load("res://Cameras/Cam03_Vide.png")
 			return
 		elif occupants_reels.has("Foxy") or occupants_reels.is_empty(): 
-			# Si Foxy est là (il est seul dans sa rideau), on affiche selon sa rage
 			var phase = clampi(foxy_rage, 0, 4)
 			var nom_img = "res://Cameras/Cam03_Foxy_" + str(phase) + ".png"
 			if ResourceLoader.exists(nom_img):
@@ -263,24 +304,19 @@ func mettre_a_jour_image():
 				ecran_visuel.texture = load("res://Cameras/Cam03_Foxy_0.png")
 			return
 
-	# --- CHARGEMENT STANDARD ---
 	var chemin_final = "res://Cameras/" + camera_actuelle + suffixe + ".png"
 	
 	if ResourceLoader.exists(chemin_final):
 		ecran_visuel.texture = load(chemin_final)
 	else:
-		# Si l'image combinée n'existe pas (ex: Chica + Freddy ensemble), on met l'image vide ou statique
-		print("Image manquante : ", chemin_final)
 		ecran_visuel.texture = load("res://Cameras/" + camera_actuelle + "_Vide.png")
 
 func flash_screen_effect():
-	# Petit effet blanc rapide pour simuler le flash
 	var original = ecran_visuel.modulate
-	ecran_visuel.modulate = Color(3, 3, 3) # Très brillant
+	ecran_visuel.modulate = Color(3, 3, 3)
 	await get_tree().create_timer(0.05).timeout
 	ecran_visuel.modulate = original
 
-# --- FONCTION COUPURE COURANT ---
 func couper_courant_camera():
 	a_du_courant = false
 	fermer_moniteur()
@@ -288,19 +324,13 @@ func couper_courant_camera():
 	if btn_audio: btn_audio.visible = false
 	
 func gestion_audio_mangle(liste_occupants : Array):
-	# Note : Cette fonction sert pour l'activation quand on change de caméra.
-	# La désactivation d'urgence (fermeture moniteur) est gérée par _process.
-	
 	if not est_ouvert or not visible or audio_mangle_static == null:
 		audio_mangle_static.stop()
 		return
 
-	# Si Mangle est dans la liste des occupants de la caméra actuelle
 	if liste_occupants.has("Mangle"):
-		# On lance le son s'il ne joue pas déjà
 		if not audio_mangle_static.playing:
 			audio_mangle_static.play()
 	else:
-		# Mangle n'est pas là, on coupe
 		if audio_mangle_static.playing:
 			audio_mangle_static.stop()
