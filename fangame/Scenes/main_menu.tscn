@@ -424,6 +424,7 @@ offset_bottom = 1080.0
 color = Color(0, 0, 0, 1)
 
 [node name="Ecran_Accueil" type="Control" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -466,13 +467,24 @@ text_direction = 3
 [node name="Bouton_Quitter" type="Button" parent="Ecran_Accueil"]
 layout_mode = 0
 offset_left = 141.0
+offset_top = 966.0
+offset_right = 436.0
+offset_bottom = 1036.0
+theme_type_variation = &"FlatButton"
+theme_override_fonts/font = ExtResource("3_16hvj")
+theme_override_font_sizes/font_size = 70
+text = "Quitter"
+
+[node name="Bouton_Multi" type="Button" parent="Ecran_Accueil"]
+layout_mode = 0
+offset_left = 141.0
 offset_top = 883.0
 offset_right = 436.0
 offset_bottom = 953.0
 theme_type_variation = &"FlatButton"
 theme_override_fonts/font = ExtResource("3_16hvj")
 theme_override_font_sizes/font_size = 70
-text = "Quitter"
+text = "Multijoueur"
 
 [node name="Bouton_Options" type="Button" parent="Ecran_Accueil"]
 layout_mode = 0
@@ -687,6 +699,222 @@ offset_bottom = 140.0
 text = "Succès débloqués"
 label_settings = SubResource("LabelSettings_fu7sn")
 
+[node name="Ecran_Multi" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel_Connexion" type="Panel" parent="Ecran_Multi"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label_Titre" type="Label" parent="Ecran_Multi/Panel_Connexion"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -45.5
+offset_right = 45.5
+offset_bottom = 23.0
+grow_horizontal = 2
+theme_override_fonts/font = ExtResource("3_16hvj")
+theme_override_font_sizes/font_size = 80
+text = "Multijoueur"
+
+[node name="LineEdit_Pseudo" type="LineEdit" parent="Ecran_Multi/Panel_Connexion"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -125.0
+offset_top = -240.0
+offset_right = 125.0
+offset_bottom = -188.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/font = ExtResource("3_16hvj")
+theme_override_font_sizes/font_size = 50
+placeholder_text = "Pseudo"
+
+[node name="LineEdit_IP" type="LineEdit" parent="Ecran_Multi/Panel_Connexion"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -125.0
+offset_top = -165.0
+offset_right = 125.0
+offset_bottom = -113.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/font = ExtResource("3_16hvj")
+theme_override_font_sizes/font_size = 50
+text = "127.0.0.1"
+placeholder_text = "127.0.0.1"
+
+[node name="VBoxContainer_Boutons" type="VBoxContainer" parent="Ecran_Multi/Panel_Connexion"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -41.5
+offset_top = -33.0
+offset_right = 41.5
+offset_bottom = 33.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Bouton_Host" type="Button" parent="Ecran_Multi/Panel_Connexion/VBoxContainer_Boutons"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_16hvj")
+theme_override_font_sizes/font_size = 50
+text = "Créer une partie"
+
+[node name="Bouton_Join" type="Button" parent="Ecran_Multi/Panel_Connexion/VBoxContainer_Boutons"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_16hvj")
+theme_override_font_sizes/font_size = 50
+text = "Rejoindre"
+
+[node name="Bouton_Retour" type="Button" parent="Ecran_Multi/Panel_Connexion"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -74.0
+offset_right = 272.0
+grow_vertical = 0
+theme_override_fonts/font = ExtResource("3_16hvj")
+theme_override_font_sizes/font_size = 75
+text = "Retour"
+
+[node name="Panel_Lobby" type="Panel" parent="Ecran_Multi"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label_RoomName" type="Label" parent="Ecran_Multi/Panel_Lobby"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.0
+offset_right = 20.0
+offset_bottom = 23.0
+grow_horizontal = 2
+theme_override_fonts/font = ExtResource("3_16hvj")
+theme_override_font_sizes/font_size = 70
+text = "Salle d'attente"
+
+[node name="HBoxContainer_Mode" type="HBoxContainer" parent="Ecran_Multi/Panel_Lobby"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -40.0
+offset_top = -20.0
+offset_bottom = 20.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="Ecran_Multi/Panel_Lobby/HBoxContainer_Mode"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_16hvj")
+theme_override_font_sizes/font_size = 35
+text = "Mode de Jeu"
+
+[node name="OptionButton_Mode" type="OptionButton" parent="Ecran_Multi/Panel_Lobby/HBoxContainer_Mode"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_16hvj")
+theme_override_font_sizes/font_size = 35
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Ecran_Multi/Panel_Lobby"]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_top = -20.0
+offset_right = 759.0
+offset_bottom = 217.0
+grow_vertical = 2
+
+[node name="Container_Liste_Joueurs" type="VBoxContainer" parent="Ecran_Multi/Panel_Lobby/ScrollContainer"]
+layout_mode = 2
+
+[node name="Bouton_Ready" type="Button" parent="Ecran_Multi/Panel_Lobby"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -62.5
+offset_top = -280.0
+offset_right = 62.5
+offset_bottom = -228.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_fonts/font = ExtResource("3_16hvj")
+theme_override_font_sizes/font_size = 50
+text = "Prêt"
+
+[node name="Bouton_Quitter_Lobby" type="Button" parent="Ecran_Multi/Panel_Lobby"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -52.0
+offset_right = 213.0
+grow_vertical = 0
+theme_override_fonts/font = ExtResource("3_16hvj")
+theme_override_font_sizes/font_size = 50
+text = "Quitter"
+
+[node name="Label_Status" type="Label" parent="Ecran_Multi/Panel_Lobby"]
+layout_mode = 0
+offset_left = 100.0
+offset_top = 800.0
+offset_right = 832.0
+offset_bottom = 844.0
+theme_override_fonts/font = ExtResource("3_16hvj")
+theme_override_font_sizes/font_size = 50
+text = "En attente des joueurs..."
+
+[node name="Label_IP_Info" type="Label" parent="Ecran_Multi/Panel_Lobby"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -20.0
+offset_top = -23.0
+offset_right = 20.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_fonts/font = ExtResource("3_16hvj")
+theme_override_font_sizes/font_size = 50
+text = "192.168.1.1"
+
 [node name="Ecran_Options" type="Control" parent="."]
 visible = false
 layout_mode = 1
@@ -812,9 +1040,12 @@ texture = ExtResource("8_8dnnj")
 
 [connection signal="pressed" from="Ecran_Accueil/Bouton_Play" to="." method="_on_aller_vers_selection"]
 [connection signal="pressed" from="Ecran_Accueil/Bouton_Quitter" to="." method="_on_bouton_quitter_pressed"]
+[connection signal="pressed" from="Ecran_Accueil/Bouton_Multi" to="." method="_on_bouton_multi_pressed"]
 [connection signal="pressed" from="Ecran_Accueil/Bouton_Options" to="." method="_on_bouton_options_pressed"]
 [connection signal="pressed" from="Ecran_Accueil/Bouton_Succes" to="." method="_on_aller_vers_succes"]
 [connection signal="pressed" from="Ecran_Selection/Panneau_Details/Bouton_Lancer_Nuit" to="." method="_on_bouton_lancer_nuit_pressed"]
 [connection signal="pressed" from="Ecran_Selection/Bouton_Retour" to="." method="_on_bouton_retour_pressed"]
 [connection signal="pressed" from="Ecran_Succes/Bouton_Retour" to="." method="_on_retour_accueil_depuis_succes"]
+[connection signal="pressed" from="Ecran_Multi/Panel_Connexion/VBoxContainer_Boutons/Bouton_Join" to="." method="_on_join_pressed"]
+[connection signal="pressed" from="Ecran_Multi/Panel_Connexion/Bouton_Retour" to="." method="_on_retour_multi_pressed"]
 [connection signal="pressed" from="Ecran_Options/Panel/Bouton_Retour" to="." method="_on_bouton_retour_pressed"]

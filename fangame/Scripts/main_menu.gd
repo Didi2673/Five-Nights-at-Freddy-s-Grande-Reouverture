@@ -5,6 +5,19 @@ extends Control
 @onready var ecran_selection = $Ecran_Selection
 @onready var ecran_options = $Ecran_Options
 @onready var liste_nuits_container = $Ecran_Selection/Liste_Nuits
+@onready var label_ip_info = $Ecran_Multi/Panel_Lobby/Label_IP_Info
+
+@onready var ecran_multi = $Ecran_Multi
+@onready var panel_connexion = $Ecran_Multi/Panel_Connexion
+@onready var panel_lobby = $Ecran_Multi/Panel_Lobby
+
+@onready var input_pseudo = $Ecran_Multi/Panel_Connexion/LineEdit_Pseudo
+@onready var input_ip = $Ecran_Multi/Panel_Connexion/LineEdit_IP
+
+@onready var container_liste_joueurs = $Ecran_Multi/Panel_Lobby/ScrollContainer/Container_Liste_Joueurs
+@onready var option_mode = $Ecran_Multi/Panel_Lobby/HBoxContainer_Mode/OptionButton_Mode
+@onready var btn_ready = $Ecran_Multi/Panel_Lobby/Bouton_Ready
+@onready var label_status = $Ecran_Multi/Panel_Lobby/Label_Status
 
 
 @onready var container_touches = $Ecran_Options/Panel/ScrollContainer/Container_Touches
@@ -78,9 +91,34 @@ func _ready():
 		generer_liste_challenges()
 		container_challenges.visible = false
 		
+		
+	var btn_multi = ecran_accueil.find_child("Bouton_Multi", true, false)
+	if btn_multi:
+		btn_multi.pressed.connect(_on_bouton_multi_pressed)
+
+	# Connexions UI Multi
+	$Ecran_Multi/Panel_Connexion/VBoxContainer_Boutons/Bouton_Host.pressed.connect(_on_host_pressed)
+	$Ecran_Multi/Panel_Connexion/VBoxContainer_Boutons/Bouton_Join.pressed.connect(_on_join_pressed)
+	$Ecran_Multi/Panel_Connexion/Bouton_Retour.pressed.connect(_on_retour_multi_pressed)
+	
+	# Connexions Lobby
+	btn_ready.pressed.connect(_on_ready_pressed)
+	option_mode.item_selected.connect(_on_mode_selected)
+	$Ecran_Multi/Panel_Lobby/Bouton_Quitter_Lobby.pressed.connect(_on_quit_lobby)
+
+	# Connexions au NetworkGlobal (IMPORTANT)
+	NetworkGlobal.player_list_changed.connect(update_lobby_ui)
+	NetworkGlobal.connection_success.connect(_on_connection_success)
+	NetworkGlobal.connection_failed.connect(_on_connection_failed)
+	
+	# Initialisation OptionButton
+	option_mode.add_item("Coopératif")
+	option_mode.add_item("Versus (VS)")
+		
 	ecran_accueil.visible = true
 	ecran_selection.visible = false
 	ecran_options.visible = false
+	ecran_multi.visible = false
 	
 	if btn_lancer:
 		btn_lancer.mouse_entered.connect(_jouer_son_hover)
@@ -125,7 +163,158 @@ func _ready():
 	verifier_etoiles()
 	update_details_panel(0) 
 	
+func _on_bouton_multi_pressed():
+	ecran_accueil.visible = false
+	ecran_multi.visible = true
+	panel_connexion.visible = true
+	panel_lobby.visible = false
+
+func _on_retour_multi_pressed():
+	ecran_multi.visible = false
+	ecran_accueil.visible = true
+
+func _on_host_pressed():
+	if input_pseudo.text == "": return
+		
+	var mode_choisi = "Coop"
+	if option_mode.selected == 1: mode_choisi = "VS"
 	
+	NetworkGlobal.host_game(input_pseudo.text, mode_choisi)
+	_enter_lobby()
+	
+	# --- AJOUT ICI ---
+	# On récupère l'IP automatiquement
+	var mon_ip = NetworkGlobal.recuperer_mon_ip_locale()
+	label_ip_info.text = "Votre IP Hôte : " + mon_ip
+	label_ip_info.visible = true # On l'affiche seulement pour l'hôte
+
+func _on_join_pressed():
+	print("Bouton REJOINDRE cliqué !") # Pour vérifier que le clic marche
+	
+	if input_pseudo.text == "": 
+		print("Erreur : Pseudo vide")
+		return
+
+	var ip_cible = input_ip.text
+	
+	# Si le joueur n'a rien écrit, on utilise l'adresse locale par défaut
+	if ip_cible == "":
+		ip_cible = "127.0.0.1"
+	
+	print("Tentative de connexion à : " + ip_cible)
+	NetworkGlobal.join_game(input_pseudo.text, ip_cible)
+	label_ip_info.visible = false
+
+func _on_connection_success():
+	_enter_lobby()
+
+func _on_connection_failed():
+	label_status.text = "Échec de connexion !"
+	# Remettre l'écran connexion
+	panel_connexion.visible = true
+	panel_lobby.visible = false
+
+func _enter_lobby():
+	panel_connexion.visible = false
+	panel_lobby.visible = true
+	btn_ready.button_pressed = false
+	btn_ready.text = "JE SUIS PRÊT"
+	update_lobby_ui()
+
+func _on_quit_lobby():
+	NetworkGlobal.peer.close()
+	NetworkGlobal.players.clear()
+	_on_bouton_multi_pressed() # Retour écran pseudo
+
+# --- LOGIQUE LOBBY ---
+
+func _on_ready_pressed():
+	var est_pret = btn_ready.button_pressed
+	if est_pret:
+		btn_ready.text = "EN ATTENTE..."
+		btn_ready.modulate = Color.GREEN
+	else:
+		btn_ready.text = "JE SUIS PRÊT"
+		btn_ready.modulate = Color.WHITE
+		
+	NetworkGlobal.rpc("update_player_ready", est_pret)
+
+func _on_mode_selected(index):
+	# Seul l'hôte peut changer ça
+	if multiplayer.is_server():
+		var mode = "Coop"
+		if index == 1: mode = "VS"
+		NetworkGlobal.rpc("sync_game_mode", mode)
+	else:
+		# Si un client essaie de changer, on remet la valeur du serveur
+		update_lobby_ui() 
+
+func update_lobby_ui():
+	# 1. On nettoie la liste précédente (pour éviter les doublons)
+	for child in container_liste_joueurs.get_children():
+		child.queue_free()
+	
+	# 2. On boucle sur tous les joueurs connectés
+	for id in NetworkGlobal.players:
+		var p = NetworkGlobal.players[id]
+		
+		# --- CRÉATION DE LA LIGNE (HBox) ---
+		var ligne = HBoxContainer.new()
+		ligne.custom_minimum_size.y = 40 # Hauteur de la ligne
+		
+		# --- A. LE PSEUDO (à gauche) ---
+		var label_nom = Label.new()
+		label_nom.text = p["name"]
+		label_nom.size_flags_horizontal = Control.SIZE_EXPAND_FILL # Pousse le reste à droite
+		
+		# Application de la police et taille
+		if font_custom:
+			label_nom.add_theme_font_override("font", font_custom)
+			label_nom.add_theme_font_size_override("font_size", 28)
+		
+		# --- B. LE STATUT (à droite) ---
+		var label_status = Label.new()
+		
+		# Application de la police pour le statut aussi
+		if font_custom:
+			label_status.add_theme_font_override("font", font_custom)
+			label_status.add_theme_font_size_override("font_size", 24)
+			
+		if p["ready"]:
+			label_status.text = "PRÊT"
+			label_status.add_theme_color_override("font_color", Color.GREEN) # Vert fluo
+		else:
+			label_status.text = "EN ATTENTE..."
+			label_status.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5)) # Gris
+			
+			# Petit bonus : Si c'est l'hôte (ID 1) et qu'il n'est pas prêt, on peut écrire "HOST"
+			if id == 1 and not p["ready"]:
+				label_status.text = "HÔTE"
+				label_status.add_theme_color_override("font_color", Color.YELLOW)
+
+		# --- AJOUT AU CONTENEUR ---
+		ligne.add_child(label_nom)
+		ligne.add_child(label_status)
+		
+		container_liste_joueurs.add_child(ligne)
+		
+		# 3. Mise à jour du mode de jeu (inchangé)
+		var mode_actuel = NetworkGlobal.game_mode
+		if mode_actuel == "Coop": option_mode.selected = 0
+		else: option_mode.selected = 1
+		
+		# 4. Gestion des permissions (inchangé)
+		if multiplayer.is_server():
+			option_mode.disabled = false
+			label_status.text = "Configurez la partie."
+		else:
+			option_mode.disabled = true
+			label_status.text = "En attente de l'hôte..."
+
+
+
+
+
 func creer_liste_boutons():
 	# 1. On nettoie la liste existante
 	for child in container_touches.get_children():
