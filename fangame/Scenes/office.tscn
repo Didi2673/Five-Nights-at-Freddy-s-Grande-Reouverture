@@ -1,4 +1,4 @@
-[gd_scene load_steps=39 format=3 uid="uid://dvu2p8dkvbruk"]
+[gd_scene load_steps=44 format=3 uid="uid://dvu2p8dkvbruk"]
 
 [ext_resource type="Script" uid="uid://binxa8r2e1lh" path="res://Scripts/office.gd" id="1_4i814"]
 [ext_resource type="Texture2D" uid="uid://bnoromdm53qd7" path="res://office_left_light.png" id="3_4hetp"]
@@ -23,6 +23,7 @@
 [ext_resource type="Texture2D" uid="uid://bsuf1apsdeqi3" path="res://left_button_door_open.webp" id="13_4hetp"]
 [ext_resource type="Texture2D" uid="uid://cf78fi2d3xo03" path="res://left_button_door_close.webp" id="14_o3cd7"]
 [ext_resource type="Theme" uid="uid://b4ofsq1nh46rs" path="res://bouton.tres" id="15_26ul0"]
+[ext_resource type="Texture2D" uid="uid://ddjihy4k62we5" path="res://fan.png" id="23_vh33w"]
 [ext_resource type="AudioStream" uid="uid://d1cpisn0dya54" path="res://Sounds/cameras.wav" id="24_2k2f6"]
 [ext_resource type="AudioStream" uid="uid://bs88frxmqbe1w" path="res://Sounds/Vent.wav" id="25_bm8iy"]
 [ext_resource type="AudioStream" uid="uid://cu7yr4uq7w4ji" path="res://Sounds/ambience.ogg" id="25_hs4kw"]
@@ -47,6 +48,40 @@ font_size = 32
 [sub_resource type="LabelSettings" id="LabelSettings_m8tx5"]
 font = ExtResource("8_lcwox")
 font_size = 32
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7gj8a"]
+atlas = ExtResource("23_vh33w")
+region = Rect2(0, 0, 138, 196)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_cqbnc"]
+atlas = ExtResource("23_vh33w")
+region = Rect2(138, 0, 138, 196)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_8bfd6"]
+atlas = ExtResource("23_vh33w")
+region = Rect2(276, 0, 138, 196)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_5xqmo"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7gj8a")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_cqbnc")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_8bfd6")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}, {
+"frames": [],
+"loop": true,
+"name": &"new_animation",
+"speed": 5.0
+}]
 
 [node name="office" type="Node2D" node_paths=PackedStringArray("portes", "systeme_camera", "porte_gauche", "porte_droite")]
 script = ExtResource("1_4i814")
@@ -225,6 +260,12 @@ offset_bottom = 1268.0
 position = Vector2(3275, 1170)
 scale = Vector2(1.5, 1.5)
 texture = ExtResource("13_4hetp")
+
+[node name="Fan" type="AnimatedSprite2D" parent="Background"]
+position = Vector2(849, 401)
+sprite_frames = SubResource("SpriteFrames_5xqmo")
+frame_progress = 0.94305706
+speed_scale = 10.0
 
 [node name="GoldenFreddy_Sprite" type="Sprite2D" parent="."]
 visible = false

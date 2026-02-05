@@ -68,8 +68,9 @@ var videos_jumpscares = {
 
 @onready var container_barres = $UI/Barres_Container
 @onready var ventilateur = $Ventilateur
+@onready var anim_ventilateur = $Background/Fan
 
-var taux_drain = [0.16, 0.33, 0.66, 1.0, 1.33, 1.66]
+var taux_drain = [0.15, 0.27, 0.63, 1.0, 1.35, 1.70]
 var temperature : float = 60.0
 var temperature_min : float = 60.0
 var temperature_max : float = 120.0
@@ -147,6 +148,9 @@ func _ready():
 	if son_monitor: audio_monitor.stream = son_monitor
 	audio_fan.play()
 	
+	if ventilateur_actif and anim_ventilateur:
+		anim_ventilateur.play("default")
+	
 	if night_index == 6:
 		print("--- NUIT 6 : SPRINGTRAP ACTIVE / PUPPET DESACTIVÉE ---")
 		
@@ -188,8 +192,10 @@ func toggle_ventilateur():
 		# Si on allume le normal, on éteint le silencieux
 		silent_ventilateur_active = false
 		if audio_fan and not audio_fan.playing: audio_fan.play()
+		if anim_ventilateur: anim_ventilateur.play("default")
 	else:
 		if audio_fan: audio_fan.stop()
+		if anim_ventilateur: anim_ventilateur.stop()
 		
 	print("Ventilateur Normal : ", ventilateur_actif)
 	
@@ -200,8 +206,15 @@ func toggle_silent_ventilateur():
 		# Si on allume le silencieux, on éteint le normal
 		ventilateur_actif = false
 		if audio_fan: audio_fan.stop() # Le silencieux ne fait pas de bruit
+		if anim_ventilateur: 
+			anim_ventilateur.speed_scale = 5.0 # Tourne doucement
+			anim_ventilateur.play("default")
+		
 		print("Ventilateur Silencieux : ACTIF")
 	else:
+		if anim_ventilateur: 
+			anim_ventilateur.stop()
+			anim_ventilateur.speed_scale = 10.0
 		print("Ventilateur Silencieux : INACTIF")
 
 func gestion_inputs_clavier():
