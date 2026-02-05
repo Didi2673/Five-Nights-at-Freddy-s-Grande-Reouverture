@@ -1,0 +1,133 @@
+[gd_scene load_steps=3 format=3 uid="uid://bldcki1ylrt4r"]
+
+[ext_resource type="FontFile" uid="uid://dh5jtdq4vw75k" path="res://LcdSolid.ttf" id="1_4j4yi"]
+[ext_resource type="Script" uid="uid://dst5ml821dicm" path="res://versus_hud.gd" id="1_8fc71"]
+
+[node name="VersusHUD" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_8fc71")
+
+[node name="Panel_Header" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+grow_horizontal = 2
+
+[node name="Label_Role" type="Label" parent="Panel_Header"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+theme_override_fonts/font = ExtResource("1_4j4yi")
+theme_override_font_sizes/font_size = 30
+text = "RÔLE : PURPLE GUY"
+
+[node name="VSeparator" type="VSeparator" parent="Panel_Header"]
+layout_mode = 0
+offset_right = 4.0
+offset_bottom = 40.0
+
+[node name="Label_Energy" type="Label" parent="Panel_Header"]
+layout_mode = 0
+offset_top = 50.0
+offset_right = 312.0
+offset_bottom = 81.0
+theme_override_fonts/font = ExtResource("1_4j4yi")
+theme_override_font_sizes/font_size = 30
+text = "ENERGIE : 50"
+
+[node name="Panel_Controls" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -40.0
+offset_top = -20.0
+offset_bottom = 20.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="Grid_Actions" type="GridContainer" parent="Panel_Controls"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -118.0
+offset_top = -20.0
+offset_bottom = 20.0
+grow_horizontal = 0
+grow_vertical = 2
+columns = 3
+
+[node name="Btn_Bonnie" type="Button" parent="Panel_Controls/Grid_Actions"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_4j4yi")
+theme_override_font_sizes/font_size = 30
+text = "Bonnie"
+
+[node name="Btn_Chica" type="Button" parent="Panel_Controls/Grid_Actions"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_4j4yi")
+theme_override_font_sizes/font_size = 30
+text = "Chica"
+
+[node name="Btn_Freddy" type="Button" parent="Panel_Controls/Grid_Actions"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_4j4yi")
+theme_override_font_sizes/font_size = 30
+text = "Freddy"
+
+[node name="Btn_Foxy" type="Button" parent="Panel_Controls/Grid_Actions"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_4j4yi")
+theme_override_font_sizes/font_size = 30
+text = "Foxy"
+
+[node name="Btn_Mangle" type="Button" parent="Panel_Controls/Grid_Actions"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_4j4yi")
+theme_override_font_sizes/font_size = 30
+text = "Mangle"
+
+[node name="Btn_Puppet" type="Button" parent="Panel_Controls/Grid_Actions"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_4j4yi")
+theme_override_font_sizes/font_size = 30
+text = "Puppet"
+
+[node name="Btn_Golden" type="Button" parent="Panel_Controls/Grid_Actions"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_4j4yi")
+theme_override_font_sizes/font_size = 30
+text = "Golden"
+
+[node name="Btn_Shadow" type="Button" parent="Panel_Controls/Grid_Actions"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_4j4yi")
+theme_override_font_sizes/font_size = 30
+text = "Shadow"
+
+[node name="Label_Feedback" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -11.5
+offset_right = 20.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/font = ExtResource("1_4j4yi")
+theme_override_font_sizes/font_size = 50
+text = "Action"

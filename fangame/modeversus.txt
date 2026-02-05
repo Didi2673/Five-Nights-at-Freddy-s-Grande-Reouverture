@@ -1,0 +1,3564 @@
+class_name AnimatronicAI extends Node
+
+# --- DONNÉES ---
+var nom : String
+var data_json : Dictionary
+var json_index : int = 0
+var path_list : Array = []
+var current_path_index : int = 0
+
+var sb_active : bool = false        # Est-il apparu ?
+var sb_kill_timer : float = 8.0    # Le joueur a 10s pour réagir
+var sb_stare_timer : float = 0.0    # Le joueur doit le regarder 3s
+var sb_room : String = ""
+
+
+# --- RÉFÉRENCES ---
+var camera_system_ref : Node 
+var porte_cible : Node2D 
+var office_ref : Node2D 
+
+# --- TIMER ---
+var move_timer : float = 0.0
+var base_interval : float = 5.0
+
+var current_ai_level : int = 0
+
+func setup(data, _camera_system_ref, _porte_cible, _office_ref, _real_index):
+	json_index = _real_index
+	data_json = data
+	nom = data["name"]
+	path_list = data["path"]
+	base_interval = data["movement_interval"]
+	
+	reset_timer(0)
+	
+	camera_system_ref = _camera_system_ref
+	porte_cible = _porte_cible
+	office_ref = _office_ref
+	
+	if nom == "Shadow-Bonnie":
+		return
+	
+	# INITIALISATION SÉCURISÉE
+	var salle_depart = path_list[0]
+	if camera_system_ref.etat_salles.has(salle_depart):
+		if not camera_system_ref.etat_salles[salle_depart].has(nom):
+			camera_system_ref.etat_salles[salle_depart].append(nom)
+			#camera_system_ref.mettre_a_jour_image()
+
+func definir_visibilite_camera(est_visible : bool):
+	var salle_actuelle = path_list[current_path_index]
+	
+	if est_visible:
+		if camera_system_ref.etat_salles.has(salle_actuelle):
+			if not camera_system_ref.etat_salles[salle_actuelle].has(nom):
+				camera_system_ref.etat_salles[salle_actuelle].append(nom)
+	else:
+		if camera_system_ref.etat_salles.has(salle_actuelle):
+			if camera_system_ref.etat_salles[salle_actuelle].has(nom):
+				camera_system_ref.etat_salles[salle_actuelle].erase(nom)
+				
+	camera_system_ref.mettre_a_jour_image()
+
+func tenter_jouer_son_vent():
+	if office_ref.has_node("Audio_Vent_Move"):
+		var audio = office_ref.get_node("Audio_Vent_Move")
+		audio.pitch_scale = randf_range(0.9, 1.1)
+		audio.play()
+
+func reset_timer(ai_level : int):
+	move_timer = base_interval
+
+# --- RECEPTION AUDIO (CHICA) ---
+func recevoir_audio(camera_source : String):
+	if nom != "Chica": return
+	
+	if current_path_index == path_list.size() - 1:
+		print("ECHEC : Chica est déjà à la porte.")
+		return
+	
+	var index_son = path_list.find(camera_source)
+	if index_son == -1: return
+	if index_son == 0: return 
+
+	if index_son == current_path_index - 1:
+		print("SUCCÈS ! Chica recule vers ", camera_source)
+		reculer_sur_chemin(index_son)
+		move_timer = base_interval 
+	else:
+		print("ECHEC DE DISTANCE.")
+		
+func reculer_sur_chemin(index_cible):
+	var ancienne_salle = path_list[current_path_index]
+	
+	if camera_system_ref.etat_salles.has(ancienne_salle):
+		camera_system_ref.etat_salles[ancienne_salle].erase(nom)
+	
+	current_path_index = index_cible
+	var nouvelle_salle = path_list[current_path_index]
+	
+	if camera_system_ref.etat_salles.has(nouvelle_salle):
+		camera_system_ref.etat_salles[nouvelle_salle].append(nom)
+	
+	# --- AJOUT SYNCHRO ---
+	var office = get_parent()
+	if office.has_method("sync_move_client"):
+		office.sync_move_client(ancienne_salle, nouvelle_salle)
+	# ---------------------
+	
+	camera_system_ref.mettre_a_jour_image()
+
+func process_ai(delta, current_ai_level_arg):
+	if NetworkGlobal.game_mode == "VS":
+		return
+	
+	if NetworkGlobal.players.size() > 0 and not multiplayer.is_server():
+		return
+	current_ai_level = current_ai_level_arg
+	
+	if office_ref.game_over or office_ref.est_coupure_courant: return
+	
+	
+	if nom == "Chica":
+		if current_path_index == path_list.size() - 1:
+			verifier_porte_ouverte()
+			return
+			
+	if nom == "Shadow-Bonnie" and sb_active:
+		
+		# 1. KILL TIMER (Le joueur a 30s pour réagir)
+		sb_kill_timer -= delta
+		if sb_kill_timer <= 0:
+			office_ref.trigger_jumpscare(nom)
+			return
+
+		if camera_system_ref.est_ouvert and camera_system_ref.camera_actuelle == sb_room:
+			sb_stare_timer += delta
+			
+			if sb_stare_timer >= 1.0: 
+				desactiver_shadow_bonnie()
+		else:
+			pass
+
+	
+	move_timer -= delta
+	
+	if move_timer <= 0:
+		reset_timer(current_ai_level)
+		attempt_logic(current_ai_level)	
+
+
+func versus_move():
+	print("Ordre reçu pour : ", nom)
+	
+	# CAS 1 : FOXY (Phases)
+	if nom == "Foxy":
+		if not "foxy_rage" in camera_system_ref: camera_system_ref.foxy_rage = 0
+		camera_system_ref.foxy_rage += 1
+		if camera_system_ref.foxy_rage >= camera_system_ref.foxy_max_rage:
+			lancer_attaque_foxy() # Votre fonction existante
+		else:
+			camera_system_ref.mettre_a_jour_image()
+		return
+
+	# CAS 2 : GOLDEN FREDDY (Spawn Office)
+	if nom == "Golden-Freddy":
+		office_ref.tenter_spawn_golden_freddy() # On force le spawn
+		return
+
+	# CAS 3 : SHADOW BONNIE (Besoin d'une caméra cible)
+	# (Géré par un autre appel spécifique, voir plus bas)
+
+	# CAS 4 : MOUVEMENT STANDARD (Bonnie, Chica, Freddy, Puppet...)
+	
+	# Est-ce qu'on est à la fin du chemin (Porte / Vent) ?
+	if current_path_index == path_list.size() - 1:
+		tenter_attaque_versus()
+	else:
+		# On avance
+		avancer_sur_chemin()
+
+
+func tenter_attaque_versus():
+	if office_ref.est_coupure_courant: return
+	
+	var attaque_reussie = false
+	
+	# VERIFICATION DES DEFENSES
+	if nom == "Freddy":
+		# Freddy passe si la porte Droite est ouverte (Logique simplifiée pour VS)
+		if porte_cible and not porte_cible.est_fermee: attaque_reussie = true
+		
+	elif nom == "Mangle" or nom == "Springtrap":
+		# Eux passent par la vent
+		if not camera_system_ref.vent_scelle: attaque_reussie = true
+		
+	elif porte_cible:
+		# Bonnie / Chica
+		if not porte_cible.est_fermee: attaque_reussie = true
+
+	# RESULTAT
+	if attaque_reussie:
+		print("PURPLE GUY A GAGNÉ AVEC ", nom)
+		office_ref.trigger_jumpscare(nom)
+	else:
+		print("ATTAQUE BLOQUÉE ! ", nom, " repart au début.")
+		# Son de "Bang" sur la porte
+		if office_ref.has_node("Audio_Door_Bang"): office_ref.get_node("Audio_Door_Bang").play()
+		
+		# Reset position
+		var index_retour = 0
+		if nom == "Bonnie": index_retour = path_list.find("Cam02")
+		if index_retour == -1: index_retour = 0
+		changer_position(index_retour)
+
+
+
+
+
+func verifier_porte_ouverte():
+	if office_ref.est_coupure_courant: return
+	if porte_cible and not porte_cible.est_fermee:
+		if randf() < 0.05: 
+			print("CHICA EST RENTRÉE !")
+			office_ref.trigger_jumpscare("Chica")
+
+func attempt_logic(ai_level):
+	if office_ref.est_coupure_courant: return
+	if nom == "Foxy":
+		gerer_foxy(ai_level)
+		return
+	
+	if nom == "Mangle":
+		attempt_mangle_move(ai_level)
+		return
+
+	if nom == "Springtrap":
+		process_springtrap_logic(ai_level)
+		return
+
+	
+	if nom == "Freddy":
+		
+		# ====================================================================
+		# AJOUT : RÈGLE DE PRIORITÉ (ATTENDRE BONNIE ET CHICA)
+		# ====================================================================
+		if current_path_index == 0: # Si Freddy est toujours sur la Scène (Cam01)
+			
+			# 1. Est-ce que le challenge "Bear Attack" est actif ?
+			var est_bear_attack = false
+			if NetworkGlobal.players.size() > 0:
+				# En Multi, on regarde la variable du réseau
+				if NetworkGlobal.active_challenge_multi_id == "bear_attack": est_bear_attack = true
+			else:
+				# En Solo, on regarde GameData
+				if GameData.active_challenge_id == "bear_attack": est_bear_attack = true
+			
+			# 2. Si ce N'EST PAS Bear Attack, on applique la restriction
+			if not est_bear_attack:
+				var salle_scene = path_list[0] # Normalement "Cam01"
+				if camera_system_ref.etat_salles.has(salle_scene):
+					var occupants = camera_system_ref.etat_salles[salle_scene]
+					
+					# Si Bonnie OU Chica est encore sur la scène, Freddy attend.
+					if occupants.has("Bonnie") or occupants.has("Chica"):
+						# On annule tout mouvement pour ce tour
+						return 
+		# ====================================================================
+
+		# --- SUITE DE LA LOGIQUE FREDDY (INCHANGÉE) ---
+		
+		if current_path_index == path_list.size() - 1:
+			
+			# CONDITION DE DÉFENSE : Ventilateur éteint
+			if not office_ref.ventilateur_actif:
+				print("Ventilateur éteint : Freddy repart forcement.")
+				var index_retour = 1 # Caméra de repli (Dining Area souvent)
+				changer_position(index_retour)
+				office_ref.jouer_rire_freddy()
+				return
+				
+		# 1. On lance le dé (RNG)
+		var roll = randi_range(1, 20)
+		
+		# Si le jet échoue, Freddy ne fait rien
+		if roll > ai_level:
+			return
+
+		# 2. EST-IL À LA DERNIÈRE CAMÉRA ? (La Ventilation)
+		if current_path_index == path_list.size() - 1:
+			
+			if office_ref.ventilateur_actif:
+				# A. Le ventilateur fait du bruit -> Freddy entend et ATTAQUE
+				print("Freddy attaque car le ventilateur est allumé !")
+				tenter_attaque()
+				
+			else:
+				# B. Le ventilateur est coupé -> Freddy repart
+				print("Ventilateur éteint : Freddy repart.")
+				var index_retour = 1 
+				changer_position(index_retour)
+				office_ref.jouer_rire_freddy() 
+				
+		else:
+			# 3. MOUVEMENT NORMAL (Il avance vers l'office)
+			avancer_sur_chemin()
+			office_ref.jouer_rire_freddy()
+			
+		return # Fin de la logique Freddy pour ce tour
+
+	# --- LOGIQUE CHICA ---
+	if nom == "Chica":
+		var roll = randi_range(1, 20)
+		if roll <= ai_level:
+			avancer_sur_chemin()
+		return
+		
+	if nom == "Shadow-Bonnie":
+		# Si il est déjà là, on ne fait rien (on attend que le joueur gère la situation)
+		if sb_active:
+			return
+
+		# Jet de dés classique pour voir s'il décide d'attaquer
+		var roll = randi_range(1, 20)
+		if roll <= ai_level:
+			faire_apparaitre_shadow_bonnie()
+		
+		return
+		
+	# --- LOGIQUE PUPPET ---
+	if nom == "Puppet":
+		if current_path_index < path_list.size() - 1:
+			var roll = randi_range(1, 20)
+			if roll <= ai_level:
+				avancer_sur_chemin()
+		return
+		
+	# --- LOGIQUE STANDARD (BONNIE) ---
+	if current_path_index == path_list.size() - 1:
+		tenter_attaque()
+	else:
+		var roll = randi_range(1, 20)
+		if roll <= ai_level:
+			avancer_sur_chemin()
+
+# --- MANGLE ---
+func attempt_mangle_move(ai_level):
+	if office_ref.est_coupure_courant: return
+	# 1. EST-ELLE À LA POSITION D'ATTAQUE ?
+	if current_path_index == path_list.size() - 1:
+		
+		# CONDITION DE DÉFENSE : Vent scellé
+		if camera_system_ref.vent_scelle:
+			print("BLOCKED! Mangle heurte la ventilation scellée (Départ Forcé).")
+			tenter_jouer_son_vent()
+			changer_position(0) # Retour départ
+			return # On s'arrête là, pas besoin de dés
+			
+		# Si vent non scellé, on continue (risque de jumpscare)
+	
+	# 2. LOGIQUE NORMALE (Déplacement ou Attaque si vent ouvert)
+	var roll = randi_range(1, 20)
+	if roll > ai_level: return # Echec du dé
+
+	# Mouvement ou Attaque standard
+	if current_path_index == path_list.size() - 1:
+		# Si on arrive ici, c'est que le vent n'était PAS scellé
+		print("MANGLE ENTRE DANS LE BUREAU !")
+		office_ref.trigger_jumpscare("Mangle")
+	else:
+		avancer_sur_chemin()
+
+func faire_apparaitre_shadow_bonnie():
+	if path_list.size() == 0: return
+	
+	# 1. Choisir une salle au hasard
+	sb_room = path_list.pick_random()
+	
+	# 2. Activer les stats (avec les valeurs corrigées précédemment)
+	sb_active = true
+	sb_kill_timer = 8.0 
+	sb_stare_timer = 0.0
+	
+	# 3. L'ajouter visuellement à la caméra
+	if camera_system_ref.etat_salles.has(sb_room):
+		
+		# --- CORRECTION ICI : ON VÉRIFIE AVANT D'AJOUTER ---
+		# On n'ajoute le nom QUE s'il n'est pas déjà dans la liste
+		if not camera_system_ref.etat_salles[sb_room].has(nom):
+			camera_system_ref.etat_salles[sb_room].append(nom)
+			
+		camera_system_ref.mettre_a_jour_image()
+		
+		if camera_system_ref.has_method("afficher_danger"):
+			camera_system_ref.afficher_danger(sb_room, true)
+		
+	print("SHADOW BONNIE EST APPARU EN ", sb_room)
+
+func desactiver_shadow_bonnie():
+	print("SHADOW BONNIE REPOUSSÉ !")
+	
+	if camera_system_ref.has_method("afficher_danger"):
+		camera_system_ref.afficher_danger(sb_room, false)
+	
+	# 1. Retirer visuellement
+	if camera_system_ref.etat_salles.has(sb_room):
+		camera_system_ref.etat_salles[sb_room].erase(nom)
+		camera_system_ref.mettre_a_jour_image()
+	
+	# 2. Reset des variables
+	sb_active = false
+	sb_room = ""
+	sb_kill_timer = 8.0
+	sb_stare_timer = 0.0
+	
+	# 3. Reset du timer principal pour lui donner un temps de pause avant de pouvoir revenir
+	reset_timer(0)
+
+	
+func changer_position(nouvel_index):
+	var ancienne_salle = path_list[current_path_index]
+	
+	# Mise à jour locale
+	if camera_system_ref.etat_salles.has(ancienne_salle):
+		camera_system_ref.etat_salles[ancienne_salle].erase(nom)
+	
+	current_path_index = nouvel_index
+	var nouvelle_salle = path_list[current_path_index]
+	
+	if camera_system_ref.etat_salles.has(nouvelle_salle):
+		camera_system_ref.etat_salles[nouvelle_salle].append(nom)
+		
+	# --- AJOUT CRUCIAL DE LA SYNCHRO ICI ---
+	var office = get_parent()
+	if office.has_method("sync_move_client"):
+		office.sync_move_client(ancienne_salle, nouvelle_salle)
+	# ---------------------------------------
+	
+	print(nom, " a été déplacé vers ", nouvelle_salle)
+	
+	# Gestion du brouillage
+	var cam_joueur = camera_system_ref.camera_actuelle
+	if camera_system_ref.est_ouvert and (cam_joueur == ancienne_salle or cam_joueur == nouvelle_salle):
+		if camera_system_ref.has_method("declencher_brouillage"):
+			camera_system_ref.declencher_brouillage()
+	
+	camera_system_ref.mettre_a_jour_image()
+	
+func gerer_foxy(ai_level):
+	if not "foxy_attacking" in camera_system_ref: return
+	if camera_system_ref.foxy_attacking: return
+	
+	var roll = randi_range(1, 20)
+	if roll <= ai_level:
+		if "foxy_rage" in camera_system_ref:
+			camera_system_ref.foxy_rage += 1
+			var max_rage = 5
+			if "foxy_max_rage" in camera_system_ref:
+				max_rage = camera_system_ref.foxy_max_rage
+			
+			if camera_system_ref.foxy_rage >= max_rage:
+				lancer_attaque_foxy()
+			else:
+				camera_system_ref.mettre_a_jour_image()
+
+func avancer_sur_chemin():
+	var ancienne_salle = path_list[current_path_index]
+	
+	# Mise à jour locale (Serveur)
+	if camera_system_ref.etat_salles.has(ancienne_salle):
+		camera_system_ref.etat_salles[ancienne_salle].erase(nom)
+
+	current_path_index += 1
+	var nouvelle_salle = path_list[current_path_index]
+	
+	if camera_system_ref.etat_salles.has(nouvelle_salle):
+		camera_system_ref.etat_salles[nouvelle_salle].append(nom)
+	
+	# --- SYNCHRONISATION (CORRIGÉE) ---
+	var office = get_parent() 
+	if office.has_method("sync_move_client"):
+		# On envoie les deux salles pour nettoyer l'ancienne et afficher la nouvelle
+		office.sync_move_client(ancienne_salle, nouvelle_salle)
+	# ----------------------------------
+	
+	if "Cam09" in ancienne_salle or "Cam13" in nouvelle_salle:
+		tenter_jouer_son_vent()
+	
+	if nom == "Freddy": 
+		jouer_rire_freddy()
+	
+	print(nom, " a bougé vers ", nouvelle_salle)
+	camera_system_ref.mettre_a_jour_image()
+
+func jouer_rire_freddy():
+	if office_ref.has_node("Audio_Freddy_Laugh"):
+		office_ref.get_node("Audio_Freddy_Laugh").play()
+
+func tenter_attaque():
+	if office_ref.est_coupure_courant: return
+	
+	# Freddy tue s'il arrive à la fin de son chemin (Office_Vent_Pos)
+	if nom == "Freddy":
+		office_ref.trigger_jumpscare("Freddy")
+		return
+	
+	# --- LOGIQUE BONNIE / CHICA ---
+	if porte_cible and porte_cible.est_fermee:
+		print("BLOCKED! ", nom, " repart.")
+		
+		# On détermine l'index de repli (où le robot doit repartir)
+		var index_repli = 0 # Par défaut : Retour au début (Cam 01)
+		
+		if nom == "Bonnie": 
+			# Bonnie repart souvent en Cam 02 (Dining Area) au lieu de tout recommencer
+			var idx = path_list.find("Cam02") 
+			if idx != -1:
+				index_repli = idx
+			
+		# --- CORRECTION MAJEURE ICI ---
+		# Au lieu de modifier les listes à la main, on appelle la fonction
+		# qui gère déjà le déplacement ET le réseau (RPC).
+		changer_position(index_repli)
+		
+	else:
+		# La porte est ouverte -> Jumpscare
+		office_ref.trigger_jumpscare(nom)
+
+func lancer_attaque_foxy():
+	print("FOXY COURT !")
+	camera_system_ref.foxy_attacking = true
+	camera_system_ref.mettre_a_jour_image()
+	await office_ref.get_tree().create_timer(randf_range(6.0, 10.0)).timeout
+	knock_door_foxy()
+
+func knock_door_foxy():
+	if office_ref.game_over or office_ref.est_coupure_courant: return
+	if porte_cible and porte_cible.est_fermee:
+		print("FOXY BLOQUÉ")
+		office_ref.batterie -= 5.0
+		if office_ref.batterie < 0: office_ref.batterie = 0
+		office_ref.label_batterie.text = "Power : " + str(int(office_ref.batterie)) + "%"
+		camera_system_ref.foxy_rage = 0
+		camera_system_ref.foxy_attacking = false
+		camera_system_ref.mettre_a_jour_image()
+	else:
+		office_ref.trigger_jumpscare("Foxy")
+
+# --- SPRINGTRAP ---
+func process_springtrap_logic(ai_level):
+	var roll = randi_range(1, 20)
+	if roll > ai_level: return 
+	
+	var salle_actuelle = path_list[current_path_index]
+	
+	match salle_actuelle:
+		"Cam02":
+			if randf() < 0.5: deplacer_springtrap("Cam07")
+			else: deplacer_springtrap("Cam10")
+		"Cam07":
+			if randf() < 0.5:
+				print("Springtrap entre dans la ventilation (Cam13)...")
+				deplacer_springtrap("Cam13") 
+				tenter_jouer_son_vent()
+			else:
+				deplacer_springtrap("Cam11")
+		"Cam10":
+			if randf() < 0.5:
+				print("Springtrap entre dans la ventilation (Cam13)...")
+				deplacer_springtrap("Cam13")
+				tenter_jouer_son_vent()
+			else:
+				deplacer_springtrap("Cam12")
+		"Cam13":
+			verifier_attaque_ventilation()
+		"Cam11":
+			attaquer_porte("left")
+		"Cam12":
+			attaquer_porte("right")
+
+func verifier_attaque_ventilation():
+	if office_ref.est_coupure_courant: return
+	if camera_system_ref.vent_scelle:
+		print("BLOCKED! Springtrap heurte la grille.")
+		if office_ref.has_node("Audio_Vent_Bang"):
+			office_ref.get_node("Audio_Vent_Bang").play()
+		else:
+			tenter_jouer_son_vent()
+		var index_start = path_list.find("Cam02")
+		changer_position(index_start)
+	else:
+		print("SPRINGTRAP SORT DE LA VENT -> MORT !")
+		office_ref.trigger_jumpscare("Springtrap")
+
+func deplacer_springtrap(nom_cible : String):
+	var nouvel_index = path_list.find(nom_cible)
+	
+	if nouvel_index != -1:
+		changer_position(nouvel_index)
+
+func attaquer_porte(cote : String):
+	print("SPRINGTRAP TENTE D'ENTRER PAR : ", cote)
+	var porte_bloquee = false
+	if cote == "left":
+		if office_ref.porte_gauche.est_fermee: porte_bloquee = true
+	elif cote == "right":
+		if office_ref.porte_droite.est_fermee: porte_bloquee = true
+		
+	if porte_bloquee:
+		print("BLOCKED! Springtrap repart.")
+		var index_start = path_list.find("Cam02")
+		changer_position(index_start)
+	else:
+		office_ref.trigger_jumpscare("Springtrap")
+
+
+=========================================================================================================
+
+
+extends Control
+
+# --- REFERENCES ---
+@onready var ecran_accueil = $Ecran_Accueil
+@onready var ecran_selection = $Ecran_Selection
+@onready var ecran_options = $Ecran_Options
+@onready var liste_nuits_container = $Ecran_Selection/Liste_Nuits
+@onready var label_ip_info = $Ecran_Multi/Panel_Lobby/Label_IP_Info
+
+@onready var option_challenge = $Ecran_Multi/Panel_Selection_Nuit/HBox_Challenge/OptionButton_Challenges
+@onready var container_challenge_ui = $Ecran_Multi/Panel_Selection_Nuit/HBox_Challenge
+
+@onready var ecran_multi = $Ecran_Multi
+@onready var panel_connexion = $Ecran_Multi/Panel_Connexion
+@onready var panel_lobby = $Ecran_Multi/Panel_Lobby
+
+@onready var panel_selection_nuit = $Ecran_Multi/Panel_Selection_Nuit
+@onready var grid_nuits_multi = $Ecran_Multi/Panel_Selection_Nuit/Grid_Nuits
+@onready var label_info_client = $Ecran_Multi/Panel_Selection_Nuit/Label_Info_Client
+
+@onready var input_pseudo = $Ecran_Multi/Panel_Connexion/LineEdit_Pseudo
+@onready var input_ip = $Ecran_Multi/Panel_Connexion/LineEdit_IP
+
+@onready var container_liste_joueurs = $Ecran_Multi/Panel_Lobby/ScrollContainer/Container_Liste_Joueurs
+@onready var option_mode = $Ecran_Multi/Panel_Lobby/HBoxContainer_Mode/OptionButton_Mode
+@onready var btn_ready = $Ecran_Multi/Panel_Lobby/Bouton_Ready
+@onready var label_status = $Ecran_Multi/Panel_Lobby/Label_Status
+
+
+@onready var container_touches = $Ecran_Options/Panel/ScrollContainer/Container_Touches
+@onready var btn_retour = $Ecran_Options/Panel/Bouton_Retour
+
+@onready var label_duree = $Ecran_Selection/Panneau_Details/Label_Duree 
+
+# Panneau Détails
+@onready var label_titre = $Ecran_Selection/Panneau_Details/Label_Titre_Nuit
+@onready var label_desc = $Ecran_Selection/Panneau_Details/Label_Description
+@onready var label_difficulte = $Ecran_Selection/Panneau_Details/Label_Difficulte
+@onready var btn_lancer = $Ecran_Selection/Panneau_Details/Bouton_Lancer_Nuit
+
+@onready var etoile_1 = $Ecran_Accueil/Container_Etoiles/Etoile_1
+@onready var etoile_2 = $Ecran_Accueil/Container_Etoiles/Etoile_2
+@onready var etoile_3 = $Ecran_Accueil/Container_Etoiles/Etoile_3
+
+@onready var ecran_transition = $Ecran_Transition
+@onready var label_trans_nuit = $Ecran_Transition/Label_Nuit_Transition
+@onready var audio_transition = $Ecran_Transition/Audio_Transition
+
+@onready var ecran_intro_nuit_1 = $ColorRect/Ecran_Intro_Nuit1
+
+@onready var audio_hover = $Audio_Hover
+
+@onready var ecran_succes = $Ecran_Succes
+@onready var grid_succes = $Ecran_Succes/ScrollContainer/Grid_Succes
+# Charge une icone par défaut si tu n'as pas encore créé les images
+@onready var icon_defaut = preload("res://icon.svg")
+
+@onready var container_custom = $Ecran_Selection/Panneau_Details/Grid_Custom_Night
+
+@onready var container_challenges = $Ecran_Selection/Panneau_Details/Liste_Challenges
+
+var actions_a_mapper = {
+	"input_light_left": "Lumière Gauche",
+	"input_light_right": "Lumière Droite",
+	"input_door_left": "Porte Gauche",
+	"input_door_right": "Porte Droite",
+	"input_seal_vent": "Sceller Ventilation",
+	"toggle_monitor": "Moniteur (Ouvrir/Fermer)",
+	"toggle_fan": "Ventilateur (On/Off)",
+	"toggle_silent_fan": "Ventilo Silencieux",
+	"toggle_fullscreen": "Plein Écran"
+}
+var action_en_cours_de_modif : String = ""
+var bouton_en_cours_de_modif : Button = null
+
+var font_custom = load("res://vcr_osd_mono.ttf")
+
+var nuit_selectionnee_temp : int = 1
+
+func _ready():
+	get_window().content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
+	get_window().content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
+	if ecran_transition:
+		ecran_transition.visible = false
+		
+	if ecran_succes: 
+		ecran_succes.visible = false
+		
+	if ecran_intro_nuit_1: 
+		ecran_intro_nuit_1.visible = false
+		
+	
+	if container_custom:
+		container_custom.visible = false
+		preparer_interface_custom()
+	
+	if container_challenges:
+		generer_liste_challenges()
+		container_challenges.visible = false
+		
+		
+	var btn_multi = ecran_accueil.find_child("Bouton_Multi", true, false)
+	if btn_multi:
+		btn_multi.pressed.connect(_on_bouton_multi_pressed)
+
+	# Connexions UI Multi
+	$Ecran_Multi/Panel_Connexion/VBoxContainer_Boutons/Bouton_Host.pressed.connect(_on_host_pressed)
+	$Ecran_Multi/Panel_Connexion/VBoxContainer_Boutons/Bouton_Join.pressed.connect(_on_join_pressed)
+	$Ecran_Multi/Panel_Connexion/Bouton_Retour.pressed.connect(_on_retour_multi_pressed)
+	
+	# Connexions Lobby
+	btn_ready.pressed.connect(_on_ready_pressed)
+	option_mode.item_selected.connect(_on_mode_selected)
+	$Ecran_Multi/Panel_Lobby/Bouton_Quitter_Lobby.pressed.connect(_on_quit_lobby)
+
+	# Connexions au NetworkGlobal (IMPORTANT)
+	NetworkGlobal.player_list_changed.connect(update_lobby_ui)
+	NetworkGlobal.connection_success.connect(_on_connection_success)
+	NetworkGlobal.connection_failed.connect(_on_connection_failed)
+	
+	# Initialisation OptionButton
+	option_mode.add_item("Coopératif")
+	option_mode.add_item("Versus (VS)")
+		
+	ecran_accueil.visible = true
+	ecran_selection.visible = false
+	ecran_options.visible = false
+	ecran_multi.visible = false
+	
+	if btn_lancer:
+		btn_lancer.mouse_entered.connect(_jouer_son_hover)
+	
+	var btn_retour = $Ecran_Selection/Bouton_Retour
+	if btn_retour:
+		btn_retour.mouse_entered.connect(_jouer_son_hover)
+		btn_retour.pressed.connect(_on_retour_accueil)
+
+	var btn_quit = ecran_accueil.find_child("Bouton_Quitter", true, false)
+	if btn_quit:
+		btn_quit.mouse_entered.connect(_jouer_son_hover)
+		btn_quit.pressed.connect(_on_bouton_quitter_pressed)
+		
+	var btn_options = ecran_accueil.find_child("Bouton_Options", true, false)
+	if btn_options:
+		btn_options.mouse_entered.connect(_jouer_son_hover)
+		btn_options.pressed.connect(_on_bouton_options_pressed)
+		
+	var btn_play = ecran_accueil.find_child("Bouton_Play", true, false)
+	if btn_play:
+		btn_play.mouse_entered.connect(_jouer_son_hover)
+		btn_play.pressed.connect(_on_aller_vers_selection)
+		
+	var btn_succes_accueil = ecran_accueil.find_child("Bouton_Succes", true, false)
+	if btn_succes_accueil:
+		btn_succes_accueil.pressed.connect(_on_aller_vers_succes)
+		btn_succes_accueil.mouse_entered.connect(_jouer_son_hover)
+
+	# Connexion du bouton "Retour" (sur l'écran succès)
+	var btn_retour_succes = ecran_succes.find_child("Bouton_Retour", true, false)
+	if btn_retour_succes:
+		btn_retour_succes.pressed.connect(_on_retour_accueil_depuis_succes)
+		btn_retour_succes.mouse_entered.connect(_jouer_son_hover)
+		
+	if btn_retour:
+		btn_retour.pressed.connect(_on_retour_pressed)
+	
+	creer_liste_boutons()
+		
+	btn_lancer.pressed.connect(_on_lancer_nuit)
+	verifier_etoiles()
+	update_details_panel(0) 
+	
+	NetworkGlobal.start_night_selection.connect(_on_start_night_selection)
+	
+	if option_challenge:
+		option_challenge.clear()
+		for chal in GameData.challenges_list:
+			option_challenge.add_item(chal["name"])
+			option_challenge.set_item_metadata(option_challenge.item_count - 1, chal["id"])
+		
+		option_challenge.item_selected.connect(_on_challenge_multi_selected)
+	
+	# Connexion réseau
+	NetworkGlobal.challenge_changed.connect(_on_network_challenge_changed)
+	
+	# Si on revient du jeu (Game Over / Win), on veut réafficher le lobby direct
+	if NetworkGlobal.is_in_game == false and NetworkGlobal.players.size() > 0:
+		# On est connecté mais pas en jeu -> Retour Lobby
+		_on_bouton_multi_pressed()
+		_enter_lobby()
+		
+	
+
+
+
+
+func _on_start_night_selection():
+	# On cache le lobby, on montre la sélection
+	panel_lobby.visible = false
+	panel_selection_nuit.visible = true
+	
+	if multiplayer.is_server():
+		# --- HÔTE ---
+		label_info_client.visible = false
+		grid_nuits_multi.visible = true
+		
+		# On affiche le sélecteur de challenge et on l'active
+		container_challenge_ui.visible = true
+		option_challenge.disabled = false
+		
+		generer_boutons_nuits_multi()
+	else:
+		# --- CLIENT ---
+		label_info_client.visible = true
+		grid_nuits_multi.visible = false
+		
+		# Le client voit le sélecteur pour savoir ce qui est choisi, mais ne peut pas toucher
+		container_challenge_ui.visible = true
+		option_challenge.disabled = true
+		
+		label_info_client.text = "L'HÔTE CHOISIT LA NUIT..."
+
+func _on_challenge_multi_selected(index):
+	if multiplayer.is_server():
+		var id_choisi = option_challenge.get_item_metadata(index)
+		# On synchronise le choix avec tout le monde
+		NetworkGlobal.rpc("sync_challenge_selection", id_choisi)
+	else:
+		# Si un client essaie de tricher/cliquer, on remet la valeur du serveur
+		_on_network_challenge_changed(NetworkGlobal.active_challenge_multi_id)
+
+func _on_network_challenge_changed(challenge_id):
+	# Met à jour l'interface visuelle quand l'hôte change le challenge
+	if not option_challenge: return
+	for i in range(option_challenge.item_count):
+		if option_challenge.get_item_metadata(i) == challenge_id:
+			option_challenge.selected = i
+			break
+
+
+func generer_boutons_nuits_multi():
+	# 1. Configuration de la Grille (Espacement)
+	grid_nuits_multi.columns = 3 # Force 3 colonnes pour un affichage propre
+	grid_nuits_multi.add_theme_constant_override("h_separation", 25)
+	grid_nuits_multi.add_theme_constant_override("v_separation", 25)
+	
+	# Nettoyage
+	for child in grid_nuits_multi.get_children():
+		child.queue_free()
+		
+	# On génère les nuits 1 à 7
+	for i in range(1, 8):
+		var btn = Button.new()
+		btn.text = "NUIT " + str(i)
+		
+		# --- STYLE VISUEL ---
+		if font_custom:
+			btn.add_theme_font_override("font", font_custom)
+		
+		# Taille du texte (30 est bien lisible)
+		btn.add_theme_font_size_override("font_size", 30)
+		
+		# Taille du bouton (Plus large et plus haut)
+		btn.custom_minimum_size = Vector2(180, 80)
+		
+		# --- INTERACTIVITÉ ---
+		# Le curseur devient une main
+		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		
+		# Son au survol (Cohérence avec le reste du menu)
+		btn.mouse_entered.connect(_jouer_son_hover)
+		
+		# Connexion du clic
+		btn.pressed.connect(_on_nuit_multi_choisie.bind(i))
+		
+		# Optionnel : Couleur spécifique pour la Nuit 7 (Rouge ?)
+		if i == 7:
+			btn.modulate = Color(1, 0.3, 0.3) # Teinte rouge pour la Custom Night
+		
+		grid_nuits_multi.add_child(btn)
+
+func _on_nuit_multi_choisie(nuit):
+	# L'hôte a cliqué. On lance la partie pour tout le monde !
+	NetworkGlobal.rpc("launch_game_scene", nuit)
+
+
+func _on_bouton_multi_pressed():
+	ecran_accueil.visible = false
+	ecran_multi.visible = true
+	panel_connexion.visible = true
+	panel_lobby.visible = false
+
+func _on_retour_multi_pressed():
+	ecran_multi.visible = false
+	ecran_accueil.visible = true
+
+func _on_host_pressed():
+	if input_pseudo.text == "": return
+		
+	var mode_choisi = "Coop"
+	if option_mode.selected == 1: mode_choisi = "VS"
+	
+	NetworkGlobal.host_game(input_pseudo.text, mode_choisi)
+	_enter_lobby()
+	
+	# --- AJOUT ICI ---
+	# On récupère l'IP automatiquement
+	var mon_ip = NetworkGlobal.recuperer_mon_ip_locale()
+	label_ip_info.text = "Votre IP Hôte : " + mon_ip
+	label_ip_info.visible = true # On l'affiche seulement pour l'hôte
+
+func _on_join_pressed():
+	print("Bouton REJOINDRE cliqué !") # Pour vérifier que le clic marche
+	
+	if input_pseudo.text == "": 
+		print("Erreur : Pseudo vide")
+		return
+
+	var ip_cible = input_ip.text
+	
+	# Si le joueur n'a rien écrit, on utilise l'adresse locale par défaut
+	if ip_cible == "":
+		ip_cible = "127.0.0.1"
+	
+	print("Tentative de connexion à : " + ip_cible)
+	NetworkGlobal.join_game(input_pseudo.text, ip_cible)
+	label_ip_info.visible = false
+
+func _on_connection_success():
+	_enter_lobby()
+
+func _on_connection_failed():
+	label_status.text = "Échec de connexion !"
+	# Remettre l'écran connexion
+	panel_connexion.visible = true
+	panel_lobby.visible = false
+
+func _enter_lobby():
+	panel_connexion.visible = false
+	panel_lobby.visible = true
+	btn_ready.button_pressed = false
+	btn_ready.text = "JE SUIS PRÊT"
+	update_lobby_ui()
+
+func _on_quit_lobby():
+	NetworkGlobal.peer.close()
+	NetworkGlobal.players.clear()
+	_on_bouton_multi_pressed() # Retour écran pseudo
+
+# --- LOGIQUE LOBBY ---
+
+func _on_ready_pressed():
+	var est_pret = btn_ready.button_pressed
+	if est_pret:
+		btn_ready.text = "EN ATTENTE..."
+		btn_ready.modulate = Color.GREEN
+	else:
+		btn_ready.text = "JE SUIS PRÊT"
+		btn_ready.modulate = Color.WHITE
+		
+	NetworkGlobal.rpc("update_player_ready", est_pret)
+
+func _on_mode_selected(index):
+	# Seul l'hôte peut changer ça
+	if multiplayer.is_server():
+		var mode = "Coop"
+		if index == 1: mode = "VS"
+		NetworkGlobal.rpc("sync_game_mode", mode)
+	else:
+		# Si un client essaie de changer, on remet la valeur du serveur
+		update_lobby_ui() 
+
+func update_lobby_ui():
+	# 1. On nettoie la liste précédente (pour éviter les doublons)
+	for child in container_liste_joueurs.get_children():
+		child.queue_free()
+	
+	# 2. On boucle sur tous les joueurs connectés
+	for id in NetworkGlobal.players:
+		var p = NetworkGlobal.players[id]
+		
+		# --- CRÉATION DE LA LIGNE (HBox) ---
+		var ligne = HBoxContainer.new()
+		ligne.custom_minimum_size.y = 40 # Hauteur de la ligne
+		
+		# --- A. LE PSEUDO (à gauche) ---
+		var label_nom = Label.new()
+		label_nom.text = p["name"]
+		label_nom.size_flags_horizontal = Control.SIZE_EXPAND_FILL # Pousse le reste à droite
+		
+		# Application de la police et taille
+		if font_custom:
+			label_nom.add_theme_font_override("font", font_custom)
+			label_nom.add_theme_font_size_override("font_size", 28)
+		
+		# --- B. LE STATUT (à droite) ---
+		var label_status = Label.new()
+		
+		# Application de la police pour le statut aussi
+		if font_custom:
+			label_status.add_theme_font_override("font", font_custom)
+			label_status.add_theme_font_size_override("font_size", 24)
+			
+		if p["ready"]:
+			label_status.text = "PRÊT"
+			label_status.add_theme_color_override("font_color", Color.GREEN) # Vert fluo
+		else:
+			label_status.text = "EN ATTENTE..."
+			label_status.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5)) # Gris
+			
+			# Petit bonus : Si c'est l'hôte (ID 1) et qu'il n'est pas prêt, on peut écrire "HOST"
+			if id == 1 and not p["ready"]:
+				label_status.text = "HÔTE"
+				label_status.add_theme_color_override("font_color", Color.YELLOW)
+		
+		if multiplayer.is_server() and NetworkGlobal.game_mode == "VS":
+			# On ne peut pas se désigner soi-même si on veut tester (optionnel)
+			var btn_role = Button.new()
+			btn_role.text = "Mettre en Purple Guy"
+			if p.has("role") and p["role"] == "Purple Guy":
+				btn_role.text = "C'EST LE TUEUR"
+				btn_role.disabled = true
+				btn_role.modulate = Color.PURPLE
+			else:
+				btn_role.pressed.connect(_on_set_purple_guy.bind(id))
+			
+			ligne.add_child(btn_role)
+			
+		# Affichage du rôle pour tout le monde
+		if p.has("role") and p["role"] == "Purple Guy":
+			var lbl_role = Label.new()
+			lbl_role.text = "[PURPLE GUY]"
+			lbl_role.modulate = Color.PURPLE
+			ligne.add_child(lbl_role)
+		
+		
+		# --- AJOUT AU CONTENEUR ---
+		ligne.add_child(label_nom)
+		ligne.add_child(label_status)
+		
+		container_liste_joueurs.add_child(ligne)
+		
+		# 3. Mise à jour du mode de jeu (inchangé)
+		var mode_actuel = NetworkGlobal.game_mode
+		if mode_actuel == "Coop": option_mode.selected = 0
+		else: option_mode.selected = 1
+		
+		# 4. Gestion des permissions (inchangé)
+		if multiplayer.is_server():
+			option_mode.disabled = false
+			label_status.text = "Configurez la partie."
+		else:
+			option_mode.disabled = true
+			label_status.text = "En attente de l'hôte..."
+
+
+func _on_set_purple_guy(id_cible):
+	NetworkGlobal.rpc("set_versus_role", id_cible)
+
+
+func creer_liste_boutons():
+	# 1. On nettoie la liste existante
+	for child in container_touches.get_children():
+		child.queue_free()
+	
+	# 2. On crée une ligne pour chaque action
+	for action_id in actions_a_mapper:
+		var nom_lisible = actions_a_mapper[action_id]
+		
+		# Création d'un conteneur horizontal
+		var hbox = HBoxContainer.new()
+		hbox.custom_minimum_size.y = 50 # Un peu plus de hauteur pour aérer
+		
+		# A. Le Nom de l'action
+		var lbl = Label.new()
+		lbl.text = nom_lisible
+		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		
+		# --- AJOUT STYLE ---
+		if font_custom:
+			lbl.add_theme_font_override("font", font_custom)
+			lbl.add_theme_font_size_override("font_size", 24)
+		# -------------------
+		
+		hbox.add_child(lbl)
+		
+		# B. Le Bouton avec la touche actuelle
+		var btn = Button.new()
+		btn.custom_minimum_size.x = 200 # Bouton un peu plus large
+		btn.toggle_mode = true
+		btn.text = recuperer_nom_touche_actuelle(action_id)
+		
+		# --- AJOUT STYLE ---
+		if font_custom:
+			btn.add_theme_font_override("font", font_custom)
+			btn.add_theme_font_size_override("font_size", 24)
+		# -------------------
+		
+		btn.pressed.connect(_on_remap_button_pressed.bind(action_id, btn))
+		
+		hbox.add_child(btn)
+		container_touches.add_child(hbox)
+
+func recuperer_nom_touche_actuelle(action_id):
+	var events = InputMap.action_get_events(action_id)
+	if events.size() > 0:
+		# On prend le premier événement (souvent une touche clavier)
+		var event = events[0]
+		if event is InputEventKey:
+			return OS.get_keycode_string(event.keycode)
+		elif event is InputEventMouseButton:
+			return "Souris " + str(event.button_index)
+	return "Aucune"
+
+func _on_remap_button_pressed(action_id, bouton_ref):
+	# Si on clique sur un bouton, on passe en mode "Écoute"
+	action_en_cours_de_modif = action_id
+	bouton_en_cours_de_modif = bouton_ref
+	
+	bouton_ref.text = "Appuyez..."
+	
+	# On désactive les autres boutons pour éviter les conflits
+	set_process_input(true)
+	
+func _input(event):
+	# Si on n'est pas en train de modifier, on ne fait rien
+	if action_en_cours_de_modif == "": return
+	
+	# On cherche une pression de touche clavier
+	if event is InputEventKey and event.pressed:
+		
+		# Annulation avec ECHAP
+		if event.keycode == KEY_ESCAPE:
+			cancel_remap()
+			return
+			
+		# --- APPLICATION DE LA NOUVELLE TOUCHE ---
+		
+		# 1. On supprime l'ancienne touche
+		InputMap.action_erase_events(action_en_cours_de_modif)
+		
+		# 2. On ajoute la nouvelle
+		InputMap.action_add_event(action_en_cours_de_modif, event)
+		
+		# 3. Mise à jour visuelle
+		bouton_en_cours_de_modif.text = OS.get_keycode_string(event.keycode)
+		bouton_en_cours_de_modif.button_pressed = false # Relâche le bouton visuellement
+		
+		# 4. Sauvegarde
+		GameData.save_keybinds() 
+		
+		# 5. Reset
+		action_en_cours_de_modif = ""
+		bouton_en_cours_de_modif = null
+		
+		# On "consomme" l'événement pour qu'il ne déclenche rien d'autre dans le jeu
+		get_viewport().set_input_as_handled()
+
+func cancel_remap():
+	if bouton_en_cours_de_modif:
+		bouton_en_cours_de_modif.text = recuperer_nom_touche_actuelle(action_en_cours_de_modif)
+		bouton_en_cours_de_modif.button_pressed = false
+	
+	action_en_cours_de_modif = ""
+	bouton_en_cours_de_modif = null
+
+func _on_retour_pressed():
+	# Masquer le menu options et réafficher le menu principal
+	ecran_options.visible = false
+	ecran_accueil.visible = true
+
+func generer_liste_challenges():
+	# Nettoyage
+	for child in container_challenges.get_children():
+		child.queue_free()
+	
+	for challenge in GameData.challenges_list:
+		var btn = Button.new()
+		
+		# --- MODIFICATIONS ICI ---
+		# 1. Application de la police importée (.ttf)
+		if font_custom:
+			btn.add_theme_font_override("font", font_custom)
+		
+		# 2. Augmentation de la taille de la police (Changez 24 par ce que vous voulez)
+		btn.add_theme_font_size_override("font_size", 35) 
+		
+		# Optionnel : Augmenter un peu la hauteur du bouton pour que le gros texte rentre bien
+		btn.custom_minimum_size.y = 40 
+		# -------------------------
+		
+		btn.text = challenge["name"]
+		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		
+		# Si le challenge est réussi
+		if challenge["id"] in GameData.completed_challenges:
+			#btn.text += " [★]"
+			btn.modulate = Color.GREEN
+		
+		# Connexion du signal
+		btn.pressed.connect(_on_challenge_clicked.bind(challenge))
+		
+		# Curseur main au survol (plus joli)
+		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		
+		container_challenges.add_child(btn)
+
+func _on_challenge_clicked(challenge_data):
+	print("Challenge sélectionné : ", challenge_data["name"])
+	GameData.active_challenge_id = challenge_data["id"]
+	
+	# 1. Mise à jour des données (Logique)
+	if challenge_data["id"] == "custom":
+		# Reset à 0
+		for key in GameData.custom_night_levels:
+			GameData.custom_night_levels[key] = 0
+	else:
+		# Applique les niveaux du challenge
+		# D'abord reset à 0 pour ceux qui ne sont pas dans le challenge
+		for key in GameData.custom_night_levels:
+			GameData.custom_night_levels[key] = 0
+			
+		var niveaux_impose = challenge_data["levels"]
+		for robot_nom in niveaux_impose:
+			GameData.custom_night_levels[robot_nom] = niveaux_impose[robot_nom]
+	
+	# 2. Reconstruire l'interface visuelle
+	# Cela va appeler preparer_interface_custom qui va lire les nouvelles données
+	# et appliquer les bons chiffres et l'état désactivé/activé des boutons.
+	rafraichir_valeurs_visuelles()
+
+func rafraichir_valeurs_visuelles():
+	# Cette fonction parcourt ton interface pour mettre à jour les textes "0", "10", "20"
+	# en lisant GameData.custom_night_levels.
+	# Tu devras peut-être adapter ton code existant pour retrouver les Labels.
+	# Une astuce est de nommer les labels "Label_NomDuRobot" ou de les mettre dans un dictionnaire lors de la création.
+	
+	# Exemple simple si tu refais la boucle de création :
+	preparer_interface_custom()
+	
+func _on_aller_vers_succes():
+	ecran_accueil.visible = false
+	ecran_selection.visible = false # Au cas où
+	ecran_succes.visible = true
+	ecran_options.visible = false
+	
+	generer_liste_succes() # On génère la liste à l'ouverture
+
+func _on_retour_accueil_depuis_succes():
+	ecran_succes.visible = false
+	ecran_accueil.visible = true
+	
+func generer_liste_succes():
+	# 1. Nettoyage de la liste précédente
+	for child in grid_succes.get_children():
+		child.queue_free()
+	
+	# 2. Configuration de la grille (Espacement)
+	grid_succes.add_theme_constant_override("h_separation", 20)
+	grid_succes.add_theme_constant_override("v_separation", 20)
+	
+	# 3. Boucle sur les données
+	for ach in GameData.achievements_data:
+		var est_debloque = GameData.unlocked_achievements.has(ach["id"])
+		
+		# --- LE CONTENEUR (Panel) ---
+		var panel = PanelContainer.new()
+		panel.custom_minimum_size = Vector2(400, 100) # Taille fixe assez large
+		
+		# --- DISPOSITION (HBox : Icone à gauche | Texte à droite) ---
+		var hbox = HBoxContainer.new()
+		hbox.add_theme_constant_override("separation", 15)
+		panel.add_child(hbox)
+		
+		# A. L'ICONE
+		var icon_rect = TextureRect.new()
+		icon_rect.custom_minimum_size = Vector2(80, 80)
+		icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		
+		if est_debloque:
+			# Si débloqué : On charge l'image (si elle existe) sinon défaut
+			if ResourceLoader.exists(ach["icon"]):
+				icon_rect.texture = load(ach["icon"])
+			else:
+				icon_rect.texture = icon_defaut
+			icon_rect.modulate = Color.WHITE
+		else:
+			# Si verrouillé : Image sombre ou "?"
+			icon_rect.texture = icon_defaut
+			icon_rect.modulate = Color(0.1, 0.1, 0.1, 0.5) # Très sombre et transparent
+			
+		hbox.add_child(icon_rect)
+		
+		# B. LES TEXTES (VBox : Titre en haut, Description en bas)
+		var vbox_text = VBoxContainer.new()
+		vbox_text.alignment = BoxContainer.ALIGNMENT_CENTER # Centré verticalement
+		vbox_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL # Prend toute la place restante
+		
+		var lbl_titre = Label.new()
+		var lbl_desc = Label.new()
+		
+		# Police (si tu veux l'appliquer)
+		if font_custom:
+			lbl_titre.add_theme_font_override("font", font_custom)
+			lbl_desc.add_theme_font_override("font", font_custom)
+		
+		if est_debloque:
+			lbl_titre.text = ach["title"]
+			lbl_desc.text = ach["description"]
+			lbl_titre.modulate = Color.GREEN # Titre en vert
+		else:
+			if ach["hidden"]:
+				lbl_titre.text = "???"
+				lbl_desc.text = "Succès Secret"
+			else:
+				lbl_titre.text = ach["title"]
+				lbl_desc.text = "Verrouillé"
+			
+			lbl_titre.modulate = Color.GRAY
+			lbl_desc.modulate = Color(0.5, 0.5, 0.5)
+		
+		# Style des textes
+		lbl_titre.add_theme_font_size_override("font_size", 22) # Titre gros
+		lbl_desc.add_theme_font_size_override("font_size", 16)  # Desc plus petite
+		lbl_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART # Retour à la ligne auto
+		
+		vbox_text.add_child(lbl_titre)
+		vbox_text.add_child(lbl_desc)
+		
+		hbox.add_child(vbox_text)
+		
+		# Ajout final à la grille
+		grid_succes.add_child(panel)
+
+func preparer_interface_custom():
+	# On nettoie d'abord
+	for child in container_custom.get_children():
+		child.queue_free()
+	
+	container_custom.columns = 4 
+	container_custom.add_theme_constant_override("h_separation", 30)
+	container_custom.add_theme_constant_override("v_separation", 50)
+	
+	# Est-ce qu'on est dans un challenge ? (Si oui, on désactive les boutons)
+	var est_en_challenge = (GameData.active_challenge_id != "custom")
+	
+	for data in GameData.animatronics_data:
+		var nom_bot = data["name"]
+		
+		if nom_bot == "Springtrap": continue
+			
+		var boite_robot = VBoxContainer.new()
+		boite_robot.custom_minimum_size = Vector2(180, 150)
+		boite_robot.alignment = BoxContainer.ALIGNMENT_CENTER
+		
+		# --- IMAGE ---
+		var icon_robot = TextureRect.new()
+		icon_robot.custom_minimum_size = Vector2(200, 200) 
+		icon_robot.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon_robot.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		
+		var chemin_image = "res://IconesAnimatroniques/" + nom_bot + ".webp"
+		if ResourceLoader.exists(chemin_image):
+			icon_robot.texture = load(chemin_image)
+		else:
+			icon_robot.texture = icon_defaut 
+			
+		boite_robot.add_child(icon_robot)
+		
+		# --- SÉLECTEUR ---
+		var boite_selecteur = HBoxContainer.new()
+		boite_selecteur.alignment = BoxContainer.ALIGNMENT_CENTER
+		boite_selecteur.add_theme_constant_override("separation", 15) 
+		
+		# Bouton Moins
+		var btn_minus = Button.new()
+		btn_minus.text = "<"
+		btn_minus.custom_minimum_size = Vector2(40, 40) 
+		btn_minus.pressed.connect(_on_change_ai.bind(nom_bot, -1, boite_selecteur))
+		btn_minus.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		btn_minus.add_to_group("boutons_ai")
+		
+		# --- CORRECTION 1 : Désactiver si challenge ---
+		btn_minus.disabled = est_en_challenge 
+		
+		# Label Valeur
+		var lbl_val = Label.new()
+		lbl_val.name = "Label_AI"
+		
+		# --- CORRECTION 2 : Lire la valeur actuelle au lieu de mettre "0" ---
+		var niveau_actuel = 0
+		if GameData.custom_night_levels.has(nom_bot):
+			niveau_actuel = GameData.custom_night_levels[nom_bot]
+		else:
+			GameData.custom_night_levels[nom_bot] = 0 # Init si inexistant
+			
+		lbl_val.text = str(niveau_actuel)
+		
+		# Couleur du texte selon la difficulté
+		update_label_color(lbl_val, niveau_actuel)
+		# -------------------------------------------------------------------
+
+		lbl_val.custom_minimum_size.x = 40 
+		lbl_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		
+		if font_custom: 
+			lbl_val.add_theme_font_override("font", font_custom)
+			lbl_val.add_theme_font_size_override("font_size", 40) 
+		else:
+			lbl_val.add_theme_font_size_override("font_size", 28)
+		
+		# Bouton Plus
+		var btn_plus = Button.new()
+		btn_plus.text = ">"
+		btn_plus.custom_minimum_size = Vector2(40, 40)
+		btn_plus.pressed.connect(_on_change_ai.bind(nom_bot, 1, boite_selecteur))
+		btn_plus.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		btn_plus.add_to_group("boutons_ai")
+		
+		# --- CORRECTION 1 : Désactiver si challenge ---
+		btn_plus.disabled = est_en_challenge
+		
+		boite_selecteur.add_child(btn_minus)
+		boite_selecteur.add_child(lbl_val)
+		boite_selecteur.add_child(btn_plus)
+		
+		boite_robot.add_child(boite_selecteur)
+		container_custom.add_child(boite_robot)
+
+# Petite fonction utilitaire pour ne pas dupliquer le code des couleurs
+func update_label_color(label, valeur):
+	if valeur == 0: label.modulate = Color.WHITE
+	elif valeur <= 10: label.modulate = Color.YELLOW
+	elif valeur < 20: label.modulate = Color.ORANGE
+	else: label.modulate = Color.RED
+
+# --- 2. GESTION DU CLIC (+ / -) ---
+func _on_change_ai(nom_bot, changement, conteneur_ref):
+	var valeur_actuelle = GameData.custom_night_levels[nom_bot]
+	var nouvelle_valeur = clamp(valeur_actuelle + changement, 0, 20)
+	
+	GameData.custom_night_levels[nom_bot] = nouvelle_valeur
+	
+	var label = conteneur_ref.get_node("Label_AI")
+	label.text = str(nouvelle_valeur)
+	
+	# Utilisation de la fonction utilitaire créée plus haut
+	update_label_color(label, nouvelle_valeur)
+
+
+# --- NAVIGATION ---
+func _on_aller_vers_selection():
+	ecran_accueil.visible = false
+	ecran_selection.visible = true
+	generer_liste_nuits()
+	nuit_selectionnee_temp = GameData.unlocked_night
+	update_details_panel(GameData.unlocked_night)
+
+func _on_bouton_quitter_pressed():
+	print("Fermeture du jeu...")
+	get_tree().quit()
+
+func _jouer_son_hover():
+	if audio_hover:
+		audio_hover.pitch_scale = randf_range(0.9, 1.1)
+		audio_hover.play()
+		
+func _on_retour_accueil():
+	ecran_selection.visible = false
+	ecran_accueil.visible = true
+
+# --- GÉNÉRATION DE LA LISTE (STYLISTIQUE AMÉLIORÉE) ---
+func generer_liste_nuits():
+	var total_nuits_json = GameData.nights_data.size()
+	
+	# --- 1. CALCUL DE LA HAUTEUR DYNAMIQUE ---
+	# On récupère la hauteur totale du conteneur (définie dans l'éditeur avec les Ancres/Anchors)
+	var hauteur_totale = liste_nuits_container.size.y
+	
+	# On récupère l'espace entre les boutons (défini dans Theme Overrides > Constants > Separation)
+	# Si ce n'est pas défini, Godot utilise 4px par défaut.
+	var separation = liste_nuits_container.get_theme_constant("separation")
+	
+	# Calcul de l'espace total "perdu" par les écarts (Il y a N-1 écarts pour N boutons)
+	var total_separation = separation * (total_nuits_json - 1)
+	if total_separation < 0: total_separation = 0
+	
+	# Hauteur restante divisée par le nombre de boutons
+	var hauteur_bouton = (hauteur_totale - total_separation) / total_nuits_json
+	
+	# Petite sécurité pour éviter des boutons minuscules ou négatifs
+	if hauteur_bouton < 30: hauteur_bouton = 30 
+	
+	# --- 2. CHARGEMENT POLICE ---
+	var ma_police = load("res://vcr_osd_mono.ttf") 
+	
+	# Nettoyage
+	for child in liste_nuits_container.get_children():
+		child.queue_free()
+	
+	for i in range(1, total_nuits_json + 1):
+		var btn = Button.new()
+		
+		# --- STYLE ---
+		if ma_police:
+			btn.add_theme_font_override("font", ma_police)
+			# On adapte aussi la taille du texte : plus le bouton est petit, plus le texte est petit
+			# (C'est optionnel, tu peux garder une taille fixe comme 24)
+			var taille_texte = 50
+			btn.add_theme_font_size_override("font_size", int(taille_texte))
+		
+		# --- HAUTEUR DYNAMIQUE ICI ---
+		btn.custom_minimum_size.y = hauteur_bouton
+		
+		btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
+		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		btn.mouse_entered.connect(_jouer_son_hover)
+		
+		if i <= GameData.unlocked_night:
+			btn.text = "  Nuit " + str(i)
+			btn.pressed.connect(_on_nuit_bouton_clicked.bind(i))
+		else:
+			btn.text = "  ???"
+			btn.disabled = true
+			btn.modulate = Color(1, 1, 1, 0.5)
+		
+		liste_nuits_container.add_child(btn)
+
+# --- LOGIQUE DE SÉLECTION & COULEURS ---
+func _on_nuit_bouton_clicked(numero_nuit):
+	nuit_selectionnee_temp = numero_nuit
+	update_details_panel(numero_nuit)
+
+func verifier_etoiles():
+	# Par sécurité, on cache tout d'abord
+	if etoile_1: etoile_1.visible = false
+	if etoile_2: etoile_2.visible = false
+	if etoile_3: etoile_3.visible = false
+	
+	# --- ETOILE 1 : Avoir fini la Nuit 5 ---
+	# Si on a débloqué la nuit 6 (ou plus), c'est qu'on a fini la 5.
+	if GameData.unlocked_night >= 6:
+		if etoile_1: etoile_1.visible = true
+		
+	# --- ETOILE 2 : Avoir fini la Nuit 6 ---
+	# Si on a débloqué la nuit 7 (ou plus), c'est qu'on a fini la 6.
+	if GameData.unlocked_night >= 7:
+		if etoile_2: etoile_2.visible = true
+		
+	# --- ETOILE 3 : Le défi 20/20/20/20 ---
+	# On vérifie si le succès spécifique a été débloqué
+	if GameData.completed_challenges.size() > 0:
+		etoile_3.visible = true
+
+func update_details_panel(numero_nuit):
+	if numero_nuit == 0:
+		label_titre.text = "Sélectionnez une nuit"
+		label_desc.text = ""
+		label_difficulte.text = ""
+		label_duree.text = ""
+		btn_lancer.disabled = true
+		return
+
+	var info = GameData.get_night_info(numero_nuit)
+	
+	if info:
+		label_titre.text = info["title"]
+		
+		# EST-CE UNE NUIT CUSTOM ?
+		if info.has("type") and info["type"] == "custom":
+			# MODE CUSTOM : On cache la desc, on montre la grille
+			label_desc.visible = false
+			label_difficulte.visible = false
+			label_duree.visible = false
+			if container_custom: container_custom.visible = true
+			if container_challenges: container_challenges.visible = true
+			
+			# On reset les valeurs à 0 ou on garde les précédentes
+			# Pour l'instant on garde les valeurs précédentes
+		else:
+			# MODE CLASSIQUE : On montre la desc, on cache la grille
+			label_desc.visible = true
+			label_difficulte.visible = true
+			label_duree.visible = true
+			label_desc.text = info["description"]
+			if container_custom: container_custom.visible = false
+			if container_challenges: container_challenges.visible = false
+		
+		# Récupération du texte de difficulté
+		var diff_text = info["difficulty_label"]
+		label_difficulte.text = "Difficulté : " + diff_text
+		
+		# --- CHANGEMENT DE COULEUR SELON LA DIFFICULTÉ ---
+		# On convertit en minuscule pour éviter les erreurs de majuscules (Facile vs facile)
+		match diff_text.to_lower():
+			"facile", "easy":
+				label_difficulte.modulate = Color.GREEN # Vert
+			"normal", "moyen":
+				label_difficulte.modulate = Color.YELLOW # Jaune
+			"difficile", "hard":
+				label_difficulte.modulate = Color(1, 0.2, 0.2) # Rouge
+			"extrême", "extreme", "cauchemar":
+				label_difficulte.modulate = Color(0.6, 0, 0) # Rouge Sang / Foncé
+			_:
+				label_difficulte.modulate = Color.WHITE # Blanc par défaut
+		
+		if label_duree:
+			label_duree.text = "Durée : " + info["display_duration_text"]
+			
+		btn_lancer.disabled = false
+	else:
+		print("Erreur : Pas d'info pour la nuit ", numero_nuit)
+
+# --- LANCEMENT DU JEU ---
+func _on_lancer_nuit():
+	print("Lancement de la transition pour la nuit ", nuit_selectionnee_temp)
+	
+	GameData.current_night_played = nuit_selectionnee_temp
+	
+	if nuit_selectionnee_temp == 1:
+		if ecran_intro_nuit_1:
+			# 1. On prépare l'image : Visible mais totalement transparente
+			$ColorRect.visible = true
+			ecran_intro_nuit_1.modulate.a = 0.0 
+			ecran_intro_nuit_1.visible = true
+			
+			# 2. On crée le Tween (l'animateur)
+			var tween = create_tween()
+			
+			# ÉTAPE A : Fondu d'entrée (passe de 0 à 1 en 1.0 seconde)
+			tween.tween_property(ecran_intro_nuit_1, "modulate:a", 1.0, 1.0)
+			
+			# ÉTAPE B : On attend 3 secondes (temps de lecture)
+			tween.tween_interval(3.0)
+			
+			# ÉTAPE C : Fondu de sortie (passe de 1 à 0 en 1.0 seconde)
+			tween.tween_property(ecran_intro_nuit_1, "modulate:a", 0.0, 1.0)
+			
+			# 3. On attend que TOUTE l'animation soit finie
+			await tween.finished
+			
+			# 4. On cache l'écran pour la propreté
+			ecran_intro_nuit_1.visible = false
+			$ColorRect.visible = false
+	
+	if label_trans_nuit:
+		label_trans_nuit.text = "Nuit " + str(nuit_selectionnee_temp)
+	
+	if ecran_transition:
+		ecran_transition.visible = true
+		ecran_transition.z_index = 4096 
+	
+	if audio_transition:
+		audio_transition.play()
+	
+	await get_tree().create_timer(2.5).timeout
+	
+	get_tree().change_scene_to_file("res://Scenes/office.tscn")
+
+
+func _on_bouton_options_pressed() -> void:
+	ecran_accueil.visible = false
+	ecran_selection.visible = false # Au cas où
+	ecran_succes.visible = false
+	ecran_options.visible = true
+	creer_liste_boutons()
+
+
+func _on_bouton_retour_pressed() -> void:
+	ecran_accueil.visible = true	
+	ecran_selection.visible = false # Au cas où
+	ecran_succes.visible = false
+	ecran_options.visible = false
+
+
+==========================================================================
+
+
+extends Node
+
+# Signaux pour prévenir le menu qu'il se passe des choses
+signal player_list_changed
+signal connection_failed
+signal connection_success
+signal game_started
+signal challenge_changed(challenge_id)
+
+signal start_night_selection # Pour dire au menu d'afficher le choix
+signal game_ended # Pour dire au menu de réafficher le lobby au retour
+
+var active_challenge_multi_id : String = "custom" # ID par défaut
+
+var selected_night_multi : int = 1
+var is_in_game : bool = false
+
+var peer = ENetMultiplayerPeer.new()
+var PORT = 9999
+var MAX_PLAYERS = 4 # Limité à 2 pour l'instant (Coop ou VS)
+
+# Structure : { id_unique : { "name": "Pseudo", "ready": false } }
+var players = {}
+var player_info = {"name": "Joueur", "ready": false}
+
+# Infos de la partie (Gérées par l'hôte)
+var game_mode = "Coop" # "Coop" ou "VS"
+
+var versus_purple_guy_id : int = 0 # L'ID du joueur qui joue les méchants
+
+# RPC pour définir le rôle
+@rpc("authority", "call_local", "reliable")
+func set_versus_role(target_id : int):
+	versus_purple_guy_id = target_id
+	# On met à jour les infos locales pour l'affichage
+	for id in players:
+		if id == target_id:
+			players[id]["role"] = "Purple Guy"
+		else:
+			players[id]["role"] = "Gardien"
+	player_list_changed.emit()
+
+
+func recuperer_mon_ip_locale() -> String:
+	var ip_list = IP.get_local_addresses()
+	var ip_a_afficher = ""
+	
+	for ip in ip_list:
+		# On ignore localhost et IPv6
+		if ip == "127.0.0.1" or ":" in ip:
+			continue
+			
+		# PRIORITÉ 1 : Radmin VPN (Commence souvent par 26.)
+		if ip.begins_with("26."):
+			return ip # On retourne direct celle-là, c'est la meilleure pour le VPN
+			
+		# PRIORITÉ 2 : Réseau local classique (192.168. ou 10.)
+		if ip.begins_with("192.168.") or ip.begins_with("10."):
+			ip_a_afficher = ip
+			
+	# Si on a trouvé une IP locale mais pas Radmin, on la retourne
+	if ip_a_afficher != "":
+		return ip_a_afficher
+		
+	return "IP Introuvable"
+
+func _ready():
+	multiplayer.peer_connected.connect(_on_player_connected)
+	multiplayer.peer_disconnected.connect(_on_player_disconnected)
+	multiplayer.connected_to_server.connect(_on_connected_ok)
+	multiplayer.connection_failed.connect(_on_connected_fail)
+	multiplayer.server_disconnected.connect(_on_server_disconnected)
+
+
+@rpc("authority", "call_local", "reliable")
+func sync_challenge_selection(challenge_id : String):
+	active_challenge_multi_id = challenge_id
+	print("Challenge Multi changé pour : ", challenge_id)
+	
+	# C'est ici qu'on émet le signal.
+	# Si le signal n'est pas déclaré en haut, ça plante ici aussi !
+	challenge_changed.emit(challenge_id)
+
+
+# --- FONCTIONS DE CONNEXION ---
+
+func host_game(pseudo : String, mode : String):
+	var err = peer.create_server(PORT, MAX_PLAYERS - 1)
+	if err != OK:
+		print("Impossible de créer le serveur : " + str(err))
+		return
+		
+	multiplayer.multiplayer_peer = peer
+	
+	player_info["name"] = pseudo
+	player_info["ready"] = false
+	game_mode = mode
+	
+	players[1] = player_info # 1 est toujours l'ID de l'hôte
+	player_list_changed.emit()
+	print("Serveur créé. Mode : " + mode)
+
+func join_game(pseudo : String, ip : String):
+	peer.create_client(ip, PORT)
+	multiplayer.multiplayer_peer = peer
+	
+	player_info["name"] = pseudo
+	player_info["ready"] = false
+	print("Tentative de connexion...")
+
+# --- GESTION DES EVÉNEMENTS RÉSEAU ---
+
+func _on_player_connected(id):
+	print("Joueur connecté : ", id)
+	# Quand quelqu'un arrive, on lui envoie nos infos
+	rpc_id(id, "register_player", player_info)
+
+func _on_player_disconnected(id):
+	print("Joueur parti : ", id)
+	players.erase(id)
+	player_list_changed.emit()
+
+func _on_connected_ok():
+	print("Connecté au serveur avec succès !")
+	connection_success.emit()
+	
+	var my_id = multiplayer.get_unique_id()
+	
+	# --- AJOUT ICI : On s'ajoute soi-même à notre liste locale ---
+	players[my_id] = player_info
+	player_list_changed.emit()
+	# -------------------------------------------------------------
+	
+	# On envoie nos infos à l'hôte (ça, c'était déjà là)
+	rpc_id(1, "register_player", player_info)
+
+func _on_connected_fail():
+	print("Echec connexion")
+	connection_failed.emit()
+
+func _on_server_disconnected():
+	print("Serveur fermé")
+	players.clear()
+	peer.close()
+	get_tree().change_scene_to_file("res://Scenes/main_menu.tscn") # Retour menu
+
+# --- RPC (Synchronisation) ---
+
+@rpc("any_peer", "reliable")
+func register_player(new_player_info):
+	var new_player_id = multiplayer.get_remote_sender_id()
+	players[new_player_id] = new_player_info
+	player_list_changed.emit()
+	
+	# Si je suis l'hôte, je dois dire au nouveau quel est le mode de jeu
+	if multiplayer.is_server():
+		rpc("sync_game_mode", game_mode)
+
+@rpc("any_peer", "call_local", "reliable")
+func update_player_ready(est_pret : bool):
+	var id = multiplayer.get_remote_sender_id()
+	if players.has(id):
+		players[id]["ready"] = est_pret
+		player_list_changed.emit()
+		
+		# Vérification démarrage (Seul l'hôte vérifie)
+		if multiplayer.is_server():
+			check_start_game()
+
+@rpc("authority", "call_local", "reliable")
+func sync_game_mode(mode : String):
+	game_mode = mode
+	player_list_changed.emit() # Pour mettre à jour l'interface
+
+# --- DEMARRAGE ---
+
+func check_start_game():
+	var all_ready = true
+	if players.size() < 2: return # Pas de jeu tout seul en multi
+	
+	for id in players:
+		if not players[id]["ready"]:
+			all_ready = false
+			break
+	
+	if all_ready:
+		print("TOUT LE MONDE EST PRÊT ! Lancement séquence...")
+		# On dit à tout le monde de lancer le compte à rebours
+		rpc("pre_start_countdown")
+		
+@rpc("any_peer", "call_local", "reliable")
+func pre_start_countdown():
+	# On peut émettre un signal pour que le menu affiche "Lancement dans 3..."
+	# Pour simplifier ici, on attend juste 3 secondes
+	print("Lancement dans 3 secondes...")
+	
+	# Seul le serveur gère le timer pour éviter les désynchros
+	if multiplayer.is_server():
+		await get_tree().create_timer(3.0).timeout
+		rpc("show_night_selector")
+
+@rpc("authority", "call_local", "reliable")
+func show_night_selector():
+	# Ce signal va dire au MainMenu : 
+	# - Si je suis HOST : Affiche le panneau de choix de nuit
+	# - Si je suis CLIENT : Affiche "L'hôte choisit la nuit..."
+	start_night_selection.emit()
+
+@rpc("authority", "call_local", "reliable")
+func launch_game_scene(nuit : int):
+	selected_night_multi = nuit
+	is_in_game = true
+	print("Chargement de la Nuit ", nuit, " en Coop...")
+	
+	# Changement de scène pour tout le monde
+	get_tree().change_scene_to_file("res://Scenes/office.tscn")
+
+@rpc("any_peer", "call_local", "reliable")
+func return_to_lobby_multi():
+	is_in_game = false
+	
+	# 1. On remet tout le monde en "Pas Prêt"
+	# Sinon, si les joueurs reviennent et sont encore marqués "Prêts", le jeu redémarre direct !
+	player_info["ready"] = false
+	
+	if multiplayer.is_server():
+		for id in players:
+			players[id]["ready"] = false
+	
+	# 2. On charge la scène du menu
+	# Comme NetworkGlobal est un Autoload, la connexion NE COUPE PAS ici.
+	get_tree().change_scene_to_file("res://Scenes/main_menu.tscn")
+
+
+=====================================================================================
+
+
+
+extends Node2D
+
+@export_group("Réglages Caméra")
+@export var vitesse_scroll : float = 600.0
+@export var zone_active_x : int = 150
+@onready var camera = $Camera2D
+@onready var background = $Background
+@onready var audio_warning = $Audio_Warning
+@onready var audio_fan = $Audio_Fan
+@onready var audio_music_box = $Audio_MusicBox
+@onready var audio_leurre = $Audio_Leurre
+@onready var audio_flash_foxy = $Audio_Flash_Foxy
+@onready var audio_honk = $Audio_Honk
+@onready var audio_power_down = $Audio_PowerDown
+@onready var audio_freddy = $Audio_Freddy_Laugh
+
+
+var heat_timer_accumulated : float = 0.0
+
+var puppet_timer_attaque : float = 5.0
+var puppet_timer_reset : float = 5.0
+var puppet_est_en_position : bool = false
+
+@onready var audio_phone_call = $Audio_PhoneCall
+@onready var btn_mute_call = $UI/Bouton_Mute_Call
+
+@onready var sprite_gf = $GoldenFreddy_Sprite
+@onready var audio_gf_appear = $Audio_GF_Appear
+
+@onready var audio_ambiance = $Audio_Ambiance
+
+var phone_calls = {
+	1: "res://phone/night1.wav",
+	2: "res://phone/night2.wav",
+	3: "res://phone/night3.wav",
+	4: "res://phone/night4.wav",
+	5: "res://phone/night5.wav",
+	6: "res://phone/night6.wav" 
+}
+
+var gf_active : bool = false          
+var gf_reaction_timer : float = 0.0   
+var gf_cooldown : float = 2.0         
+var gf_interval_check : float = 1.0   
+var gf_timer_check : float = 0.0
+
+@export_group("Textures Bureau")
+@export var tex_normal : Texture2D          
+@export var tex_light_left : Texture2D      
+@export var tex_light_left_bonnie : Texture2D 
+@export var tex_light_right : Texture2D      
+@export var tex_light_right_chica : Texture2D 
+
+@export var son_monitor : AudioStreamPlayer 
+@onready var audio_monitor = $Audio_Monitor 
+
+var videos_jumpscares = {
+	"Bonnie": "res://Bonnie.ogv",
+	"Chica": "res://Chica.ogv",
+	"Foxy": "res://Foxy.ogv",
+	"Freddy": "res://Freddy.ogv",
+	"Puppet": "res://Puppet.ogv",
+	"Mangle": "res://Mangle.ogv",
+	"Golden-Freddy": "res://Golden-Freddy.ogv",
+	"Shadow-Bonnie": "res://Shadow-Bonnie.ogv",
+	"Springtrap": "res://Springtrap.ogv",
+	"Heat": "res://Heat.ogv"
+}
+
+@onready var container_barres = $UI/Barres_Container
+@onready var ventilateur = $Ventilateur
+@onready var anim_ventilateur = $Background/Fan
+
+var taux_drain = [0.15, 0.27, 0.63, 1.0, 1.35, 1.70]
+var temperature : float = 60.0
+var temperature_min : float = 60.0
+var temperature_max : float = 120.0
+var ventilateur_actif : bool = true 
+
+var silent_ventilateur_active : bool = false
+var silent_fan_timer : float = 0.0
+
+var joueurs_sur_moniteur = {}
+
+@export var textures_barres : Array[Texture2D] 
+@onready var indicateur_usage = $UI/Indicateur_Usage
+var vitesse_chauffe : float = 4.5
+var vitesse_refroidissement : float = 1.5 
+@onready var label_temp = $UI/Label_Temperature 
+
+# --- LUMIERES ---
+var light_left_on : bool = false
+var light_right_on : bool = false
+var limite_gauche : float = 0.0
+var limite_droite : float = 0.0
+var ecran_largeur : float
+
+# --- UI ---
+@onready var label_heure = $UI/Label_Heure
+@onready var label_nuit = $UI/Label_Nuit
+@onready var label_batterie = $UI/Label_Batterie
+@onready var video_victoire = $UI/VideoStreamPlayer
+@onready var ecran_jumpscare = $Layer_Jumpscare/Jumpscare 
+@onready var game_ui = $UI 
+@onready var map_container = $UI/Moniteur_CCTV 
+
+# --- REFERENCES ---
+@export var portes : Array[Node] 
+@export var systeme_camera : Node
+@export var porte_gauche : Node 
+@export var porte_droite : Node
+
+# --- VARIABLES JEU ---
+var game_over : bool = false
+var night_index : int = 1
+var current_night_data = {}
+var current_hour : int = 0
+var timer_seconds : float = 0.0
+var hour_duration : float = 60.0
+
+var animatronics_instances : Array[AnimatronicAI] = []
+
+# --- BATTERIE ---
+var batterie : float = 100.0
+var est_coupure_courant : bool = false
+
+func _ready():
+	ecran_largeur = get_viewport_rect().size.x
+	if background and background.texture:
+		var taille_image = background.texture.get_width() * background.scale.x 
+		limite_droite = taille_image - ecran_largeur
+	
+	if NetworkGlobal.players.size() > 0: # Détection simple qu'on est en ligne
+		night_index = NetworkGlobal.selected_night_multi
+		print("Mode Multi détecté : Lancement Nuit ", night_index)
+	else:
+		# Mode Solo classique
+		night_index = GameData.current_night_played
+	print("Lancement Nuit : ", night_index)
+	
+	if label_nuit:
+		label_nuit.text = "Nuit " + str(night_index)
+	
+	var info = GameData.get_night_info(night_index)
+	if info:
+		current_night_data = info
+		hour_duration = info["hour_duration_seconds"]
+	else:
+		print("ERREUR : Pas d'info pour la nuit ", night_index)
+	
+	update_clock_display()
+	
+	spawn_animatronics()
+	
+	if son_monitor: audio_monitor.stream = son_monitor
+	audio_fan.play()
+	
+	if ventilateur_actif and anim_ventilateur:
+		anim_ventilateur.play("default")
+	
+	if night_index == 6:
+		print("--- NUIT 6 : SPRINGTRAP ACTIVE / PUPPET DESACTIVÉE ---")
+		
+			
+	if btn_mute_call:
+		btn_mute_call.visible = false
+		btn_mute_call.pressed.connect(_on_mute_call_pressed)
+	
+	lancer_appel_telephonique()
+	
+	if night_index < 3:
+		if label_temp: label_temp.visible = false
+	else:
+		if label_temp: label_temp.visible = true
+		
+	if NetworkGlobal.game_mode == "VS":
+		var my_id = multiplayer.get_unique_id()
+		
+		if my_id == NetworkGlobal.versus_purple_guy_id:
+			# JE SUIS LE PURPLE GUY
+			setup_purple_guy_mode()
+		else:
+			# JE SUIS UN GARDIEN
+			setup_guardian_mode()
+	else:
+		# Mode Coop/Solo normal
+		pass
+
+func setup_purple_guy_mode():
+	print("Mode Purple Guy activé")
+	
+	# 1. IMPORTANT : On laisse l'interface GLOBALE visible
+	# C'est obligatoire pour voir le HUD et les Caméras qui sont dedans
+	if game_ui: game_ui.visible = true 
+	
+	# 2. On cache MANUELLEMENT les éléments du Gardien un par un
+	# (Adaptez les noms si vous en avez d'autres)
+	if label_batterie: label_batterie.visible = false
+	if label_heure: label_heure.visible = false
+	if label_nuit: label_nuit.visible = false
+	if container_barres: container_barres.visible = false
+	if btn_mute_call: btn_mute_call.visible = false
+	
+	# Si vous avez des boutons de portes dans l'UI, cachez-les aussi :
+	# ex: $UI/Bouton_Porte_Gauche.visible = false
+	
+	# 3. Configuration du Moniteur pour le Tueur
+	if systeme_camera:
+		# Active le mode spécial (cache boutons Audio/Flash/Vent)
+		if systeme_camera.has_method("activer_mode_purple_guy"):
+			systeme_camera.activer_mode_purple_guy()
+		
+		# On s'assure que le conteneur du moniteur est visible
+		if map_container: 
+			map_container.visible = true
+			map_container.z_index = 0 
+		
+		# On force l'ouverture
+		systeme_camera.est_ouvert = true
+		systeme_camera.visible = true
+		systeme_camera.mettre_a_jour_image() 
+		
+		# On dit au serveur que ce joueur regarde
+		joueurs_sur_moniteur[multiplayer.get_unique_id()] = true
+	
+	# 4. On ajoute l'interface Versus DANS L'UI (game_ui)
+	var hud = load("res://Scenes/VersusHUD.tscn").instantiate()
+	
+	# --- C'EST ICI LA CLÉ ---
+	# On l'ajoute comme enfant de game_ui ($UI) pour qu'il soit un élément d'interface
+	if game_ui:
+		game_ui.add_child(hud)
+	else:
+		# Fallback si game_ui n'existe pas (ne devrait pas arriver)
+		add_child(hud)
+		
+	if hud.has_method("setup"):
+		hud.setup(self)
+
+func setup_guardian_mode():
+	# Comportement normal
+	pass
+
+# --- RPC DE COMMANDE DU PURPLE GUY ---
+@rpc("any_peer", "call_local", "reliable")
+func server_versus_command(nom_bot : String, extra_arg : String):
+	# Sécurité : on vérifie que c'est bien le Purple Guy qui appelle (coté serveur)
+	if multiplayer.is_server():
+		var sender_id = multiplayer.get_remote_sender_id()
+		if sender_id != NetworkGlobal.versus_purple_guy_id: return
+
+	# Exécution de l'ordre
+	print("Commande VS reçue : ", nom_bot)
+	
+	# Cas Spécial Shadow Bonnie (besoin argument caméra)
+	if nom_bot == "Shadow-Bonnie":
+		for bot in animatronics_instances:
+			if bot.nom == "Shadow-Bonnie":
+				bot.path_list = [extra_arg] # On force la salle choisie
+				bot.faire_apparaitre_shadow_bonnie()
+		return
+
+	# Autres robots
+	for bot in animatronics_instances:
+		if bot.nom == nom_bot:
+			bot.versus_move() # Appelle la fonction qu'on a créée dans l'étape 3
+			break
+
+
+func _on_nez_freddy_pressed():
+	if audio_honk: audio_honk.play()
+	GameData.unlock_achievement("honk")
+
+func lancer_appel_telephonique():
+	if phone_calls.has(night_index):
+		var chemin = phone_calls[night_index]
+		if ResourceLoader.exists(chemin):
+			audio_phone_call.stream = load(chemin)
+			audio_phone_call.play()
+			if btn_mute_call: btn_mute_call.visible = true
+			await audio_phone_call.finished
+			if btn_mute_call: btn_mute_call.visible = false
+
+func _on_mute_call_pressed():
+	if audio_phone_call.playing:
+		audio_phone_call.stop()
+		if btn_mute_call: btn_mute_call.visible = false
+
+func toggle_ventilateur():
+	ventilateur_actif = !ventilateur_actif
+	
+	if ventilateur_actif:
+		# Si on allume le normal, on éteint le silencieux
+		silent_ventilateur_active = false
+		if audio_fan and not audio_fan.playing: audio_fan.play()
+		if anim_ventilateur: anim_ventilateur.play("default")
+	else:
+		if audio_fan: audio_fan.stop()
+		if anim_ventilateur: anim_ventilateur.stop()
+		
+	print("Ventilateur Normal : ", ventilateur_actif)
+	
+func toggle_silent_ventilateur():
+	silent_ventilateur_active = !silent_ventilateur_active
+	
+	if silent_ventilateur_active:
+		# Si on allume le silencieux, on éteint le normal
+		ventilateur_actif = false
+		if audio_fan: audio_fan.stop() # Le silencieux ne fait pas de bruit
+		if anim_ventilateur: 
+			anim_ventilateur.speed_scale = 5.0 # Tourne doucement
+			anim_ventilateur.play("default")
+		
+		print("Ventilateur Silencieux : ACTIF")
+	else:
+		if anim_ventilateur: 
+			anim_ventilateur.stop()
+			anim_ventilateur.speed_scale = 10.0
+		print("Ventilateur Silencieux : INACTIF")
+
+# Dans office.gd
+
+func sync_move_client(ancienne_salle : String, nouvelle_salle : String):
+	if NetworkGlobal.players.size() > 0 and multiplayer.is_server():
+		# 1. On envoie l'état de l'ANCIENNE salle (pour effacer le robot du client)
+		# On vérifie que la salle existe bien dans le système
+		if systeme_camera.etat_salles.has(ancienne_salle):
+			var occupants_old = systeme_camera.etat_salles[ancienne_salle]
+			systeme_camera.rpc("sync_etat_salle", ancienne_salle, occupants_old)
+		
+		# 2. On envoie l'état de la NOUVELLE salle (pour afficher le robot)
+		if systeme_camera.etat_salles.has(nouvelle_salle):
+			var occupants_new = systeme_camera.etat_salles[nouvelle_salle]
+			systeme_camera.rpc("sync_etat_salle", nouvelle_salle, occupants_new)
+
+@rpc("any_peer", "call_remote", "reliable")
+func server_update_camera_usage(est_ouvert : bool):
+	# Seul le serveur exécute ça
+	if not multiplayer.is_server(): return
+	
+	var id_expediteur = multiplayer.get_remote_sender_id()
+	
+	# On enregistre l'état de ce joueur spécifique
+	joueurs_sur_moniteur[id_expediteur] = est_ouvert
+	
+	# On force le recalcul de la batterie (qui utilisera la nouvelle logique "au moins un")
+	calculer_drain_batterie(0)
+
+func gestion_inputs_clavier():
+	# --- A. LES PORTES (Appui simple / Toggle) ---
+	if Input.is_action_just_pressed("input_door_left"):
+		commander_porte("left")
+		
+	if Input.is_action_just_pressed("input_door_right"):
+		commander_porte("right")
+		
+	# --- B. LES LUMIÈRES (Maintenir appuyé) ---
+	# GAUCHE
+	if Input.is_action_just_pressed("input_light_left"):
+		commander_lumiere("left", true)
+	elif Input.is_action_just_released("input_light_left"):
+		commander_lumiere("left", false)
+	
+	# DROITE
+	if Input.is_action_just_pressed("input_light_right"):
+		commander_lumiere("right", true)
+	elif Input.is_action_just_released("input_light_right"):
+		commander_lumiere("right", false)
+		
+	# --- C. VENTILATION ---
+	if Input.is_action_just_pressed("input_seal_vent"):
+		commander_ventilation()
+		
+	# --- D. MONITEUR ---
+	if Input.is_action_just_pressed("toggle_monitor"):
+		if NetworkGlobal.game_mode == "VS" and multiplayer.get_unique_id() == NetworkGlobal.versus_purple_guy_id:
+			print("Le Purple Guy ne peut pas quitter les caméras !")
+			return
+		commander_moniteur()
+
+func commander_porte(cote : String):
+	# Vérification Multi
+	if NetworkGlobal.players.size() > 0:
+		rpc("sync_action_door", cote)
+	else:
+		# Solo
+		if cote == "left": porte_gauche._on_door_toggle()
+		elif cote == "right": porte_droite._on_door_toggle()
+
+func commander_lumiere(cote : String, est_allume : bool):
+	if NetworkGlobal.players.size() > 0:
+		rpc("sync_action_light", cote, est_allume)
+	else:
+		if cote == "left":
+			if est_allume: porte_gauche._on_light_start()
+			else: porte_gauche._on_light_stop()
+		elif cote == "right":
+			if est_allume: porte_droite._on_light_start()
+			else: porte_droite._on_light_stop()
+			
+func commander_ventilation():
+	if NetworkGlobal.players.size() > 0:
+		rpc("sync_action_vent")
+	else:
+		if systeme_camera.has_method("_on_toggle_vent"):
+			systeme_camera._on_toggle_vent()
+			
+func commander_moniteur():
+	# 1. ACTION LOCALE (Visuelle)
+	if systeme_camera.has_method("toggle_monitor"):
+		systeme_camera.toggle_monitor()
+		if audio_monitor.stream: audio_monitor.play()
+		
+		# Si j'ouvre mon moniteur, j'éteins mes lumières locales
+		if systeme_camera.est_ouvert:
+			if porte_gauche.has_method("_on_light_stop"): porte_gauche._on_light_stop()
+			if porte_droite.has_method("_on_light_stop"): porte_droite._on_light_stop()
+
+	# 2. LOGIQUE RÉSEAU (Pour la batterie)
+	if NetworkGlobal.players.size() > 0:
+		var mon_statut = systeme_camera.est_ouvert
+		
+		if multiplayer.is_server():
+			# JE SUIS L'HÔTE : Je mets à jour mon propre dictionnaire directement
+			joueurs_sur_moniteur[1] = mon_statut
+			calculer_drain_batterie(0) # Recalcul immédiat
+		else:
+			# JE SUIS CLIENT : J'envoie ma facture au serveur
+			rpc_id(1, "server_update_camera_usage", mon_statut)
+
+
+
+@rpc("any_peer", "call_local", "reliable")
+func sync_action_door(cote):
+	if cote == "left":
+		porte_gauche._on_door_toggle()
+	elif cote == "right":
+		porte_droite._on_door_toggle()
+		
+	# On force la mise à jour immédiate de l'usage pour le serveur
+	if multiplayer.is_server():
+		calculer_drain_batterie(0)
+
+@rpc("any_peer", "call_local", "reliable")
+func sync_action_light(cote, est_allume):
+	# On met à jour les variables locales pour que tout le monde ait le même état
+	if cote == "left":
+		light_left_on = est_allume
+		if est_allume: porte_gauche._on_light_start()
+		else: porte_gauche._on_light_stop()
+	elif cote == "right":
+		light_right_on = est_allume
+		if est_allume: porte_droite._on_light_start()
+		else: porte_droite._on_light_stop()
+	
+	# Mise à jour visuelle (Fond d'écran) pour voir la lumière chez l'autre
+	update_office_background()
+		
+@rpc("any_peer", "call_local", "reliable")
+func sync_action_vent():
+	if systeme_camera.has_method("_on_toggle_vent"):
+		systeme_camera._on_toggle_vent()
+
+@rpc("any_peer", "call_local", "reliable")
+func sync_action_monitor():
+	if systeme_camera.has_method("toggle_monitor"):
+		systeme_camera.toggle_monitor()
+		if audio_monitor.stream: audio_monitor.play()
+		
+		# Si on ouvre, on éteint les lumières des portes pour économiser/logique
+		if systeme_camera.est_ouvert:
+			if porte_gauche.has_method("_on_light_stop"): porte_gauche._on_light_stop()
+			if porte_droite.has_method("_on_light_stop"): porte_droite._on_light_stop()
+
+
+func _process(delta):
+	# Si Game Over, on arrête tout
+	if game_over: return 
+	
+	# --- 1. INPUTS (Bloqués si coupure de courant) ---
+	if not est_coupure_courant:
+		gestion_inputs_clavier()
+					
+		if night_index >= 3:
+			if Input.is_action_just_pressed("toggle_fan"):
+				if NetworkGlobal.players.size() > 0:
+					rpc("sync_fan_normal") # On prévient tout le monde
+				else:
+					toggle_ventilateur() # Solo
+					
+			if Input.is_action_just_pressed("toggle_silent_fan"):
+				if NetworkGlobal.players.size() > 0:
+					rpc("sync_fan_silent") # On prévient tout le monde
+				else:
+					toggle_silent_ventilateur() # Solo
+		else:
+			# Logique auto pour nuits 1-2
+			if not ventilateur_actif:
+				ventilateur_actif = true
+				if audio_fan and not audio_fan.playing: audio_fan.play()
+			if silent_ventilateur_active:
+				silent_ventilateur_active = false
+	
+	
+	# --- 2. CAMERA SCROLL (Autorisé même sans courant !) ---
+	# On peut regarder autour de soi dans le noir
+	if systeme_camera and not systeme_camera.est_ouvert:
+		gestion_camera_scroll(delta)
+	
+	# --- 3. GESTION DU TEMPS (Autorisé sans courant pour pouvoir gagner à 6AM) ---
+	timer_seconds += delta
+	if timer_seconds >= hour_duration:
+		timer_seconds = 0.0
+		passer_heure_suivante()
+
+	# --- 4. SYSTEMES (Batterie, Temp, IA) ---
+	# On ne calcule le drain et la temp que s'il y a du courant
+	if not est_coupure_courant:
+		calculer_drain_batterie(delta)
+		calculer_temperature(delta)
+	
+	# L'IA continue de tourner (pour que Freddy s'approche pendant le blackout)
+	# Mais on peut limiter les autres si on veut. Ici on laisse tourner.
+	for i in range(animatronics_instances.size()):
+		var bot = animatronics_instances[i]
+		var ai_level_to_use = 0
+		if night_index == 7:
+			ai_level_to_use = bot.current_ai_level
+		else:
+			ai_level_to_use = GameData.get_ai_level(bot.json_index, night_index, current_hour)
+		bot.process_ai(delta, ai_level_to_use)
+		
+	process_golden_freddy(delta)
+	gestion_puppet(delta)
+	
+	
+@rpc("any_peer", "call_local", "reliable")
+func sync_fan_normal():
+	toggle_ventilateur()
+	# En bonus : l'hôte force une mise à jour immédiate de l'usage batterie
+	if multiplayer.is_server():
+		calculer_drain_batterie(0)
+
+@rpc("any_peer", "call_local", "reliable")
+func sync_fan_silent():
+	toggle_silent_ventilateur()
+	if multiplayer.is_server():
+		calculer_drain_batterie(0)
+
+
+func gestion_puppet(delta):
+	if game_over or est_coupure_courant: return
+
+	var puppet_bot = null
+	for bot in animatronics_instances:
+		if bot.nom == "Puppet":
+			puppet_bot = bot
+			break
+	
+	if puppet_bot == null: return 
+
+	var salle_puppet = ""
+	if puppet_bot.path_list.size() > 0:
+		salle_puppet = puppet_bot.path_list[puppet_bot.current_path_index]
+
+	var volume_cible = -80.0
+	puppet_est_en_position = (salle_puppet == "Right_Door_Pos") # Position d'attaque (invisible)
+
+	if puppet_est_en_position:
+		volume_cible = 0.0
+	elif systeme_camera.est_ouvert and systeme_camera.camera_actuelle == salle_puppet:
+		volume_cible = 0.0
+	else:
+		volume_cible = -80.0
+
+	if audio_music_box:
+		if not audio_music_box.playing: audio_music_box.play()
+		audio_music_box.volume_db = lerp(audio_music_box.volume_db, volume_cible, 5 * delta)
+
+	if puppet_est_en_position:
+		if porte_droite.est_fermee:
+			puppet_timer_reset -= delta
+			if puppet_timer_reset <= 0:
+				renvoyer_puppet(puppet_bot)
+		else:
+			puppet_timer_attaque -= delta
+			puppet_timer_reset = 5.0 
+			if puppet_timer_attaque <= 0:
+				trigger_jumpscare("Puppet")
+	else:
+		puppet_timer_attaque = 5.0
+		puppet_timer_reset = 5.0
+
+func renvoyer_puppet(bot):
+	print("PUPPET REPART AU DÉBUT !")
+	bot.changer_position(0)
+	puppet_timer_attaque = 5.0
+	puppet_timer_reset = 5.0
+
+func calculer_temperature(delta):
+	# --- LOGIQUE SERVEUR (Autorité) OU SOLO ---
+	var dois_calculer = true
+	
+	if NetworkGlobal.players.size() > 0:
+		if not multiplayer.is_server():
+			dois_calculer = false # Le client ne calcule rien, il attend le RPC
+	
+	if dois_calculer:
+		# 1. Calcul de la physique (Chauffe / Refroidit)
+		if ventilateur_actif:
+			if temperature > temperature_min:
+				temperature -= vitesse_refroidissement * delta
+				
+		elif silent_ventilateur_active:
+			if temperature < temperature_max:
+				temperature += vitesse_chauffe * delta
+				
+			silent_fan_timer += delta
+			if silent_fan_timer >= 0.2:
+				silent_fan_timer = 0.0
+				if randf() < 0.7:
+					temperature -= 1.0
+					
+		else:
+			if temperature < temperature_max:
+				temperature += vitesse_chauffe * delta
+		
+		temperature = clamp(temperature, temperature_min, temperature_max)
+		
+		# 2. Envoi aux clients (Si on est en multi)
+		if NetworkGlobal.players.size() > 0:
+			rpc("sync_temperature_data", temperature)
+
+	# --- AFFICHAGE (Commun à tout le monde) ---
+	mettre_a_jour_affichage_temp()
+	
+	# --- LOGIQUE DE MORT (Seul l'hôte ou le solo déclenche le Game Over) ---
+	if dois_calculer:
+		if temperature >= 120.0:
+			trigger_game_over_heat()
+			
+		if temperature >= 110.0 and not game_over:
+			heat_timer_accumulated += delta
+			if heat_timer_accumulated >= 10.0:
+				GameData.unlock_achievement("heat_survivor")
+		else:
+			heat_timer_accumulated = 0.0
+
+# Fonction pour mettre à jour le texte et la couleur (extrait de votre ancien code)
+func mettre_a_jour_affichage_temp():
+	if label_temp:
+		label_temp.text = "Temp : " + str(int(temperature)) + "°"
+		if temperature > 100:
+			label_temp.modulate = Color.RED
+		else:
+			label_temp.modulate = Color.GREEN
+
+# Le RPC que le client reçoit
+@rpc("authority", "call_remote", "unreliable")
+func sync_temperature_data(temp_recue):
+	temperature = temp_recue
+	mettre_a_jour_affichage_temp()
+
+
+
+func trigger_game_over_heat():
+	trigger_jumpscare("Heat")
+	update_office_background()
+
+func jouer_audio_leurre(nom_camera : String):
+	if audio_leurre:
+		audio_leurre.pitch_scale = randf_range(0.95, 1.05)
+		audio_leurre.play()
+	for bot in animatronics_instances:
+		if bot.has_method("recevoir_audio"):
+			bot.recevoir_audio(nom_camera)
+
+
+func set_light_state(cote : String, est_allume : bool):
+	if cote == "left":
+		light_left_on = est_allume
+		if est_allume: light_right_on = false 
+	elif cote == "right":
+		light_right_on = est_allume
+		if est_allume: light_left_on = false
+	update_office_background()
+
+func update_office_background():
+	var monstre_revele = false
+	if not light_left_on and not light_right_on:
+		background.texture = tex_normal
+		return
+
+	if light_left_on:
+		if systeme_camera.etat_salles.has("Left_Door_Pos") and systeme_camera.etat_salles["Left_Door_Pos"].has("Bonnie"):
+			background.texture = tex_light_left_bonnie
+			monstre_revele = true
+		else:
+			background.texture = tex_light_left
+
+	elif light_right_on:
+		if systeme_camera.etat_salles.has("Right_Door_Pos") and systeme_camera.etat_salles["Right_Door_Pos"].has("Chica"):
+			background.texture = tex_light_right_chica
+			monstre_revele = true
+		else:
+			background.texture = tex_light_right
+			
+	if monstre_revele:
+		if not audio_warning.playing:
+			audio_warning.play()
+
+func gestion_camera_scroll(delta):
+	var souris_x = get_viewport().get_mouse_position().x
+	
+	if souris_x < zone_active_x:
+		camera.position.x -= vitesse_scroll * delta
+	elif souris_x > ecran_largeur - zone_active_x:
+		camera.position.x += vitesse_scroll * delta
+	
+	camera.position.x = clamp(camera.position.x, limite_gauche, limite_droite)
+
+
+func calculer_drain_batterie(delta):
+	var usage_level : int = 0 
+	
+	# Usage de base (Portes, lumières, etc.)
+	if silent_ventilateur_active: usage_level += 1
+	for porte in portes:
+		if porte.est_fermee: usage_level += 1
+	if light_left_on: usage_level += 1
+	if light_right_on: usage_level += 1
+	
+	# --- MODIFICATION : USAGE CAMÉRA (NON CUMULATIF) ---
+	var camera_est_active_globalement = false
+	
+	
+	if NetworkGlobal.players.size() > 0:
+		if multiplayer.is_server():
+			# Le serveur vérifie si AU MOINS UN *GARDIEN* a la caméra ouverte
+			for id in joueurs_sur_moniteur:
+				# Si c'est le Purple Guy, on l'ignore (sa caméra est gratuite)
+				if id == NetworkGlobal.versus_purple_guy_id:
+					continue
+					
+				if joueurs_sur_moniteur[id] == true:
+					camera_est_active_globalement = true
+					break
+	else:
+		# Mode Solo
+		if systeme_camera and systeme_camera.est_ouvert:
+			camera_est_active_globalement = true
+			
+	# Si la caméra est active (par 1 ou 2 joueurs), on ajoute 1 barre
+	if camera_est_active_globalement:
+		usage_level += 1
+	# -----------------------------------------------------
+
+	# Bonus vent scellé
+	if "vent_scelle" in systeme_camera and systeme_camera.vent_scelle: 
+		usage_level += 1
+	
+	usage_level = clampi(usage_level, 0, 5) 
+
+	# --- LOGIQUE SERVEUR / CLIENT (inchangée) ---
+	if NetworkGlobal.players.size() > 0:
+		if multiplayer.is_server():
+			var drain_de_base = taux_drain[usage_level] if usage_level < taux_drain.size() else 5.0
+			var ratio_duree = 60.0 / hour_duration
+			var drain_reel = drain_de_base * ratio_duree
+			batterie -= drain_reel * delta
+			if batterie < 0: batterie = 0
+			
+			# On envoie la batterie ET le niveau d'usage calculé
+			rpc("sync_battery_data", batterie, usage_level)
+			update_usage_bars_visual(usage_level)
+			
+	else:
+		# Solo
+		update_usage_bars_visual(usage_level)
+		var drain_de_base = taux_drain[usage_level] if usage_level < taux_drain.size() else 5.0
+		var drain_reel = drain_de_base * (60.0 / hour_duration)
+		batterie -= drain_reel * delta
+		if batterie < 0: batterie = 0
+
+	if label_batterie:
+		label_batterie.text = "Power : " + str(int(batterie)) + "%"
+		if batterie <= 20: label_batterie.modulate = Color.RED
+		
+	if batterie <= 0: trigger_blackout()
+
+# --- NOUVELLE FONCTION VISUELLE ---
+func update_usage_bars_visual(level : int):
+	if container_barres:
+		var barres = container_barres.get_children()
+		for i in range(barres.size()):
+			if i < level: barres[i].visible = true 
+			else: barres[i].visible = false
+
+# --- NOUVEAU RPC POUR LA BATTERIE ET L'USAGE ---
+@rpc("authority", "call_remote", "unreliable")
+func sync_battery_data(batterie_recue, usage_recu):
+	# Le client met à jour sa batterie
+	batterie = batterie_recue
+	# ET ses barres d'usage
+	update_usage_bars_visual(usage_recu)
+
+func trigger_blackout():
+	if est_coupure_courant or game_over: return
+	print("PLUS DE COURANT !")
+	
+	est_coupure_courant = true
+	batterie = 0.0
+	
+	# 1. Couper les systèmes
+	ventilateur_actif = false
+	silent_ventilateur_active = false
+	light_left_on = false
+	light_right_on = false
+	
+	if audio_fan: audio_fan.stop()
+	if audio_ambiance: audio_ambiance.stop()
+	
+	# Fermer le moniteur de force
+	if systeme_camera.est_ouvert:
+		systeme_camera.toggle_monitor()
+	
+	# Couper les portes
+	for porte in portes:
+		if porte.has_method("couper_courant"): porte.couper_courant()
+	if systeme_camera.has_method("couper_courant_camera"): systeme_camera.couper_courant_camera()
+	
+	# 2. Mise à jour visuelle (Tout noir)
+	label_batterie.text = "0%"
+	game_ui.visible = false # Cache l'interface
+	
+	# On met l'image normale mais très sombre
+	background.texture = tex_normal
+	background.modulate = Color(0.1, 0.1, 0.1, 1) # Assombri presque totalement
+	
+	# 3. Lancer la séquence audio/jumpscare
+	sequence_blackout_freddy()
+
+func sequence_blackout_freddy():
+	# A. Son de coupure ("Bzzzt")
+	if audio_power_down:
+		audio_power_down.play()
+		await audio_power_down.finished
+	
+	# B. Petit délai d'attente dans le noir (Tension)
+	await get_tree().create_timer(randf_range(1.0, 3.0)).timeout
+	if game_over: return # Si 6AM a sonné entre temps, on arrête
+	
+	# D. Silence final (Avant la mort)
+	await get_tree().create_timer(randf_range(1.0, 3.0)).timeout
+	
+	# E. JUMPSCARE
+	if not game_over: # Vérification finale si on a gagné
+		trigger_jumpscare("Freddy")
+
+func spawn_animatronics():
+	if NetworkGlobal.players.size() > 0:
+		# En multi, on utilise l'ID qui a été synchronisé via NetworkGlobal
+		var challenge_id = NetworkGlobal.active_challenge_multi_id
+		print("Lancement Nuit Multi. Challenge actif : ", challenge_id)
+		
+		# Si on joue la nuit 7, on applique les IA du challenge
+		if night_index == 7:
+			var challenge_data = null
+			for c in GameData.challenges_list:
+				if c["id"] == challenge_id:
+					challenge_data = c
+					break
+			
+			if challenge_data and challenge_data["id"] != "custom":
+				# On remplace les niveaux par ceux du challenge (Bear Attack, etc.)
+				GameData.custom_night_levels = challenge_data["levels"].duplicate()
+	
+	
+	for i in range(GameData.animatronics_data.size()):
+		var data = GameData.animatronics_data[i]
+		var nom_bot = data["name"]
+		
+		# FILTRES (Tes règles existantes)
+		if night_index == 6 and nom_bot != "Springtrap": continue
+		elif night_index != 6 and nom_bot == "Springtrap": continue
+		if nom_bot == "Golden-Freddy": continue 
+		
+		# CREATION
+		var bot = AnimatronicAI.new()
+		add_child(bot)
+		var porte_a_attaquer = null
+		
+		if nom_bot != "Springtrap" and data.has("door_side"):
+			if data["door_side"] == "left": porte_a_attaquer = porte_gauche
+			elif data["door_side"] == "right": porte_a_attaquer = porte_droite
+			
+		var ai_level_final = 0
+		
+		if night_index == 7:
+			if GameData.custom_night_levels.has(nom_bot):
+				ai_level_final = GameData.custom_night_levels[nom_bot]
+		else:
+			ai_level_final = GameData.get_ai_level(i, night_index, current_hour)
+		
+		bot.setup(data, systeme_camera, porte_a_attaquer, self, i)
+		bot.current_ai_level = ai_level_final
+		animatronics_instances.append(bot)
+		
+	if systeme_camera:
+		systeme_camera.mettre_a_jour_image()
+	
+
+func passer_heure_suivante():
+	current_hour += 1
+	update_clock_display()
+
+	if current_hour == 6: 
+		trigger_victory()
+	
+	if systeme_camera:
+		systeme_camera.mettre_a_jour_image()
+	
+	update_office_background()
+
+func forcer_depart_autres_robots():
+	for bot in animatronics_instances:
+		if bot.nom != "Springtrap":
+			# 1. On coupe son IA
+			bot.reset_timer(0) 
+			
+			# 2. On le renvoie à sa position de départ (souvent index 0 : La Scène)
+			bot.changer_position(0)
+			
+			# 3. Si c'était Foxy et qu'il attaquait, on annule
+			if bot.nom == "Foxy" and systeme_camera.foxy_attacking:
+				systeme_camera.foxy_attacking = false
+				systeme_camera.foxy_rage = 0
+				
+	# Mise à jour visuelle forcée des caméras
+	systeme_camera.mettre_a_jour_image()
+	# Mise à jour du bureau (au cas où Bonnie était à la fenêtre)
+	update_office_background()
+
+
+func update_clock_display():
+	var text_heure = "12 AM" if current_hour == 0 else str(current_hour) + " AM"
+	label_heure.text = text_heure
+
+func trigger_jumpscare(nom_tueur : String):
+	if game_over: return
+	game_over = true
+	
+	if current_hour == 0:
+		GameData.unlock_achievement("early_death")
+	
+	if map_container: map_container.visible = false
+	if game_ui: game_ui.visible = false 
+	if audio_ambiance: audio_ambiance.stop()
+	
+	if ecran_jumpscare:
+		$Layer_Jumpscare.visible = true
+		ecran_jumpscare.visible = true
+		if videos_jumpscares.has(nom_tueur):
+			ecran_jumpscare.stream = load(videos_jumpscares[nom_tueur])
+		
+		ecran_jumpscare.expand = true 
+		ecran_jumpscare.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		ecran_jumpscare.position = Vector2.ZERO
+		ecran_jumpscare.size = get_viewport_rect().size
+		
+		ecran_jumpscare.play()
+		await ecran_jumpscare.finished
+		ecran_jumpscare.stop()
+		$Layer_Jumpscare.visible = false
+	
+	if NetworkGlobal.players.size() > 0:
+		if multiplayer.is_server():
+			NetworkGlobal.rpc("return_to_lobby_multi")
+	else:
+		get_tree().change_scene_to_file("res://Scenes/main_menu.tscn")
+
+func trigger_victory():
+	game_over = true
+	
+	if game_ui: game_ui.visible = true
+	
+	# Par contre, on cache les textes pour ne pas les voir par dessus la vidéo
+	if label_heure: label_heure.visible = false
+	if label_batterie: label_batterie.visible = false
+	if map_container: map_container.visible = false
+	
+	# On remet la lumière normale (au cas où le modulate du blackout affecte la vidéo)
+	if background: background.modulate = Color(1, 1, 1, 1)
+	
+	if batterie >= 20.0:
+		GameData.unlock_achievement("battery_master")
+		
+	# --- SUCCÈS : NUITS ---
+	if night_index >= 1 and night_index <= 6:
+		GameData.unlock_achievement("night_" + str(night_index))
+		
+	# --- SUCCÈS : 7/20 MODE ---
+	if night_index == 7:
+		if GameData.active_challenge_id != "custom":
+			var id_chal = GameData.active_challenge_id
+			
+			# Si pas déjà validé, on l'ajoute
+			if not id_chal in GameData.completed_challenges:
+				GameData.completed_challenges.append(id_chal)
+				GameData.save_game() # On sauvegarde immédiatemen
+				
+		var tous_a_20 = true
+		# On vérifie si un seul robot est en dessous de 20
+		# Attention : On vérifie TOUS les robots disponibles
+		for key in GameData.custom_night_levels:
+			if GameData.custom_night_levels[key] < 20:
+				tous_a_20 = false
+				break
+		
+		# Vérification supplémentaire : est-ce que les robots sont bien activés ?
+		# (Pour éviter le cheat où on met 0 partout)
+		if GameData.custom_night_levels.size() < 4: # Sécurité
+			tous_a_20 = false
+			 
+		if tous_a_20:
+			GameData.unlock_achievement("20_20_mode")
+	
+	GameData.win_night(night_index)
+	audio_fan.stop()
+	audio_power_down.stop()
+	audio_music_box.volume_db = -80.0
+	audio_music_box.stop()
+	audio_ambiance.stop()
+	
+	if map_container: map_container.visible = false
+	if label_heure: label_heure.visible = false
+	if label_batterie: label_batterie.visible = false
+	
+	if video_victoire:
+		video_victoire.z_index = 4000 
+		video_victoire.visible = true
+		video_victoire.play()
+		await video_victoire.finished
+		
+	var chemin_image_fin = ""
+	
+	# DÉFINITION DES IMAGES SELON LA NUIT
+	if night_index == 5:
+		chemin_image_fin = "res://night5.png" # Ton image "Chèque"
+	elif night_index == 6:
+		chemin_image_fin = "res://night6.png" # Ton image "Heures Supp"
+	elif night_index == 7:
+		chemin_image_fin = "res://night7.png"     # Ton image "Licenciement"
+	
+	# 1. SI C'EST UNE NUIT AVEC IMAGE DE FIN
+	if chemin_image_fin != "" and ResourceLoader.exists(chemin_image_fin):
+		print("Affichage écran de fin pour la nuit ", night_index)
+		
+		# On passe l'info au GameData
+		GameData.image_fin_a_afficher = chemin_image_fin
+		
+		# On charge la scène de fin
+		if NetworkGlobal.players.size() > 0:
+		# RETOUR LOBBY EN MULTI
+			if multiplayer.is_server():
+				NetworkGlobal.rpc("return_to_lobby_multi")
+		else:
+			# RETOUR MENU EN SOLO
+			get_tree().change_scene_to_file("res://Scenes/main_menu.tscn")
+		return # On arrête la fonction ici, on ne lance pas de mini-jeu
+		
+	var nom_scene_minijeu = "res://minigames/Minigame_" + str(night_index) + ".tscn"
+	
+	# On vérifie si ce fichier existe réellement
+	if ResourceLoader.exists(nom_scene_minijeu):
+		print("Lancement du Mini-Jeu pour la nuit ", night_index)
+		get_tree().change_scene_to_file(nom_scene_minijeu)
+	else:
+		# Si pas de mini-jeu pour cette nuit (ex: Nuit 7), retour au menu
+		print("Pas de mini-jeu trouvé, retour menu.")
+		get_tree().change_scene_to_file("res://Scenes/main_menu.tscn")
+
+func process_golden_freddy(delta):
+	if game_over or est_coupure_courant: return
+	if gf_cooldown > 0:
+		gf_cooldown -= delta
+		return 
+
+	if gf_active:
+		if systeme_camera.est_ouvert:
+			desactiver_golden_freddy()
+			return
+		gf_reaction_timer -= delta
+		if gf_reaction_timer <= 0:
+			trigger_jumpscare("Golden-Freddy")
+	else:
+		if systeme_camera.est_ouvert: return
+		gf_timer_check -= delta
+		if gf_timer_check <= 0:
+			gf_timer_check = 1.0 
+			tenter_spawn_golden_freddy()
+
+func tenter_spawn_golden_freddy():
+	var ai_level = 0
+	
+	# --- 1. RECUPERATION DU NIVEAU ---
+	if night_index == 7:
+		# CAS CUSTOM NIGHT : On lit le menu
+		if GameData.custom_night_levels.has("Golden-Freddy"):
+			ai_level = GameData.custom_night_levels["Golden-Freddy"]
+	else:
+		# CAS HISTOIRE : On lit le JSON
+		for i in range(GameData.animatronics_data.size()):
+			if GameData.animatronics_data[i]["name"] == "Golden-Freddy":
+				ai_level = GameData.get_ai_level(i, night_index, current_hour)
+				break
+	
+	# Si IA est à 0, il n'apparaît jamais
+	if ai_level == 0: return 
+	
+	# --- 2. CALCUL PROBABILITÉ ---
+	var chance = randi_range(1, 1000)
+	var seuil = ai_level * 10 
+	
+	if chance <= seuil:
+		activer_golden_freddy()
+
+func activer_golden_freddy():
+	sprite_gf.visible = true
+	gf_active = true
+	GameData.unlock_achievement("golden_sighting")
+	gf_reaction_timer = 2.0 
+	if has_node("Audio_GF_Appear"): $Audio_GF_Appear.play()
+
+func desactiver_golden_freddy():
+	gf_active = false
+	sprite_gf.visible = false
+	gf_cooldown = randf_range(10.0, 20.0)
+
+func jouer_rire_freddy():
+	audio_freddy.play()
+
+
+
+=========================================================
+
+
+extends Control
+
+# --- RÉFÉRENCES VISUELLES ---
+@export var ecran_visuel : TextureRect 
+@export var ecran_brouillage : ColorRect 
+
+var flash_count_session : int = 0
+
+# --- RÉFÉRENCES AUDIO ---
+@onready var audio_switch = $Audio_Switch_Cam
+@onready var audio_flash_foxy = $Audio_Flash_Foxy
+@onready var audio_mangle_static = $Audio_Mangle_Static
+
+# --- BOUTONS ---
+var btn_audio : BaseButton
+var btn_vent : BaseButton
+var btn_flash : BaseButton
+
+# --- ETAT DU JEU ---
+var est_ouvert : bool = false
+var a_du_courant : bool = true
+var camera_actuelle : String = "Cam01"
+var vent_scelle : bool = false
+
+# --- ZONES SPÉCIALES ---
+var chemin_chica_audio = ["Cam12", "Cam10", "Cam06", "Cam05", "Cam02"]
+
+# --- FOXY ---
+var ui_foxy : Control
+var peut_flasher : bool = true
+var foxy_max_rage : int = 5
+var temps_recharge_flash : float = 3.0
+var foxy_rage : int = 0
+var foxy_attacking : bool = false
+
+# --- DONNÉES SALLES ---
+var etat_salles = {
+	"Cam01": [], "Cam02": [], "Cam03": [], "Cam04": [],
+	"Cam05": [], "Cam06": [], "Cam07": [], "Cam08": [], 
+	"Cam09": [], "Cam10": [], "Cam11": [], "Cam12": [], "Cam13": [],
+	"Left_Door_Pos": [],   
+	"Right_Door_Pos": [],  
+}
+var mode_purple_guy : bool = false
+
+# Ajoutez cette fonction pour activer le mode
+func activer_mode_purple_guy():
+	mode_purple_guy = true
+	if camera_actuelle == "": camera_actuelle = "Cam01"
+	# On cache tout immédiatement
+	if btn_audio: btn_audio.visible = false
+	if btn_vent: btn_vent.visible = false
+	if ui_foxy: ui_foxy.visible = false
+	
+	visible = true 
+	est_ouvert = true
+	
+	mettre_a_jour_image()
+
+
+func _ready():
+	visible = false 
+	
+	# --- 1. CONFIGURATION AUDIO (CHICA) ---
+	btn_audio = find_child("Bouton_Audio", true, false)
+	if btn_audio:
+		if not btn_audio.pressed.is_connected(_on_input_audio_pressed):
+			btn_audio.pressed.connect(_on_input_audio_pressed) # Modifié
+		btn_audio.visible = false
+	
+	# --- 2. CONFIGURATION VENTILATION (SPRINGTRAP/MANGLE) ---
+	btn_vent = find_child("Bouton_Vent", true, false)
+	if btn_vent:
+		btn_vent.visible = false 
+		if not btn_vent.pressed.is_connected(_on_input_vent_pressed):
+			btn_vent.pressed.connect(_on_input_vent_pressed) # Modifié
+			
+	# --- 3. CONFIGURATION FOXY (FLASH) ---
+	ui_foxy = find_child("Foxy_UI", true, false)
+	if ui_foxy:
+		btn_flash = ui_foxy.find_child("Bouton_Flash", true, false)
+		if btn_flash:
+			if not btn_flash.pressed.is_connected(_on_input_flash_pressed):
+				btn_flash.pressed.connect(_on_input_flash_pressed) # Modifié
+
+	# --- 4. BROUILLAGE ---
+	if ecran_brouillage:
+		ecran_brouillage.visible = false
+	
+	mettre_a_jour_image()
+
+func _process(_delta):
+	if not visible:
+		if audio_mangle_static and audio_mangle_static.playing:
+			audio_mangle_static.stop()
+		if audio_switch and audio_switch.playing:
+			audio_switch.stop()
+
+# ============================================================
+# PARTIE 1 : INPUTS (CLICS SOURIS)
+# Ces fonctions envoient l'ordre au serveur via RPC
+# ============================================================
+
+func _on_input_vent_pressed():
+	if NetworkGlobal.players.size() > 0:
+		rpc("sync_action_vent_cctv") # On envoie l'ordre
+	else:
+		_executer_toggle_vent() # Solo
+
+func _on_input_audio_pressed():
+	if not a_du_courant: return
+	if NetworkGlobal.players.size() > 0:
+		rpc("sync_action_audio_lure", camera_actuelle)
+	else:
+		_executer_audio_lure(camera_actuelle)
+
+func _on_input_flash_pressed():
+	if not peut_flasher or not a_du_courant: return
+	if NetworkGlobal.players.size() > 0:
+		rpc("sync_action_flash")
+	else:
+		_executer_flash_foxy()
+
+# ============================================================
+# PARTIE 2 : ACTIONS RÉELLES (RPC)
+# Exécutées chez TOUT LE MONDE (Serveur + Clients)
+# ============================================================
+
+# --- A. VENTILATION ---
+@rpc("any_peer", "call_local", "reliable")
+func sync_action_vent_cctv():
+	# Si ça vient de la caméra, on exécute
+	_executer_toggle_vent()
+	
+	# IMPORTANT : Si le bureau a aussi un bouton physique ou une variable d'état,
+	# il faut s'assurer qu'Office.gd soit au courant.
+	# Normalement Office.gd gère la logique "vent_scelle" principale.
+	var office = get_owner()
+	if office and office.has_method("commander_ventilation"):
+		# On informe l'office sans recréer une boucle infinie RPC
+		# (Ici on suppose que c'est juste visuel/bouton CCTV)
+		if office.has_method("_on_toggle_vent"): # Si office a une méthode interne
+			pass 
+
+func _on_toggle_vent():
+	_executer_toggle_vent()
+
+# La vraie logique qui change la variable et le texte
+func _executer_toggle_vent():
+	vent_scelle = !vent_scelle
+	if btn_vent:
+		if vent_scelle: btn_vent.text = "OUVRIR VENT"
+		else: btn_vent.text = "SCELLER VENT"
+	
+	# On informe l'Office pour qu'il mette à jour ses variables de jeu
+	var office = get_owner()
+	if office and "vent_scelle" in office.systeme_camera:
+		office.systeme_camera.vent_scelle = vent_scelle
+		
+	print("Système Vent scellé : ", vent_scelle)
+
+
+# --- B. AUDIO LEURRE ---
+@rpc("any_peer", "call_local", "reliable")
+func sync_action_audio_lure(cam_cible):
+	_executer_audio_lure(cam_cible)
+
+func _executer_audio_lure(cam_cible):
+	print("Audio leurre reçu sur : ", cam_cible)
+	
+	var office = get_owner()
+	if office and office.has_method("jouer_audio_leurre"):
+		office.jouer_audio_leurre(cam_cible)
+	
+	# Cooldown visuel du bouton
+	if btn_audio:
+		btn_audio.disabled = true
+		await get_tree().create_timer(3.0).timeout 
+		if btn_audio: btn_audio.disabled = false
+
+
+# --- C. FLASH FOXY ---
+@rpc("any_peer", "call_local", "reliable")
+func sync_action_flash():
+	_executer_flash_foxy()
+
+func _executer_flash_foxy():
+	if camera_actuelle == "Cam03" and not foxy_attacking:
+		if audio_flash_foxy: audio_flash_foxy.play()
+		
+		foxy_rage -= 1
+		if foxy_rage < 0: foxy_rage = 0
+		
+		# On prévient aussi Office.gd qui gère la "vraie" rage de l'IA
+		var office = get_owner()
+		if office and office.has_method("update_foxy_rage"): 
+			office.update_foxy_rage(foxy_rage) # Fonction hypothétique dans office
+		
+		flash_count_session += 1
+		
+		flash_screen_effect()
+		mettre_a_jour_image()
+		
+		# Cooldown
+		peut_flasher = false
+		if btn_flash: btn_flash.disabled = true
+		await get_tree().create_timer(temps_recharge_flash).timeout
+		peut_flasher = true
+		if btn_flash: btn_flash.disabled = false
+
+
+# ============================================================
+# PARTIE 3 : SYNCHRONISATION VISUELLE (LES ROBOTS)
+# Cette fonction doit être appelée par Office.gd quand un robot bouge
+# ============================================================
+
+@rpc("authority", "call_remote", "reliable")
+func sync_etat_salle(nom_salle : String, liste_occupants : Array):
+	# 1. Mise à jour des données
+	etat_salles[nom_salle] = liste_occupants
+	
+	# 2. Si on regarde cette salle sur la tablette, on met à jour l'image
+	if camera_actuelle == nom_salle:
+		mettre_a_jour_image()
+
+	# 3. AJOUT IMPORTANT : On prévient le bureau de vérifier ses lumières/portes
+	# C'est ce qui permet d'effacer Bonnie de la fenêtre immédiatement
+	var office = get_owner()
+	if office and office.has_method("update_office_background"):
+		office.update_office_background()
+
+# --- INPUT UTILISATEUR LOCAL (Boutons Caméras) ---
+# Ces boutons restent locaux car chaque joueur regarde la caméra qu'il veut
+
+func afficher_danger(nom_camera : String, est_visible : bool):
+	var nom_bouton = "Bouton_" + nom_camera.to_upper()
+	var bouton = find_child(nom_bouton, true, false)
+	if bouton:
+		var icon = bouton.get_node_or_null("Icone_Danger")
+		if icon: icon.visible = est_visible
+
+# --- GESTION DU MONITEUR ---
+
+func toggle_monitor():
+	if not a_du_courant: return
+	est_ouvert = !est_ouvert
+	visible = est_ouvert
+	
+	if est_ouvert:
+		mettre_a_jour_image()
+
+func fermer_moniteur():
+	est_ouvert = false
+	visible = false
+	if audio_mangle_static: audio_mangle_static.stop()
+
+func declencher_brouillage():
+	if not est_ouvert: return
+	if ecran_brouillage:
+		ecran_brouillage.visible = true
+		await get_tree().create_timer(1.0).timeout
+		if ecran_brouillage: ecran_brouillage.visible = false
+
+# --- NAVIGATION CAMÉRAS ---
+
+func _on_cam_01_pressed(): changer_camera("Cam01")
+func _on_cam_02_pressed(): changer_camera("Cam02")
+func _on_cam_03_pressed(): changer_camera("Cam03")
+func _on_cam_04_pressed(): changer_camera("Cam04")
+func _on_cam_05_pressed(): changer_camera("Cam05")
+func _on_cam_06_pressed(): changer_camera("Cam06")
+func _on_cam_07_pressed(): changer_camera("Cam07")
+func _on_cam_08_pressed(): changer_camera("Cam08")
+func _on_cam_09_pressed(): changer_camera("Cam09")
+func _on_cam_10_pressed(): changer_camera("Cam10")
+func _on_cam_11_pressed(): changer_camera("Cam11")
+func _on_cam_12_pressed(): changer_camera("Cam12")
+func _on_cam_13_pressed(): changer_camera("Cam13")
+
+func changer_camera(nom_cam : String):
+	camera_actuelle = nom_cam
+	if audio_switch: audio_switch.play()
+	
+	if mode_purple_guy:
+		# En mode Purple Guy, on n'affiche JAMAIS les boutons de défense
+		if btn_audio: btn_audio.visible = false
+		if btn_vent: btn_vent.visible = false
+		if ui_foxy: ui_foxy.visible = false
+	else:
+		# Comportement Gardien Classique
+		if btn_audio: btn_audio.visible = (nom_cam in chemin_chica_audio)
+		if btn_vent: btn_vent.visible = (nom_cam == "Cam13")
+		if ui_foxy: ui_foxy.visible = (nom_cam == "Cam03" and not foxy_attacking)
+		
+	mettre_a_jour_image()
+
+# --- SYSTÈME D'IMAGES ---
+
+func mettre_a_jour_image():
+	if ecran_visuel == null: return
+	
+	var occupants_reels = []
+	if etat_salles.has(camera_actuelle):
+		occupants_reels = etat_salles[camera_actuelle].duplicate()
+	
+	gestion_audio_mangle(occupants_reels)
+	
+	var suffixe = ""
+	
+	if occupants_reels.is_empty():
+		suffixe = "_Vide"
+	else:
+		occupants_reels.sort()
+		for nom_monstre in occupants_reels:
+			suffixe += "_" + nom_monstre
+			
+	if camera_actuelle == "Cam03":
+		if foxy_attacking:
+			ecran_visuel.texture = load("res://Cameras/Cam03_Vide.png")
+			return
+		elif occupants_reels.has("Foxy") or occupants_reels.is_empty(): 
+			var phase = clampi(foxy_rage, 0, 4)
+			var nom_img = "res://Cameras/Cam03_Foxy_" + str(phase) + ".png"
+			if ResourceLoader.exists(nom_img):
+				ecran_visuel.texture = load(nom_img)
+			else:
+				ecran_visuel.texture = load("res://Cameras/Cam03_Foxy_0.png")
+			return
+
+	var chemin_final = "res://Cameras/" + camera_actuelle + suffixe + ".png"
+	
+	if ResourceLoader.exists(chemin_final):
+		ecran_visuel.texture = load(chemin_final)
+	else:
+		ecran_visuel.texture = load("res://Cameras/" + camera_actuelle + "_Vide.png")
+
+func flash_screen_effect():
+	var original = ecran_visuel.modulate
+	ecran_visuel.modulate = Color(3, 3, 3)
+	await get_tree().create_timer(0.05).timeout
+	ecran_visuel.modulate = original
+
+func couper_courant_camera():
+	a_du_courant = false
+	fermer_moniteur()
+	if btn_vent: btn_vent.visible = false
+	if btn_audio: btn_audio.visible = false
+	
+func gestion_audio_mangle(liste_occupants : Array):
+	if not est_ouvert or not visible or audio_mangle_static == null:
+		audio_mangle_static.stop()
+		return
+
+	if liste_occupants.has("Mangle"):
+		if not audio_mangle_static.playing:
+			audio_mangle_static.play()
+	else:
+		if audio_mangle_static.playing:
+			audio_mangle_static.stop()
+
+
+
+===================================================================
+
+
+extends Control
+
+# --- VARIABLES ---
+var office_ref
+var energy : float = 50.0
+var max_energy : float = 100.0
+var regen_rate : float = 3.5 # Régénération par seconde (Ajustable pour l'équilibrage)
+
+# --- COÛTS EN ÉNERGIE ---
+# Vous pouvez ajuster ces valeurs pour équilibrer le jeu VS
+var costs = {
+	"Bonnie": 15,
+	"Chica": 15,
+	"Freddy": 20, # Plus cher car il ne recule pas
+	"Foxy": 25,   # Cher car c'est une phase d'attaque
+	"Mangle": 15,
+	"Springtrap": 15,
+	"Golden-Freddy": 60, # Très cher (attaque directe)
+	"Shadow-Bonnie": 40  # Cher (sabotage)
+}
+
+# --- RÉFÉRENCES UI ---
+@onready var lbl_energy = $Panel_Header/HBoxContainer/Label_Energy
+@onready var progress_bar = $Panel_Header/HBoxContainer/ProgressBar
+@onready var feedback_lbl = $Label_Feedback
+
+@onready var grid_buttons = $Panel_Controls/Grid_Actions
+
+func setup(_office):
+	office_ref = _office
+	actualiser_boutons()
+
+func _ready():
+	# Configuration initiale de la barre
+	if progress_bar:
+		progress_bar.max_value = max_energy
+		progress_bar.value = energy
+	
+	# Connexion automatique des boutons si vous les avez nommés correctement
+	# Exemple : Btn_Bonnie, Btn_Chica...
+	for btn in grid_buttons.get_children():
+		if btn is Button:
+			# On extrait le nom (ex: "Btn_Bonnie" -> "Bonnie")
+			var nom_bot = btn.name.replace("Btn_", "")
+			
+			# On met le texte du bouton avec le coût
+			if costs.has(nom_bot):
+				btn.text = nom_bot + "\n(" + str(costs[nom_bot]) + " E)"
+			
+			# Connexion dynamique
+			btn.pressed.connect(_on_command_pressed.bind(nom_bot))
+
+func _process(delta):
+	# Régénération passive
+	if energy < max_energy:
+		energy += regen_rate * delta
+		if energy > max_energy: energy = max_energy
+		update_ui()
+
+func update_ui():
+	if lbl_energy:
+		lbl_energy.text = "ENERGIE : " + str(int(energy))
+	if progress_bar:
+		progress_bar.value = energy
+		
+	# Griser les boutons si pas assez d'énergie
+	for btn in grid_buttons.get_children():
+		var nom_bot = btn.name.replace("Btn_", "")
+		if costs.has(nom_bot):
+			btn.disabled = (energy < costs[nom_bot])
+
+func _on_command_pressed(nom_bot):
+	if not costs.has(nom_bot): return
+	
+	var cout = costs[nom_bot]
+	
+	if energy >= cout:
+		# 1. On paie le coût
+		energy -= cout
+		update_ui()
+		
+		# 2. Gestion Spéciale : Shadow Bonnie (Cible la caméra regardée)
+		var extra_arg = ""
+		if nom_bot == "Shadow-Bonnie":
+			# L'argument est la caméra que le Purple Guy regarde ACTUELLEMENT
+			if office_ref.systeme_camera:
+				extra_arg = office_ref.systeme_camera.camera_actuelle
+				afficher_feedback("Shadow Bonnie envoyé en " + extra_arg)
+			else:
+				extra_arg = "Cam01" # Sécurité
+		else:
+			afficher_feedback("Ordre envoyé à " + nom_bot)
+		
+		# 3. Envoi au Serveur (via Office)
+		office_ref.rpc("server_versus_command", nom_bot, extra_arg)
+		
+	else:
+		afficher_feedback("Pas assez d'énergie !", Color.RED)
+
+func afficher_feedback(texte : String, couleur : Color = Color.WHITE):
+	if feedback_lbl:
+		feedback_lbl.text = texte
+		feedback_lbl.modulate = couleur
+		feedback_lbl.visible = true
+		
+		# Petit effet pour cacher le texte après 2 secondes
+		await get_tree().create_timer(2.0).timeout
+		if feedback_lbl.text == texte: # Si le texte n'a pas changé entre temps
+			feedback_lbl.visible = false
+
+# Fonction optionnelle si vous voulez que les boutons se génèrent tout seuls
+# (Au lieu de les placer à la main dans l'éditeur)
+func actualiser_boutons():
+	# Si vous préférez placer les boutons à la main dans l'éditeur, ignorez cette fonction.
+	# Sinon, elle peut créer les boutons manquants.
+	pass

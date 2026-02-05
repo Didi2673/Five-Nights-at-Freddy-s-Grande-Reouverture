@@ -412,7 +412,28 @@ func update_lobby_ui():
 			if id == 1 and not p["ready"]:
 				label_status.text = "HÔTE"
 				label_status.add_theme_color_override("font_color", Color.YELLOW)
-
+		
+		if multiplayer.is_server() and NetworkGlobal.game_mode == "VS":
+			# On ne peut pas se désigner soi-même si on veut tester (optionnel)
+			var btn_role = Button.new()
+			btn_role.text = "Mettre en Purple Guy"
+			if p.has("role") and p["role"] == "Purple Guy":
+				btn_role.text = "C'EST LE TUEUR"
+				btn_role.disabled = true
+				btn_role.modulate = Color.PURPLE
+			else:
+				btn_role.pressed.connect(_on_set_purple_guy.bind(id))
+			
+			ligne.add_child(btn_role)
+			
+		# Affichage du rôle pour tout le monde
+		if p.has("role") and p["role"] == "Purple Guy":
+			var lbl_role = Label.new()
+			lbl_role.text = "[PURPLE GUY]"
+			lbl_role.modulate = Color.PURPLE
+			ligne.add_child(lbl_role)
+		
+		
 		# --- AJOUT AU CONTENEUR ---
 		ligne.add_child(label_nom)
 		ligne.add_child(label_status)
@@ -433,7 +454,8 @@ func update_lobby_ui():
 			label_status.text = "En attente de l'hôte..."
 
 
-
+func _on_set_purple_guy(id_cible):
+	NetworkGlobal.rpc("set_versus_role", id_cible)
 
 
 func creer_liste_boutons():

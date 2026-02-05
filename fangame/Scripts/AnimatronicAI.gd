@@ -110,6 +110,9 @@ func reculer_sur_chemin(index_cible):
 	camera_system_ref.mettre_a_jour_image()
 
 func process_ai(delta, current_ai_level_arg):
+	if NetworkGlobal.game_mode == "VS":
+		return
+	
 	if NetworkGlobal.players.size() > 0 and not multiplayer.is_server():
 		return
 	current_ai_level = current_ai_level_arg
@@ -144,7 +147,76 @@ func process_ai(delta, current_ai_level_arg):
 	if move_timer <= 0:
 		reset_timer(current_ai_level)
 		attempt_logic(current_ai_level)	
+
+
+func versus_move():
+	print("Ordre reçu pour : ", nom)
+	
+	# CAS 1 : FOXY (Phases)
+	if nom == "Foxy":
+		if not "foxy_rage" in camera_system_ref: camera_system_ref.foxy_rage = 0
+		camera_system_ref.foxy_rage += 1
+		if camera_system_ref.foxy_rage >= camera_system_ref.foxy_max_rage:
+			lancer_attaque_foxy() # Votre fonction existante
+		else:
+			camera_system_ref.mettre_a_jour_image()
+		return
+
+	# CAS 2 : GOLDEN FREDDY (Spawn Office)
+	if nom == "Golden-Freddy":
+		office_ref.tenter_spawn_golden_freddy() # On force le spawn
+		return
+
+	# CAS 3 : SHADOW BONNIE (Besoin d'une caméra cible)
+	# (Géré par un autre appel spécifique, voir plus bas)
+
+	# CAS 4 : MOUVEMENT STANDARD (Bonnie, Chica, Freddy, Puppet...)
+	
+	# Est-ce qu'on est à la fin du chemin (Porte / Vent) ?
+	if current_path_index == path_list.size() - 1:
+		tenter_attaque_versus()
+	else:
+		# On avance
+		avancer_sur_chemin()
+
+
+func tenter_attaque_versus():
+	if office_ref.est_coupure_courant: return
+	
+	var attaque_reussie = false
+	
+	# VERIFICATION DES DEFENSES
+	if nom == "Freddy":
+		# Freddy passe si la porte Droite est ouverte (Logique simplifiée pour VS)
+		if porte_cible and not porte_cible.est_fermee: attaque_reussie = true
 		
+	elif nom == "Mangle" or nom == "Springtrap":
+		# Eux passent par la vent
+		if not camera_system_ref.vent_scelle: attaque_reussie = true
+		
+	elif porte_cible:
+		# Bonnie / Chica
+		if not porte_cible.est_fermee: attaque_reussie = true
+
+	# RESULTAT
+	if attaque_reussie:
+		print("PURPLE GUY A GAGNÉ AVEC ", nom)
+		office_ref.trigger_jumpscare(nom)
+	else:
+		print("ATTAQUE BLOQUÉE ! ", nom, " repart au début.")
+		# Son de "Bang" sur la porte
+		if office_ref.has_node("Audio_Door_Bang"): office_ref.get_node("Audio_Door_Bang").play()
+		
+		# Reset position
+		var index_retour = 0
+		if nom == "Bonnie": index_retour = path_list.find("Cam02")
+		if index_retour == -1: index_retour = 0
+		changer_position(index_retour)
+
+
+
+
+
 func verifier_porte_ouverte():
 	if office_ref.est_coupure_courant: return
 	if porte_cible and not porte_cible.est_fermee:

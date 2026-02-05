@@ -41,6 +41,22 @@ var etat_salles = {
 	"Left_Door_Pos": [],   
 	"Right_Door_Pos": [],  
 }
+var mode_purple_guy : bool = false
+
+# Ajoutez cette fonction pour activer le mode
+func activer_mode_purple_guy():
+	mode_purple_guy = true
+	if camera_actuelle == "": camera_actuelle = "Cam01"
+	# On cache tout immédiatement
+	if btn_audio: btn_audio.visible = false
+	if btn_vent: btn_vent.visible = false
+	if ui_foxy: ui_foxy.visible = false
+	
+	visible = true 
+	est_ouvert = true
+	
+	mettre_a_jour_image()
+
 
 func _ready():
 	visible = false 
@@ -265,9 +281,16 @@ func changer_camera(nom_cam : String):
 	camera_actuelle = nom_cam
 	if audio_switch: audio_switch.play()
 	
-	if btn_audio: btn_audio.visible = (nom_cam in chemin_chica_audio)
-	if btn_vent: btn_vent.visible = (nom_cam == "Cam13")
-	if ui_foxy: ui_foxy.visible = (nom_cam == "Cam03" and not foxy_attacking)
+	if mode_purple_guy:
+		# En mode Purple Guy, on n'affiche JAMAIS les boutons de défense
+		if btn_audio: btn_audio.visible = false
+		if btn_vent: btn_vent.visible = false
+		if ui_foxy: ui_foxy.visible = false
+	else:
+		# Comportement Gardien Classique
+		if btn_audio: btn_audio.visible = (nom_cam in chemin_chica_audio)
+		if btn_vent: btn_vent.visible = (nom_cam == "Cam13")
+		if ui_foxy: ui_foxy.visible = (nom_cam == "Cam03" and not foxy_attacking)
 		
 	mettre_a_jour_image()
 

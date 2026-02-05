@@ -14,6 +14,7 @@ extends Node2D
 @onready var audio_power_down = $Audio_PowerDown
 @onready var audio_freddy = $Audio_Freddy_Laugh
 
+
 var heat_timer_accumulated : float = 0.0
 
 var puppet_timer_attaque : float = 5.0
@@ -123,7 +124,6 @@ var animatronics_instances : Array[AnimatronicAI] = []
 var batterie : float = 100.0
 var est_coupure_courant : bool = false
 
-
 func _ready():
 	ecran_largeur = get_viewport_rect().size.x
 	if background and background.texture:
@@ -172,6 +172,100 @@ func _ready():
 		if label_temp: label_temp.visible = false
 	else:
 		if label_temp: label_temp.visible = true
+		
+	if NetworkGlobal.game_mode == "VS":
+		var my_id = multiplayer.get_unique_id()
+		
+		if my_id == NetworkGlobal.versus_purple_guy_id:
+			# JE SUIS LE PURPLE GUY
+			setup_purple_guy_mode()
+		else:
+			# JE SUIS UN GARDIEN
+			setup_guardian_mode()
+	else:
+		# Mode Coop/Solo normal
+		pass
+
+func setup_purple_guy_mode():
+	print("Mode Purple Guy activé")
+	
+	# 1. IMPORTANT : On laisse l'interface GLOBALE visible
+	# C'est obligatoire pour voir le HUD et les Caméras qui sont dedans
+	if game_ui: game_ui.visible = true 
+	
+	# 2. On cache MANUELLEMENT les éléments du Gardien un par un
+	# (Adaptez les noms si vous en avez d'autres)
+	if label_batterie: label_batterie.visible = false
+	if label_heure: label_heure.visible = false
+	if label_nuit: label_nuit.visible = false
+	if container_barres: container_barres.visible = false
+	if btn_mute_call: btn_mute_call.visible = false
+	
+	# Si vous avez des boutons de portes dans l'UI, cachez-les aussi :
+	# ex: $UI/Bouton_Porte_Gauche.visible = false
+	
+	# 3. Configuration du Moniteur pour le Tueur
+	if systeme_camera:
+		# Active le mode spécial (cache boutons Audio/Flash/Vent)
+		if systeme_camera.has_method("activer_mode_purple_guy"):
+			systeme_camera.activer_mode_purple_guy()
+		
+		# On s'assure que le conteneur du moniteur est visible
+		if map_container: 
+			map_container.visible = true
+			map_container.z_index = 0 
+		
+		# On force l'ouverture
+		systeme_camera.est_ouvert = true
+		systeme_camera.visible = true
+		systeme_camera.mettre_a_jour_image() 
+		
+		# On dit au serveur que ce joueur regarde
+		joueurs_sur_moniteur[multiplayer.get_unique_id()] = true
+	
+	# 4. On ajoute l'interface Versus DANS L'UI (game_ui)
+	var hud = load("res://Scenes/VersusHUD.tscn").instantiate()
+	
+	# --- C'EST ICI LA CLÉ ---
+	# On l'ajoute comme enfant de game_ui ($UI) pour qu'il soit un élément d'interface
+	if game_ui:
+		game_ui.add_child(hud)
+	else:
+		# Fallback si game_ui n'existe pas (ne devrait pas arriver)
+		add_child(hud)
+		
+	if hud.has_method("setup"):
+		hud.setup(self)
+
+func setup_guardian_mode():
+	# Comportement normal
+	pass
+
+# --- RPC DE COMMANDE DU PURPLE GUY ---
+@rpc("any_peer", "call_local", "reliable")
+func server_versus_command(nom_bot : String, extra_arg : String):
+	# Sécurité : on vérifie que c'est bien le Purple Guy qui appelle (coté serveur)
+	if multiplayer.is_server():
+		var sender_id = multiplayer.get_remote_sender_id()
+		if sender_id != NetworkGlobal.versus_purple_guy_id: return
+
+	# Exécution de l'ordre
+	print("Commande VS reçue : ", nom_bot)
+	
+	# Cas Spécial Shadow Bonnie (besoin argument caméra)
+	if nom_bot == "Shadow-Bonnie":
+		for bot in animatronics_instances:
+			if bot.nom == "Shadow-Bonnie":
+				bot.path_list = [extra_arg] # On force la salle choisie
+				bot.faire_apparaitre_shadow_bonnie()
+		return
+
+	# Autres robots
+	for bot in animatronics_instances:
+		if bot.nom == nom_bot:
+			bot.versus_move() # Appelle la fonction qu'on a créée dans l'étape 3
+			break
+
 
 func _on_nez_freddy_pressed():
 	if audio_honk: audio_honk.play()
@@ -279,6 +373,9 @@ func gestion_inputs_clavier():
 		
 	# --- D. MONITEUR ---
 	if Input.is_action_just_pressed("toggle_monitor"):
+		if NetworkGlobal.game_mode == "VS" and multiplayer.get_unique_id() == NetworkGlobal.versus_purple_guy_id:
+			print("Le Purple Guy ne peut pas quitter les caméras !")
+			return
 		commander_moniteur()
 
 func commander_porte(cote : String):
@@ -636,16 +733,18 @@ func calculer_drain_batterie(delta):
 	# --- MODIFICATION : USAGE CAMÉRA (NON CUMULATIF) ---
 	var camera_est_active_globalement = false
 	
+	
 	if NetworkGlobal.players.size() > 0:
 		if multiplayer.is_server():
-			# Le serveur vérifie si AU MOINS UN joueur a la caméra ouverte
+			# Le serveur vérifie si AU MOINS UN *GARDIEN* a la caméra ouverte
 			for id in joueurs_sur_moniteur:
+				# Si c'est le Purple Guy, on l'ignore (sa caméra est gratuite)
+				if id == NetworkGlobal.versus_purple_guy_id:
+					continue
+					
 				if joueurs_sur_moniteur[id] == true:
 					camera_est_active_globalement = true
-					break # On a trouvé quelqu'un, pas besoin de compter les autres !
-		else:
-			# Le client ne calcule rien, il attend le RPC
-			pass
+					break
 	else:
 		# Mode Solo
 		if systeme_camera and systeme_camera.est_ouvert:

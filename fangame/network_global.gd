@@ -26,6 +26,20 @@ var player_info = {"name": "Joueur", "ready": false}
 # Infos de la partie (Gérées par l'hôte)
 var game_mode = "Coop" # "Coop" ou "VS"
 
+var versus_purple_guy_id : int = 0 # L'ID du joueur qui joue les méchants
+
+# RPC pour définir le rôle
+@rpc("authority", "call_local", "reliable")
+func set_versus_role(target_id : int):
+	versus_purple_guy_id = target_id
+	# On met à jour les infos locales pour l'affichage
+	for id in players:
+		if id == target_id:
+			players[id]["role"] = "Purple Guy"
+		else:
+			players[id]["role"] = "Gardien"
+	player_list_changed.emit()
+
 
 func recuperer_mon_ip_locale() -> String:
 	var ip_list = IP.get_local_addresses()
