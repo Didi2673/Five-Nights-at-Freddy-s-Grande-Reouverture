@@ -120,7 +120,7 @@ func _ready():
 	
 	# Initialisation OptionButton
 	option_mode.add_item("Coopératif")
-	option_mode.add_item("Versus (VS)")
+	#option_mode.add_item("Versus (VS)")
 		
 	ecran_accueil.visible = true
 	ecran_selection.visible = false
