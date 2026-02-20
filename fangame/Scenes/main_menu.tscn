@@ -494,7 +494,7 @@ offset_bottom = 1149.0
 scale = Vector2(0.2, 0.2)
 theme_override_fonts/font = ExtResource("3_16hvj")
 theme_override_font_sizes/font_size = 10
-text = "v0.0.1"
+text = "v0.1.0"
 label_settings = SubResource("LabelSettings_7vrkn")
 
 [node name="Bouton_Succes" type="Button" parent="Ecran_Accueil"]

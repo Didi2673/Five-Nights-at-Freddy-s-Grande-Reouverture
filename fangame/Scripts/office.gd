@@ -504,6 +504,7 @@ func trigger_blackout():
 	
 	if audio_fan: audio_fan.stop()
 	if audio_ambiance: audio_ambiance.stop()
+	if audio_music_box: audio_music_box.stop()
 	
 	# Fermer le moniteur de force
 	if systeme_camera.est_ouvert:
@@ -526,20 +527,23 @@ func trigger_blackout():
 	sequence_blackout_freddy()
 
 func sequence_blackout_freddy():
-	# A. Son de coupure ("Bzzzt")
+	# A. Son de coupure de courant ("Bzzzt")
 	if audio_power_down:
 		audio_power_down.play()
-		await audio_power_down.finished
+		var music_duration = audio_power_down.stream.get_length()
+		var min_duration = 2.0 # Temps minimum de musique pour faire peur
+		var random_stop_time = randf_range(min_duration, music_duration)
+		
+		# Attente jusqu'au moment de l'arrêt
+		await get_tree().create_timer(random_stop_time).timeout
+		audio_power_down.stop()
 	
-	# B. Petit délai d'attente dans le noir (Tension)
-	await get_tree().create_timer(randf_range(1.0, 3.0)).timeout
-	if game_over: return # Si 6AM a sonné entre temps, on arrête
 	
-	# D. Silence final (Avant la mort)
-	await get_tree().create_timer(randf_range(1.0, 3.0)).timeout
+	# C. Petit délai de silence total après l'arrêt de la musique (le plus stressant !)
+	await get_tree().create_timer(randf_range(0.5, 1.5)).timeout
 	
-	# E. JUMPSCARE
-	if not game_over: # Vérification finale si on a gagné
+	# D. JUMPSCARE
+	if not game_over: 
 		trigger_jumpscare("Freddy")
 
 func spawn_animatronics():
