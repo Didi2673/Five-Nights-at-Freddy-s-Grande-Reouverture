@@ -477,6 +477,7 @@ func deplacer_springtrap(nom_cible : String):
 	
 	if nouvel_index != -1:
 		changer_position(nouvel_index)
+		tenter_jouer_son_springtrap()
 
 func attaquer_porte(cote : String):
 	print("SPRINGTRAP TENTE D'ENTRER PAR : ", cote)
@@ -492,3 +493,9 @@ func attaquer_porte(cote : String):
 		changer_position(index_start)
 	else:
 		office_ref.trigger_jumpscare("Springtrap")
+		
+func tenter_jouer_son_springtrap():
+	if office_ref.has_node("Audio_Springtrap_Move"):
+		var audio = office_ref.get_node("Audio_Springtrap_Move")
+		audio.pitch_scale = randf_range(0.9, 1.05) # Varie un peu le son pour le rendre plus réaliste
+		audio.play()

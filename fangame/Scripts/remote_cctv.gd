@@ -227,7 +227,16 @@ func changer_camera(nom_cam : String):
 
 func mettre_a_jour_image():
 	if ecran_visuel == null: return
-	
+	if GameData.current_night_played == 7 and camera_actuelle == "Cam01":
+		# L'écran n'aura pas de texture (il sera transparent/noir selon ton fond d'écran)
+		#ecran_visuel.texture = null 
+		
+		# OPTIONNEL : Si tu as dessiné une image spéciale "Signal Perdu", 
+		# tu peux retirer le "null" au-dessus et décommenter la ligne ci-dessous :
+		ecran_visuel.texture = load("res://Cameras/Signal_Perdu.png")
+		
+		return # On arrête la fonction ici pour ne pas charger les monstres
+		
 	# 1. On récupère qui est dans la salle
 	var occupants_reels = []
 	if etat_salles.has(camera_actuelle):
@@ -236,7 +245,10 @@ func mettre_a_jour_image():
 	# --- GESTION AUDIO MANGLE ---
 	gestion_audio_mangle(occupants_reels)
 	
-	
+	if GameData.no_cameras_mode_active:
+		ecran_visuel.texture = load("res://Cameras/Signal_Perdu.png") # Ou texture = null
+		return # On bloque le reste de l'affichage
+		
 	# 3. Construction du nom de l'image
 	var suffixe = ""
 	

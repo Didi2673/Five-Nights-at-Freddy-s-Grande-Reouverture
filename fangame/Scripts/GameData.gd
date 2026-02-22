@@ -4,6 +4,8 @@ extends Node
 var nights_data = []
 var animatronics_data = []
 
+var no_cameras_mode_active : bool = false
+var completed_no_cameras_nights : Array = []
 # --- VARIABLES CHALLENGES ---
 var active_challenge_id : String = "custom" 
 var completed_challenges : Array = [] # Liste des ID réussis (ex: ["bear_attack", "ladies_night"])
@@ -40,10 +42,58 @@ var challenges_list = [
 		"levels": {"Chica": 0, "Mangle": 0, "Puppet": 0, "Freddy": 0, "Bonnie": 20, "Foxy": 0, "Golden-Freddy": 0, "Shadow-Bonnie": 20}
 	},
 	{
+		"id": "vent_lovers",
+		"name": "Vent Lovers",
+		"description": "vent",
+		"levels": {"Chica": 0, "Mangle": 20, "Puppet": 0, "Freddy": 20, "Bonnie": 0, "Foxy": 0, "Golden-Freddy": 0, "Shadow-Bonnie": 0}
+	},
+	{
+		"id": "not_real",
+		"name": "Not Real",
+		"description": "not",
+		"levels": {"Chica": 0, "Mangle": 0, "Puppet": 0, "Freddy": 0, "Bonnie": 0, "Foxy": 0, "Golden-Freddy": 20, "Shadow-Bonnie": 20}
+	},
+	{
+		"id": "on_the_stage",
+		"name": "On the stage",
+		"description": "Freddou, Bonnie et Chick!!",
+		"levels": {"Chica": 20, "Mangle": 0, "Puppet": 0, "Freddy": 20, "Bonnie": 20, "Foxy": 0, "Golden-Freddy": 0, "Shadow-Bonnie": 0}
+	},
+	{
+		"id": "misfits",
+		"name": "Night of Misfits",
+		"description": "les autres mdr",
+		"levels": {"Chica": 0, "Mangle": 20, "Puppet": 20, "Freddy": 0, "Bonnie": 0, "Foxy": 0, "Golden-Freddy": 20, "Shadow-Bonnie": 20}
+	},
+	{
+		"id": "5_5_5_5",
+		"name": "4/5 Mode",
+		"description": "4/5",
+		"levels": {"Freddy": 5, "Bonnie": 5, "Golden-Freddy": 0, "Puppet": 0, "Chica": 5, "Foxy": 5, "Mangle": 0, "Shadow-Bonnie": 0}
+	},
+	{
+		"id": "10_10_10_10",
+		"name": "4/10 Mode",
+		"description": "4/10",
+		"levels": {"Freddy": 10, "Bonnie": 10, "Golden-Freddy": 0, "Puppet": 0, "Chica": 10, "Foxy": 10, "Mangle": 0, "Shadow-Bonnie": 0}
+	},
+	{
 		"id": "20_20_20_20",
 		"name": "4/20 Mode",
 		"description": "4/20",
 		"levels": {"Freddy": 20, "Bonnie": 20, "Golden-Freddy": 0, "Puppet": 0, "Chica": 20, "Foxy": 20, "Mangle": 0, "Shadow-Bonnie": 0}
+	},
+	{
+		"id": "easy_challenge",
+		"name": "Easy Challenge",
+		"description": "Tout le monde à 1",
+		"levels": {"Chica": 1, "Mangle": 1, "Puppet": 1, "Freddy": 1, "Bonnie": 1, "Foxy": 1, "Golden-Freddy": 1, "Shadow-Bonnie": 1}
+	},
+	{
+		"id": "cupcake_challenge",
+		"name": "Cupcake Challenge",
+		"description": "Tout le monde à 5",
+		"levels": {"Chica": 5, "Mangle": 5, "Puppet": 5, "Freddy": 5, "Bonnie": 5, "Foxy": 5, "Golden-Freddy": 5, "Shadow-Bonnie": 5}
 	},
 	{
 		"id": "fazbear_fever",
@@ -164,11 +214,11 @@ func save_game():
 		var data = {
 			"unlocked": unlocked_night,
 			"achievements": unlocked_achievements,
-			"completed_challenges": completed_challenges # <--- ON SAUVEGARDE LES CHALLENGES ICI
+			"completed_challenges": completed_challenges,
+			"completed_no_cams": completed_no_cameras_nights # <--- NOUVEAU
 		}
 		file.store_string(JSON.stringify(data))
 		file.close()
-		print("Jeu sauvegardé avec succès.")
 
 func load_game():
 	if FileAccess.file_exists(save_path):
@@ -177,26 +227,31 @@ func load_game():
 		if json.parse(file.get_as_text()) == OK:
 			var data = json.get_data()
 			
-			if data.has("unlocked"): unlocked_night = data["unlocked"]
+			if data.has("unlocked"): unlocked_night = int(data["unlocked"])
+			if data.has("achievements"): unlocked_achievements = data["achievements"]
+			if data.has("completed_challenges"): completed_challenges = data["completed_challenges"]
 			
-			if data.has("achievements"):
-				unlocked_achievements = data["achievements"]
-				
-			# <--- ON CHARGE LES CHALLENGES ICI
-			if data.has("completed_challenges"):
-				completed_challenges = data["completed_challenges"]
-				print("Challenges chargés : ", completed_challenges)
+			# --- CORRECTION ICI ---
+			if data.has("completed_no_cams"): 
+				completed_no_cameras_nights.clear() # On vide par sécurité
+				for numero in data["completed_no_cams"]:
+					completed_no_cameras_nights.append(int(numero)) # On force en entier (int)
+			# ----------------------
 		file.close()
-
-func unlock_achievement(ach_id : String):
-	if unlocked_achievements.has(ach_id): return
-	
-	print(">>> SUCCÈS DÉBLOQUÉ : ", ach_id)
-	unlocked_achievements.append(ach_id)
-	save_game()
 
 func win_night(n_terminee : int):
 	print("Victoire validée pour la nuit : ", n_terminee)
+	
+	# --- NOUVEAU : Si on gagne en mode No Cameras ---
+	if no_cameras_mode_active:
+		if not completed_no_cameras_nights.has(n_terminee):
+			completed_no_cameras_nights.append(n_terminee)
+			if n_terminee == 6:
+				unlock_achievement("no_cams")
+			save_game()
+			print(">>> SUCCÈS : Nuit ", n_terminee, " sans caméras terminée !")
+		return # On arrête là pour ne pas débloquer la nuit suivante normale
+	# ------------------------------------------------
 	
 	if n_terminee == unlocked_night:
 		if unlocked_night < nights_data.size():
@@ -205,8 +260,14 @@ func win_night(n_terminee : int):
 			print(">>> SUCCÈS : Nuit ", unlocked_night, " débloquée !")
 		else:
 			print("Jeu terminé à 100% !")
-	else:
-		print("Pas de déblocage (Nuit déjà acquise ou nuit précédente rejouée).")
+
+func unlock_achievement(ach_id : String):
+	if unlocked_achievements.has(ach_id): return
+	
+	print(">>> SUCCÈS DÉBLOQUÉ : ", ach_id)
+	unlocked_achievements.append(ach_id)
+	save_game()
+
 
 func load_data():
 	nights_data = load_json_file("res://data/nights.json")

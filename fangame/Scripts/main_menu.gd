@@ -21,6 +21,10 @@ extends Control
 @onready var etoile_1 = $Ecran_Accueil/Container_Etoiles/Etoile_1
 @onready var etoile_2 = $Ecran_Accueil/Container_Etoiles/Etoile_2
 @onready var etoile_3 = $Ecran_Accueil/Container_Etoiles/Etoile_3
+@onready var etoile_4 = $Ecran_Accueil/Container_Etoiles/Etoile_4
+@onready var etoile_5 = $Ecran_Accueil/Container_Etoiles/Etoile_5
+
+@onready var btn_lancer_no_cams = $Ecran_Selection/Panneau_Details/Bouton_Lancer_No_Cams
 
 @onready var ecran_transition = $Ecran_Transition
 @onready var label_trans_nuit = $Ecran_Transition/Label_Nuit_Transition
@@ -89,6 +93,10 @@ func _ready():
 	if btn_retour:
 		btn_retour.mouse_entered.connect(_jouer_son_hover)
 		btn_retour.pressed.connect(_on_retour_accueil)
+		
+	if btn_lancer_no_cams:
+		btn_lancer_no_cams.pressed.connect(_on_bouton_lancer_no_cams_pressed)
+		btn_lancer_no_cams.mouse_entered.connect(_jouer_son_hover)
 
 	var btn_quit = ecran_accueil.find_child("Bouton_Quitter", true, false)
 	if btn_quit:
@@ -121,7 +129,7 @@ func _ready():
 	
 	creer_liste_boutons()
 		
-	btn_lancer.pressed.connect(_on_lancer_nuit)
+	btn_lancer.pressed.connect(_on_lancer_nuit_classique)
 	verifier_etoiles()
 	update_details_panel(0) 
 	
@@ -601,25 +609,31 @@ func _on_nuit_bouton_clicked(numero_nuit):
 	update_details_panel(numero_nuit)
 
 func verifier_etoiles():
-	# Par sécurité, on cache tout d'abord
 	if etoile_1: etoile_1.visible = false
 	if etoile_2: etoile_2.visible = false
 	if etoile_3: etoile_3.visible = false
+	if etoile_4: etoile_4.visible = false # NOUVEAU
+	if etoile_5: etoile_5.visible = false # NOUVEAU
 	
-	# --- ETOILE 1 : Avoir fini la Nuit 5 ---
-	# Si on a débloqué la nuit 6 (ou plus), c'est qu'on a fini la 5.
 	if GameData.unlocked_night >= 6:
 		if etoile_1: etoile_1.visible = true
-		
-	# --- ETOILE 2 : Avoir fini la Nuit 6 ---
-	# Si on a débloqué la nuit 7 (ou plus), c'est qu'on a fini la 6.
 	if GameData.unlocked_night >= 7:
 		if etoile_2: etoile_2.visible = true
-		
-	# --- ETOILE 3 : Le défi 20/20/20/20 ---
-	# On vérifie si le succès spécifique a été débloqué
 	if GameData.completed_challenges.size() > 0:
-		etoile_3.visible = true
+		if etoile_3: etoile_3.visible = true
+		
+	# --- ETOILE 4 : Avoir battu Nuits 1 à 5 en No Cams ---
+	var a_battu_1_a_5 = true
+	for i in range(1, 6):
+		if not GameData.completed_no_cameras_nights.has(i):
+			a_battu_1_a_5 = false
+			break
+	if a_battu_1_a_5 and GameData.completed_no_cameras_nights.size() > 0:
+		if etoile_4: etoile_4.visible = true
+		
+	# --- ETOILE 5 : Avoir battu la Nuit 6 en No Cams ---
+	if GameData.completed_no_cameras_nights.has(6):
+		if etoile_5: etoile_5.visible = true
 
 func update_details_panel(numero_nuit):
 	if numero_nuit == 0:
@@ -677,6 +691,12 @@ func update_details_panel(numero_nuit):
 			label_duree.text = "Durée : " + info["display_duration_text"]
 			
 		btn_lancer.disabled = false
+		
+		if btn_lancer_no_cams:
+			if GameData.unlocked_night >= 7 and numero_nuit <= 6:
+				btn_lancer_no_cams.visible = true
+			else:
+				btn_lancer_no_cams.visible = false
 	else:
 		print("Erreur : Pas d'info pour la nuit ", numero_nuit)
 
@@ -685,6 +705,7 @@ func _on_lancer_nuit():
 	print("Lancement de la transition pour la nuit ", nuit_selectionnee_temp)
 	
 	GameData.current_night_played = nuit_selectionnee_temp
+	
 	
 	if nuit_selectionnee_temp == 1:
 		if ecran_intro_nuit_1:
@@ -740,3 +761,12 @@ func _on_bouton_retour_pressed() -> void:
 	ecran_selection.visible = false # Au cas où
 	ecran_succes.visible = false
 	ecran_options.visible = false
+
+
+func _on_bouton_lancer_no_cams_pressed() -> void:
+	GameData.no_cameras_mode_active = true
+	_on_lancer_nuit()
+
+func _on_lancer_nuit_classique():
+	GameData.no_cameras_mode_active = false # On s'assure que le mode est éteint
+	_on_lancer_nuit()

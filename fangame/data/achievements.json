@@ -49,6 +49,13 @@
 		"hidden": true
 	},
 	{
+		"id": "no_cams",
+		"title": "No cameras mode",
+		"description": "Terminer les 6 nuits avec le mode sans caméras.",
+		"icon": "res://achievements/no_cams.png",
+		"hidden": true
+	},
+	{
 		"id": "early_death",
 		"title": "Trop Tôt",
 		"description": "Mourir à 12 AM.",

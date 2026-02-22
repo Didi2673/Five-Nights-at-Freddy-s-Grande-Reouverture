@@ -1,10 +1,11 @@
-[gd_scene load_steps=71 format=3 uid="uid://d1jvp74qdhp23"]
+[gd_scene load_steps=73 format=3 uid="uid://d1jvp74qdhp23"]
 
 [ext_resource type="Script" uid="uid://bbqvbkh1q8p0h" path="res://Scripts/main_menu.gd" id="1_yhxw7"]
 [ext_resource type="Texture2D" uid="uid://bn0yyf1714mg" path="res://freddy.png" id="2_trj04"]
 [ext_resource type="FontFile" uid="uid://83xb00w7vpum" path="res://vcr_osd_mono.ttf" id="3_16hvj"]
 [ext_resource type="Texture2D" uid="uid://d05y5ylad3fdn" path="res://star.png" id="4_vr1f0"]
 [ext_resource type="FontFile" uid="uid://dh5jtdq4vw75k" path="res://LcdSolid.ttf" id="5_t1dhk"]
+[ext_resource type="Texture2D" uid="uid://dwcdk0csyvkix" path="res://star_nightmare.png" id="5_trj04"]
 [ext_resource type="AudioStream" uid="uid://f1m0j2lgiypg" path="res://Sounds/camera_change.wav" id="6_5egv6"]
 [ext_resource type="Shader" uid="uid://hhifebkgqjh8" path="res://moniteur_cctv.gdshader" id="7_vtepg"]
 [ext_resource type="Texture2D" uid="uid://ctymrjpc6bnc3" path="res://night1.png" id="8_8dnnj"]
@@ -399,6 +400,9 @@ bg_color = Color(0.61229926, 1.504086e-06, 5.7756904e-07, 1)
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qe12f"]
 bg_color = Color(0.6117647, 0, 0, 1)
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yhxw7"]
+bg_color = Color(0.44666582, 0.56580967, 1, 1)
+
 [sub_resource type="LabelSettings" id="LabelSettings_qe12f"]
 font = ExtResource("5_t1dhk")
 font_size = 70
@@ -533,6 +537,16 @@ visible = false
 layout_mode = 2
 texture = ExtResource("4_vr1f0")
 
+[node name="Etoile_4" type="TextureRect" parent="Ecran_Accueil/Container_Etoiles"]
+visible = false
+layout_mode = 2
+texture = ExtResource("5_trj04")
+
+[node name="Etoile_5" type="TextureRect" parent="Ecran_Accueil/Container_Etoiles"]
+visible = false
+layout_mode = 2
+texture = ExtResource("5_trj04")
+
 [node name="Ecran_Selection" type="Control" parent="."]
 visible = false
 layout_mode = 1
@@ -605,6 +619,29 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_glbon")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_nlkkf")
 theme_override_styles/hover = SubResource("StyleBoxFlat_qe12f")
 text = "Lancer"
+
+[node name="Bouton_Lancer_No_Cams" type="Button" parent="Ecran_Selection/Panneau_Details"]
+layout_mode = 0
+offset_left = 400.0
+offset_top = 800.0
+offset_right = 618.0
+offset_bottom = 868.0
+focus_mode = 0
+theme_override_colors/icon_disabled_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_16hvj")
+theme_override_font_sizes/font_size = 50
+theme_override_styles/normal = SubResource("StyleBoxFlat_yhxw7")
+theme_override_styles/normal_mirrored = SubResource("StyleBoxFlat_yhxw7")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_yhxw7")
+theme_override_styles/pressed_mirrored = SubResource("StyleBoxFlat_yhxw7")
+theme_override_styles/hover = SubResource("StyleBoxFlat_yhxw7")
+theme_override_styles/hover_mirrored = SubResource("StyleBoxFlat_yhxw7")
+theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_yhxw7")
+theme_override_styles/hover_pressed_mirrored = SubResource("StyleBoxFlat_yhxw7")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_yhxw7")
+theme_override_styles/disabled_mirrored = SubResource("StyleBoxFlat_yhxw7")
+theme_override_styles/focus = SubResource("StyleBoxFlat_yhxw7")
+text = "Lancer (No cams Mode)"
 
 [node name="Grid_Custom_Night" type="GridContainer" parent="Ecran_Selection/Panneau_Details"]
 layout_mode = 1
@@ -815,6 +852,7 @@ texture = ExtResource("8_8dnnj")
 [connection signal="pressed" from="Ecran_Accueil/Bouton_Options" to="." method="_on_bouton_options_pressed"]
 [connection signal="pressed" from="Ecran_Accueil/Bouton_Succes" to="." method="_on_aller_vers_succes"]
 [connection signal="pressed" from="Ecran_Selection/Panneau_Details/Bouton_Lancer_Nuit" to="." method="_on_bouton_lancer_nuit_pressed"]
+[connection signal="pressed" from="Ecran_Selection/Panneau_Details/Bouton_Lancer_No_Cams" to="." method="_on_bouton_lancer_no_cams_pressed"]
 [connection signal="pressed" from="Ecran_Selection/Bouton_Retour" to="." method="_on_bouton_retour_pressed"]
 [connection signal="pressed" from="Ecran_Succes/Bouton_Retour" to="." method="_on_retour_accueil_depuis_succes"]
 [connection signal="pressed" from="Ecran_Options/Panel/Bouton_Retour" to="." method="_on_bouton_retour_pressed"]
