@@ -57,7 +57,7 @@ var actions_a_mapper = {
 var action_en_cours_de_modif : String = ""
 var bouton_en_cours_de_modif : Button = null
 
-var font_custom = load("res://vcr_osd_mono.ttf")
+var font_custom = load("res://OCRAEXT.ttf")
 
 var nuit_selectionnee_temp : int = 1
 
@@ -569,7 +569,7 @@ func generer_liste_nuits():
 	if hauteur_bouton < 30: hauteur_bouton = 30 
 	
 	# --- 2. CHARGEMENT POLICE ---
-	var ma_police = load("res://vcr_osd_mono.ttf") 
+	var ma_police = load("res://OCRAEXT.ttf") 
 	
 	# Nettoyage
 	for child in liste_nuits_container.get_children():

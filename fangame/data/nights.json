@@ -2,7 +2,7 @@
 	{
 		"id": 1,
 		"title": "Nuit 1",
-		"description": "Nuit d'introduction pour que vous vous appropriez les \nméchaniques du jeu.",
+		"description": "Nuit d'introduction pour que vous vous appropriez les \nmécaniques du jeu.",
 		"difficulty_label": "Facile",
 		"display_duration_text": "6 minutes",
 		"hour_duration_seconds": 60, 
@@ -12,7 +12,7 @@
 	{
 		"id": 2,
 		"title": "Nuit 2",
-		"description": "La nuit un plus tendu avec l'arrivée de Chica et Puppet",
+		"description": "La nuit un plus tendu avec l'arrivée de Mangle et Puppet",
 		"difficulty_label": "Facile",
 		"display_duration_text": "6 minutes",
 		"hour_duration_seconds": 60, 

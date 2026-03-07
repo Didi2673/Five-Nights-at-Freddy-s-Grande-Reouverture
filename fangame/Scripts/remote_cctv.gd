@@ -44,14 +44,14 @@ var etat_salles = {
 
 func _ready():
 	visible = false 
-	
+	"""
 	# --- 1. CONFIGURATION AUDIO (CHICA) ---
 	btn_audio = find_child("Bouton_Audio", true, false)
 	if btn_audio:
 		if not btn_audio.pressed.is_connected(_on_audio_pressed):
 			btn_audio.pressed.connect(_on_audio_pressed)
 		btn_audio.visible = false
-	
+	"""
 	# --- 2. CONFIGURATION VENTILATION (SPRINGTRAP/MANGLE) ---
 	btn_vent = find_child("Bouton_Vent", true, false)
 	if btn_vent:
@@ -206,12 +206,12 @@ func _on_cam_13_pressed(): changer_camera("Cam13")
 func changer_camera(nom_cam : String):
 	camera_actuelle = nom_cam
 	if audio_switch: audio_switch.play()
-	
+	"""
 	# 1. Gestion Bouton AUDIO (Chica)
 	if btn_audio:
 		# Visible seulement si utile pour Chica
 		btn_audio.visible = (nom_cam in chemin_chica_audio)
-
+"""
 	# 2. Gestion Bouton VENT (Springtrap / Mangle)
 	if btn_vent:
 		# Visible seulement sur la caméra de ventilation

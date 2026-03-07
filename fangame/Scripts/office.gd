@@ -611,6 +611,12 @@ func forcer_depart_autres_robots():
 	# Mise à jour du bureau (au cas où Bonnie était à la fenêtre)
 	update_office_background()
 
+func _on_bouton_monitor_button_up() -> void:		
+	$UI/Moniteur_CCTV.visible = not $UI/Moniteur_CCTV.visible
+	audio_monitor.play()
+	if systeme_camera.has_method("toggle_monitor"):
+		systeme_camera.toggle_monitor()
+
 
 func update_clock_display():
 	var text_heure = "12 AM" if current_hour == 0 else str(current_hour) + " AM"
@@ -623,26 +629,40 @@ func trigger_jumpscare(nom_tueur : String):
 	if current_hour == 0:
 		GameData.unlock_achievement("early_death")
 	
+	# 1. Masquer l'interface et couper l'ambiance
 	if map_container: map_container.visible = false
 	if game_ui: game_ui.visible = false 
 	if audio_ambiance: audio_ambiance.stop()
 	
-	if ecran_jumpscare:
+
+	if $Layer_Jumpscare:
 		$Layer_Jumpscare.visible = true
-		ecran_jumpscare.visible = true
-		if videos_jumpscares.has(nom_tueur):
-			ecran_jumpscare.stream = load(videos_jumpscares[nom_tueur])
 		
-		ecran_jumpscare.expand = true 
-		ecran_jumpscare.set_anchors_preset(Control.PRESET_TOP_LEFT)
-		ecran_jumpscare.position = Vector2.ZERO
-		ecran_jumpscare.size = get_viewport_rect().size
-		
-		ecran_jumpscare.play()
-		await ecran_jumpscare.finished
-		ecran_jumpscare.stop()
-		$Layer_Jumpscare.visible = false
+	if $Layer_Jumpscare.has_node("Audio_Jumpscare2") and (nom_tueur == "Puppet" or nom_tueur == "Golden-Freddy" or nom_tueur == "Mangle"):
+		$Layer_Jumpscare.get_node("Audio_Jumpscare2").play()
+	elif  $Layer_Jumpscare.has_node("Audio_Jumpscare3") and (nom_tueur == "Springtrap"):
+		$Layer_Jumpscare.get_node("Audio_Jumpscar3").play()
+	elif $Layer_Jumpscare.has_node("Audio_Jumpscare") and (nom_tueur == "Freddy" or nom_tueur == "Bonnie" or nom_tueur == "Chica" or nom_tueur == "Foxy"):
+		$Layer_Jumpscare.get_node("Audio_Jumpscare").play()
 	
+	var sprite_tueur = $Layer_Jumpscare.get_node_or_null(nom_tueur)
+	
+	if sprite_tueur and sprite_tueur is AnimatedSprite2D:
+		sprite_tueur.visible = true
+		sprite_tueur.play() 
+		
+		await sprite_tueur.animation_finished
+		
+		sprite_tueur.visible = false
+	else:
+		# SÉCURITÉ : Si vous avez oublié de créer le sprite ou mal orthographié le nom
+		print("⚠️ ERREUR : Sprite de Jumpscare introuvable pour -> ", nom_tueur)
+		await get_tree().create_timer(2.0).timeout # On attend quand même 2 secondes pour faire genre
+	
+	# 5. On masque le layer et on retourne au menu
+	if $Layer_Jumpscare:
+		$Layer_Jumpscare.visible = false
+		
 	get_tree().change_scene_to_file("res://Scenes/main_menu.tscn")
 
 func trigger_victory():
@@ -697,6 +717,7 @@ func trigger_victory():
 	audio_music_box.volume_db = -80.0
 	audio_music_box.stop()
 	audio_ambiance.stop()
+	audio_phone_call.stop()
 	
 	if map_container: map_container.visible = false
 	if label_heure: label_heure.visible = false

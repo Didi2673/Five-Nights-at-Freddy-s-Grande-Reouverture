@@ -70,6 +70,7 @@ func tenter_jouer_son_vent():
 func reset_timer(ai_level : int):
 	move_timer = base_interval
 
+"""
 # --- RECEPTION AUDIO (CHICA) ---
 func recevoir_audio(camera_source : String):
 	if nom != "Chica": return
@@ -88,7 +89,7 @@ func recevoir_audio(camera_source : String):
 		move_timer = base_interval 
 	else:
 		print("ECHEC DE DISTANCE.")
-		
+	"""	
 func reculer_sur_chemin(index_cible):
 	var ancienne_salle = path_list[current_path_index]
 	if camera_system_ref.etat_salles.has(ancienne_salle):
@@ -107,12 +108,12 @@ func process_ai(delta, current_ai_level_arg):
 	
 	if office_ref.game_over or office_ref.est_coupure_courant: return
 	
-	
+	"""
 	if nom == "Chica":
 		if current_path_index == path_list.size() - 1:
 			verifier_porte_ouverte()
 			return
-			
+	"""		
 	if nom == "Shadow-Bonnie" and sb_active:
 		
 		# 1. KILL TIMER (Le joueur a 30s pour réagir)
@@ -135,14 +136,14 @@ func process_ai(delta, current_ai_level_arg):
 	if move_timer <= 0:
 		reset_timer(current_ai_level)
 		attempt_logic(current_ai_level)	
-		
+"""		
 func verifier_porte_ouverte():
 	if office_ref.est_coupure_courant: return
 	if porte_cible and not porte_cible.est_fermee:
 		if randf() < 0.05: 
 			print("CHICA EST RENTRÉE !")
 			office_ref.trigger_jumpscare("Chica")
-
+"""
 func attempt_logic(ai_level):
 	if office_ref.est_coupure_courant: return
 	if nom == "Foxy":
@@ -209,14 +210,14 @@ func attempt_logic(ai_level):
 			office_ref.jouer_rire_freddy()
 			
 		return # Fin de la logique Freddy pour ce tour
-
+	"""
 	# --- LOGIQUE CHICA ---
 	if nom == "Chica":
 		var roll = randi_range(1, 20)
 		if roll <= ai_level:
 			avancer_sur_chemin()
 		return
-		
+	"""	
 	if nom == "Shadow-Bonnie":
 		# Si il est déjà là, on ne fait rien (on attend que le joueur gère la situation)
 		if sb_active:
@@ -237,7 +238,7 @@ func attempt_logic(ai_level):
 				avancer_sur_chemin()
 		return
 		
-	# --- LOGIQUE STANDARD (BONNIE) ---
+	# --- LOGIQUE STANDARD (BONNIE, Chica) ---
 	if current_path_index == path_list.size() - 1:
 		tenter_attaque()
 	else:
@@ -395,7 +396,7 @@ func tenter_attaque():
 			camera_system_ref.etat_salles[salle_porte].erase(nom)
 		
 		current_path_index = 0 
-		if nom == "Bonnie": current_path_index = path_list.find("Cam02") 
+		if nom == "Bonnie" or nom == "Chica": current_path_index = path_list.find("Cam02") 
 		if current_path_index == -1: current_path_index = 0
 		
 		var salle_repli = path_list[current_path_index]
