@@ -138,6 +138,11 @@ func creer_liste_boutons():
 	# 1. On nettoie la liste existante
 	for child in container_touches.get_children():
 		child.queue_free()
+		
+	# --- CHARGEMENT DES THÈMES ---
+	# Remplacez ces chemins par les vôtres !
+	var theme_label = load("res://text_normal.tres")
+	var theme_bouton = load("res://bouton_options_keys.tres")
 	
 	# 2. On crée une ligne pour chaque action
 	for action_id in actions_a_mapper:
@@ -147,30 +152,40 @@ func creer_liste_boutons():
 		var hbox = HBoxContainer.new()
 		hbox.custom_minimum_size.y = 50 # Un peu plus de hauteur pour aérer
 		
-		# A. Le Nom de l'action
+		# ==========================================
+		# A. LE LABEL (Nom de l'action)
+		# ==========================================
 		var lbl = Label.new()
 		lbl.text = nom_lisible
 		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		
-		# --- AJOUT STYLE ---
-		if font_custom:
-			lbl.add_theme_font_override("font", font_custom)
-			lbl.add_theme_font_size_override("font_size", 24)
-		# -------------------
+		# Application du thème pour le Label
+		if theme_label:
+			lbl.theme = theme_label
+			
+		# Optionnel : Si la taille 24 n'est pas déjà fixée dans votre thème, 
+		# vous pouvez toujours la forcer ici. Sinon, vous pouvez effacer cette ligne.
+		lbl.add_theme_font_size_override("font_size", 24)
 		
 		hbox.add_child(lbl)
 		
-		# B. Le Bouton avec la touche actuelle
+		# ==========================================
+		# B. LE BOUTON (Touche à configurer)
+		# ==========================================
 		var btn = Button.new()
 		btn.custom_minimum_size.x = 200 # Bouton un peu plus large
 		btn.toggle_mode = true
 		btn.text = recuperer_nom_touche_actuelle(action_id)
 		
-		# --- AJOUT STYLE ---
-		if font_custom:
-			btn.add_theme_font_override("font", font_custom)
-			btn.add_theme_font_size_override("font_size", 24)
-		# -------------------
+		# Application du thème pour le Bouton
+		if theme_bouton:
+			btn.theme = theme_bouton
+			
+		# Optionnel (idem que pour le label)
+		btn.add_theme_font_size_override("font_size", 24)
+		
+		# Petit bonus : le curseur main au survol
+		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		
 		btn.pressed.connect(_on_remap_button_pressed.bind(action_id, btn))
 		
@@ -250,33 +265,36 @@ func generer_liste_challenges():
 	for child in container_challenges.get_children():
 		child.queue_free()
 	
+	# --- 1. CHARGEMENT DES THÈMES ---
+	# Remplacez par vos vrais chemins
+	var theme_normal = load("res://bouton_challenges.tres") 
+	var theme_success = load("res://bouton_challenges_win.tres") # Votre nouveau thème vert !
+	
 	for challenge in GameData.challenges_list:
 		var btn = Button.new()
 		
-		# --- MODIFICATIONS ICI ---
-		# 1. Application de la police importée (.ttf)
+		# --- 2. THÈME PAR DÉFAUT ---
+		if theme_normal:
+			btn.theme = theme_normal
+			
+		# Si vous avez configuré la police dans le thème, vous pouvez retirer ça :
 		if font_custom:
 			btn.add_theme_font_override("font", font_custom)
-		
-		# 2. Augmentation de la taille de la police (Changez 24 par ce que vous voulez)
 		btn.add_theme_font_size_override("font_size", 35) 
-		
-		# Optionnel : Augmenter un peu la hauteur du bouton pour que le gros texte rentre bien
 		btn.custom_minimum_size.y = 40 
-		# -------------------------
 		
 		btn.text = challenge["name"]
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		
-		# Si le challenge est réussi
+		# --- 3. SI LE CHALLENGE EST RÉUSSI -> ON APPLIQUE LE NOUVEAU THÈME ---
 		if challenge["id"] in GameData.completed_challenges:
-			#btn.text += " [★]"
-			btn.modulate = Color.GREEN
+			if theme_success:
+				btn.theme = theme_success 
 		
 		# Connexion du signal
 		btn.pressed.connect(_on_challenge_clicked.bind(challenge))
 		
-		# Curseur main au survol (plus joli)
+		# Curseur main au survol
 		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		
 		container_challenges.add_child(btn)
@@ -415,11 +433,28 @@ func preparer_interface_custom():
 		child.queue_free()
 	
 	container_custom.columns = 4 
-	container_custom.add_theme_constant_override("h_separation", 30)
-	container_custom.add_theme_constant_override("v_separation", 50)
+	# 1. RAPPROCHER LES IMAGES (Réduction de l'espacement)
+	container_custom.add_theme_constant_override("h_separation", 15)
+	container_custom.add_theme_constant_override("v_separation", 20)
 	
-	# Est-ce qu'on est dans un challenge ? (Si oui, on désactive les boutons)
 	var est_en_challenge = (GameData.active_challenge_id != "custom")
+	
+	# --- 3. STYLE DES BOUTONS (Créé une seule fois pour optimiser) ---
+	var style_btn_normal = StyleBoxFlat.new()
+	style_btn_normal.bg_color = Color(0.1, 0.1, 0.1, 1) # Fond très sombre
+	style_btn_normal.border_color = Color(0.6, 0.6, 0.6, 1) # Bordure grise
+	style_btn_normal.border_width_bottom = 2
+	style_btn_normal.border_width_top = 2
+	style_btn_normal.border_width_left = 2
+	style_btn_normal.border_width_right = 2
+	
+	var style_btn_hover = style_btn_normal.duplicate()
+	style_btn_hover.bg_color = Color(0.3, 0.3, 0.3, 1) # Plus clair au survol
+	style_btn_hover.border_color = Color(1.0, 1.0, 1.0, 1) # Bordure blanche au survol
+	
+	var style_btn_pressed = style_btn_normal.duplicate()
+	style_btn_pressed.bg_color = Color(0.0, 0.0, 0.0, 1) # Noir au clic
+	# -----------------------------------------------------------------
 	
 	for data in GameData.animatronics_data:
 		var nom_bot = data["name"]
@@ -427,12 +462,23 @@ func preparer_interface_custom():
 		if nom_bot == "Springtrap": continue
 			
 		var boite_robot = VBoxContainer.new()
-		boite_robot.custom_minimum_size = Vector2(180, 150)
+		# On enlève la taille minimum forcée pour que la boîte s'adapte à l'image
 		boite_robot.alignment = BoxContainer.ALIGNMENT_CENTER
+		
+		# --- 2. CRÉATION DU CADRE AVEC BORDURE (1 PIXEL) ---
+		var cadre_image = PanelContainer.new()
+		var style_cadre = StyleBoxFlat.new()
+		style_cadre.bg_color = Color(0, 0, 0, 1) # Fond noir derrière l'image
+		style_cadre.border_color = Color(1, 1, 1, 1) # Bordure blanche
+		style_cadre.border_width_bottom = 2
+		style_cadre.border_width_top = 2
+		style_cadre.border_width_left = 2
+		style_cadre.border_width_right = 2
+		cadre_image.add_theme_stylebox_override("panel", style_cadre)
 		
 		# --- IMAGE ---
 		var icon_robot = TextureRect.new()
-		icon_robot.custom_minimum_size = Vector2(200, 200) 
+		icon_robot.custom_minimum_size = Vector2(183, 244) # Taille réduite pour rapprocher les colonnes
 		icon_robot.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon_robot.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		
@@ -440,63 +486,75 @@ func preparer_interface_custom():
 		if ResourceLoader.exists(chemin_image):
 			icon_robot.texture = load(chemin_image)
 		else:
-			icon_robot.texture = icon_defaut 
+			# Assurez-vous d'avoir défini icon_defaut quelque part dans votre script !
+			pass 
 			
-		boite_robot.add_child(icon_robot)
+		# On met l'image DANS le cadre, et le cadre DANS la boîte
+		cadre_image.add_child(icon_robot)
+		boite_robot.add_child(cadre_image)
 		
 		# --- SÉLECTEUR ---
 		var boite_selecteur = HBoxContainer.new()
 		boite_selecteur.alignment = BoxContainer.ALIGNMENT_CENTER
-		boite_selecteur.add_theme_constant_override("separation", 15) 
+		boite_selecteur.add_theme_constant_override("separation", 10) 
 		
-		# Bouton Moins
+		# --- BOUTON MOINS ---
 		var btn_minus = Button.new()
 		btn_minus.text = "<"
-		btn_minus.custom_minimum_size = Vector2(40, 40) 
+		btn_minus.add_theme_font_size_override("font_size", 30) 
+		btn_minus.custom_minimum_size = Vector2(50, 50) 
 		btn_minus.pressed.connect(_on_change_ai.bind(nom_bot, -1, boite_selecteur))
 		btn_minus.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		btn_minus.add_to_group("boutons_ai")
-		
-		# --- CORRECTION 1 : Désactiver si challenge ---
 		btn_minus.disabled = est_en_challenge 
 		
-		# Label Valeur
+		# Application du style et de la police au bouton Moins
+		btn_minus.add_theme_stylebox_override("normal", style_btn_normal)
+		btn_minus.add_theme_stylebox_override("hover", style_btn_hover)
+		btn_minus.add_theme_stylebox_override("pressed", style_btn_pressed)
+		if font_custom: btn_minus.add_theme_font_override("font", font_custom)
+		
+		# --- LABEL VALEUR ---
 		var lbl_val = Label.new()
 		lbl_val.name = "Label_AI"
 		
-		# --- CORRECTION 2 : Lire la valeur actuelle au lieu de mettre "0" ---
 		var niveau_actuel = 0
 		if GameData.custom_night_levels.has(nom_bot):
 			niveau_actuel = GameData.custom_night_levels[nom_bot]
 		else:
-			GameData.custom_night_levels[nom_bot] = 0 # Init si inexistant
+			GameData.custom_night_levels[nom_bot] = 0 
 			
 		lbl_val.text = str(niveau_actuel)
 		
-		# Couleur du texte selon la difficulté
-		update_label_color(lbl_val, niveau_actuel)
-		# -------------------------------------------------------------------
+		if has_method("update_label_color"):
+			update_label_color(lbl_val, niveau_actuel)
 
 		lbl_val.custom_minimum_size.x = 40 
 		lbl_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		
 		if font_custom: 
 			lbl_val.add_theme_font_override("font", font_custom)
-			lbl_val.add_theme_font_size_override("font_size", 40) 
+			lbl_val.add_theme_font_size_override("font_size", 50) 
 		else:
 			lbl_val.add_theme_font_size_override("font_size", 28)
 		
-		# Bouton Plus
+		# --- BOUTON PLUS ---
 		var btn_plus = Button.new()
 		btn_plus.text = ">"
-		btn_plus.custom_minimum_size = Vector2(40, 40)
+		btn_plus.add_theme_font_size_override("font_size", 30) 
+		btn_plus.custom_minimum_size = Vector2(50, 50)
 		btn_plus.pressed.connect(_on_change_ai.bind(nom_bot, 1, boite_selecteur))
 		btn_plus.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		btn_plus.add_to_group("boutons_ai")
-		
-		# --- CORRECTION 1 : Désactiver si challenge ---
 		btn_plus.disabled = est_en_challenge
 		
+		# Application du style et de la police au bouton Plus
+		btn_plus.add_theme_stylebox_override("normal", style_btn_normal)
+		btn_plus.add_theme_stylebox_override("hover", style_btn_hover)
+		btn_plus.add_theme_stylebox_override("pressed", style_btn_pressed)
+		if font_custom: btn_plus.add_theme_font_override("font", font_custom)
+		
+		# --- ASSEMBLAGE ---
 		boite_selecteur.add_child(btn_minus)
 		boite_selecteur.add_child(lbl_val)
 		boite_selecteur.add_child(btn_plus)
@@ -551,25 +609,18 @@ func generer_liste_nuits():
 	var total_nuits_json = GameData.nights_data.size()
 	
 	# --- 1. CALCUL DE LA HAUTEUR DYNAMIQUE ---
-	# On récupère la hauteur totale du conteneur (définie dans l'éditeur avec les Ancres/Anchors)
 	var hauteur_totale = liste_nuits_container.size.y
-	
-	# On récupère l'espace entre les boutons (défini dans Theme Overrides > Constants > Separation)
-	# Si ce n'est pas défini, Godot utilise 4px par défaut.
 	var separation = liste_nuits_container.get_theme_constant("separation")
 	
-	# Calcul de l'espace total "perdu" par les écarts (Il y a N-1 écarts pour N boutons)
 	var total_separation = separation * (total_nuits_json - 1)
 	if total_separation < 0: total_separation = 0
 	
-	# Hauteur restante divisée par le nombre de boutons
 	var hauteur_bouton = (hauteur_totale - total_separation) / total_nuits_json
-	
-	# Petite sécurité pour éviter des boutons minuscules ou négatifs
 	if hauteur_bouton < 30: hauteur_bouton = 30 
 	
-	# --- 2. CHARGEMENT POLICE ---
-	var ma_police = load("res://OCRAEXT.ttf") 
+	# --- 2. CHARGEMENT DU THÈME ---
+	# Remplace ce chemin par le vrai chemin de ton fichier .tres
+	var theme_nuits = load("res://bouton_nuits.tres") 
 	
 	# Nettoyage
 	for child in liste_nuits_container.get_children():
@@ -578,28 +629,26 @@ func generer_liste_nuits():
 	for i in range(1, total_nuits_json + 1):
 		var btn = Button.new()
 		
-		# --- STYLE ---
-		if ma_police:
-			btn.add_theme_font_override("font", ma_police)
-			# On adapte aussi la taille du texte : plus le bouton est petit, plus le texte est petit
-			# (C'est optionnel, tu peux garder une taille fixe comme 24)
-			var taille_texte = 50
-			btn.add_theme_font_size_override("font_size", int(taille_texte))
+		# --- 3. APPLICATION DU THÈME ---
+		if theme_nuits:
+			btn.theme = theme_nuits
+
 		
-		# --- HAUTEUR DYNAMIQUE ICI ---
+		# --- APPLICATION DE LA HAUTEUR DYNAMIQUE ---
 		btn.custom_minimum_size.y = hauteur_bouton
 		
 		btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
 		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		btn.mouse_entered.connect(_jouer_son_hover)
 		
+		# --- LOGIQUE DE DÉBLOCAGE ---
 		if i <= GameData.unlocked_night:
 			btn.text = "  Nuit " + str(i)
 			btn.pressed.connect(_on_nuit_bouton_clicked.bind(i))
 		else:
 			btn.text = "  ???"
 			btn.disabled = true
-			btn.modulate = Color(1, 1, 1, 0.5)
+			btn.modulate = Color(1, 1, 1, 0.5) # Rendre le bouton semi-transparent s'il est bloqué
 		
 		liste_nuits_container.add_child(btn)
 

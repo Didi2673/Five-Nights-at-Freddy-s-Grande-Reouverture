@@ -2,7 +2,7 @@
 	{
 		"id": 1,
 		"title": "Nuit 1",
-		"description": "Nuit d'introduction pour que vous vous appropriez les \nmécaniques du jeu.",
+		"description": "Nuit d'introduction pour que vous vous \nappropriez les mécaniques du jeu.",
 		"difficulty_label": "Facile",
 		"display_duration_text": "6 minutes",
 		"hour_duration_seconds": 60, 
@@ -12,7 +12,7 @@
 	{
 		"id": 2,
 		"title": "Nuit 2",
-		"description": "La nuit un plus tendu avec l'arrivée de Mangle et Puppet",
+		"description": "La nuit un plus tendue avec l'arrivée \nde Mangle et Puppet",
 		"difficulty_label": "Facile",
 		"display_duration_text": "6 minutes",
 		"hour_duration_seconds": 60, 
@@ -22,8 +22,8 @@
 	{
 		"id": 3,
 		"title": "Nuit 3",
-		"description": "Foxy et Freddy vont ajouter une nouvelle pression",
-		"difficulty_label": "Normal",
+		"description": "Foxy et Freddy vont ajouter une \nnouvelle pression",
+		"difficulty_label": "Normale",
 		"display_duration_text": "6 minutes",
 		"hour_duration_seconds": 60, 
 		"start_hour": 0,
@@ -32,8 +32,8 @@
 	{
 		"id": 4,
 		"title": "Nuit 4",
-		"description": "Entraînement dur avant la réelle difficulté.",
-		"difficulty_label": "Normal",
+		"description": "Entraînement dur avant la réelle \ndifficulté.",
+		"difficulty_label": "Normale",
 		"display_duration_text": "6 minutes",
 		"hour_duration_seconds": 60, 
 		"start_hour": 0,

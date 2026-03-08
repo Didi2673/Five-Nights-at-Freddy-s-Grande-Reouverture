@@ -76,6 +76,9 @@ func _on_door_toggle():
 func _on_light_start():
 	if est_coupure_courant(): return
 	
+	# SÉCURITÉ : Si la lumière est DÉJÀ allumée, on ne relance pas le son !
+	if est_allumee: return 
+	
 	est_allumee = true
 	audio_light.play()
 	

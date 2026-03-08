@@ -153,6 +153,10 @@ func attempt_logic(ai_level):
 	if nom == "Mangle":
 		attempt_mangle_move(ai_level)
 		return
+		
+	if nom == "Chica":
+		process_chica_logic(ai_level)
+		return
 
 	if nom == "Springtrap":
 		process_springtrap_logic(ai_level)
@@ -245,6 +249,72 @@ func attempt_logic(ai_level):
 		var roll = randi_range(1, 20)
 		if roll <= ai_level:
 			avancer_sur_chemin()
+
+
+func process_chica_logic(ai_level):
+	# 1. Jet de dés pour voir si elle a l'opportunité de bouger
+	var roll = randi_range(1, 20)
+	if roll > ai_level: return # Elle ne bouge pas ce tour-ci
+	
+	var salle_actuelle = path_list[current_path_index]
+	
+	# 2. Choix de la destination selon la salle actuelle
+	match salle_actuelle:
+		"Cam01":
+			deplacer_chica("Cam02")
+		"Cam02":
+			deplacer_chica("Cam05")
+		"Cam05":
+			# 3 possibilités
+			var choix = randi() % 3 # Renvoie 0, 1 ou 2
+			if choix == 0: deplacer_chica("Cam02")
+			elif choix == 1: deplacer_chica("Cam06")
+			else: deplacer_chica("Cam10")
+		"Cam06":
+			# 2 possibilités
+			if randf() < 0.5: deplacer_chica("Cam05")
+			else: deplacer_chica("Cam10")
+		"Cam10":
+			# 2 possibilités
+			if randf() < 0.5: deplacer_chica("Cam06")
+			else: deplacer_chica("Cam12")
+		"Cam12":
+			# 2 possibilités
+			if randf() < 0.5: deplacer_chica("Cam02")
+			else: deplacer_chica("Right_Door_Pos")
+		"Right_Door_Pos":
+			# Elle est à la porte, elle tente d'attaquer ou de partir
+			tenter_attaque_chica()
+
+func deplacer_chica(nom_cible : String):
+	# On cherche l'index de la nouvelle caméra dans sa liste JSON
+	var nouvel_index = path_list.find(nom_cible)
+	
+	if nouvel_index != -1:
+		changer_position(nouvel_index)
+
+func tenter_attaque_chica():
+	if office_ref.est_coupure_courant: return
+	
+	if porte_cible and porte_cible.est_fermee:
+		# --- LA PORTE EST FERMÉE ---
+		# Elle a 2 chances sur 3 (66.6%) d'abandonner
+		var choix = randi() % 3 # Renvoie 0, 1 ou 2
+		
+		if choix < 2: 
+			# Résultat 0 ou 1 -> Elle abandonne
+			print("BLOCKED! Chica abandonne et retourne en Cam02.")
+			deplacer_chica("Cam02")
+		else: 
+			# Résultat 2 -> Elle est têtue
+			print("BLOCKED! Chica est têtue et campe à la porte droite.")
+			# On ne fait rien : elle reste à "Right_Door_Pos".
+			# Au prochain timer d'IA, elle repassera dans cette fonction.
+	else:
+		# --- LA PORTE EST OUVERTE ---
+		print("CHICA ENTRE DANS LE BUREAU !")
+		office_ref.trigger_jumpscare("Chica")
+
 
 # --- MANGLE ---
 func attempt_mangle_move(ai_level):

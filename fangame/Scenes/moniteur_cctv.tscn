@@ -1,23 +1,11 @@
-[gd_scene load_steps=25 format=3 uid="uid://dvj4ixdew2cl5"]
+[gd_scene load_steps=13 format=3 uid="uid://dvj4ixdew2cl5"]
 
 [ext_resource type="Script" uid="uid://dfukqvi7p8lin" path="res://Scripts/remote_cctv.gd" id="1_og2t3"]
 [ext_resource type="Texture2D" uid="uid://cqi8pfb27eur0" path="res://map.png" id="1_r7ydr"]
 [ext_resource type="Texture2D" uid="uid://cqs0towftcxht" path="res://Cameras/Cam01_Bonnie_Chica_Freddy.png" id="2_dshet"]
-[ext_resource type="Texture2D" uid="uid://b22hkjv40xtxy" path="res://1.png" id="2_og2t3"]
-[ext_resource type="Texture2D" uid="uid://cpd8oil0s6rc1" path="res://2.png" id="3_lqbdw"]
-[ext_resource type="Texture2D" uid="uid://boby4btsk5h2l" path="res://3.png" id="4_dshet"]
-[ext_resource type="Texture2D" uid="uid://tnikqqej4jmu" path="res://4.png" id="5_ocw4j"]
-[ext_resource type="Texture2D" uid="uid://b1u67my7h6au6" path="res://5.png" id="6_73acr"]
-[ext_resource type="Texture2D" uid="uid://bdet8cuo1lm86" path="res://6.png" id="7_b4apj"]
+[ext_resource type="Theme" uid="uid://3vys4refbmjc" path="res://bouton_cameras.tres" id="4_87cd1"]
 [ext_resource type="Texture2D" uid="uid://d3r2x3e0q0qpc" path="res://TheWarningSign.webp" id="8_87cd1"]
-[ext_resource type="Texture2D" uid="uid://df4fmx07l2okw" path="res://7.png" id="8_job2a"]
-[ext_resource type="Texture2D" uid="uid://dhhv52ide45p" path="res://8.png" id="9_71ynp"]
-[ext_resource type="Texture2D" uid="uid://uigeyji6fnad" path="res://9.png" id="10_nsts7"]
-[ext_resource type="Texture2D" uid="uid://bjg1uc3wj126d" path="res://10.png" id="11_l16op"]
-[ext_resource type="Texture2D" uid="uid://vkr5cxsya5h2" path="res://11.png" id="12_lv74b"]
-[ext_resource type="Texture2D" uid="uid://vmfif1hnfysn" path="res://12.png" id="13_vt1tl"]
 [ext_resource type="Shader" uid="uid://hhifebkgqjh8" path="res://moniteur_cctv.gdshader" id="15_lqbdw"]
-[ext_resource type="Texture2D" uid="uid://cgiem0shlq3jq" path="res://13.png" id="16_ocw4j"]
 [ext_resource type="AudioStream" uid="uid://f1m0j2lgiypg" path="res://Sounds/camera_change.wav" id="18_73acr"]
 [ext_resource type="Theme" uid="uid://b4ofsq1nh46rs" path="res://bouton.tres" id="18_nsts7"]
 [ext_resource type="AudioStream" uid="uid://cqgqjxna5ir8m" path="res://Sounds/flash.wav" id="19_b4apj"]
@@ -71,7 +59,8 @@ offset_top = 592.0
 offset_right = 1956.0
 offset_bottom = 850.0
 scale = Vector2(0.2, 0.2)
-icon = ExtResource("2_og2t3")
+theme = ExtResource("4_87cd1")
+text = "CAM 01"
 
 [node name="Bouton_CAM02" type="Button" parent="Container_Boutons"]
 layout_mode = 0
@@ -80,7 +69,8 @@ offset_top = 660.0
 offset_right = 2016.0
 offset_bottom = 918.0
 scale = Vector2(0.2, 0.2)
-icon = ExtResource("3_lqbdw")
+theme = ExtResource("4_87cd1")
+text = "CAM 02"
 
 [node name="Bouton_CAM03" type="Button" parent="Container_Boutons"]
 layout_mode = 0
@@ -89,7 +79,8 @@ offset_top = 682.0
 offset_right = 1874.0
 offset_bottom = 940.0
 scale = Vector2(0.2, 0.2)
-icon = ExtResource("4_dshet")
+theme = ExtResource("4_87cd1")
+text = "CAM 03"
 
 [node name="Bouton_CAM04" type="Button" parent="Container_Boutons"]
 layout_mode = 0
@@ -98,7 +89,8 @@ offset_top = 792.0
 offset_right = 1879.0
 offset_bottom = 1050.0
 scale = Vector2(0.2, 0.2)
-icon = ExtResource("5_ocw4j")
+theme = ExtResource("4_87cd1")
+text = "CAM 04"
 
 [node name="Icone_Danger" type="TextureRect" parent="Container_Boutons/Bouton_CAM04"]
 visible = false
@@ -117,7 +109,8 @@ offset_top = 682.0
 offset_right = 2198.0
 offset_bottom = 940.0
 scale = Vector2(0.2, 0.2)
-icon = ExtResource("6_73acr")
+theme = ExtResource("4_87cd1")
+text = "CAM 05"
 
 [node name="Icone_Danger" type="TextureRect" parent="Container_Boutons/Bouton_CAM05"]
 visible = false
@@ -136,7 +129,8 @@ offset_top = 795.99994
 offset_right = 2197.0
 offset_bottom = 1054.0
 scale = Vector2(0.2, 0.2)
-icon = ExtResource("7_b4apj")
+theme = ExtResource("4_87cd1")
+text = "CAM 06"
 
 [node name="Bouton_CAM07" type="Button" parent="Container_Boutons"]
 layout_mode = 0
@@ -145,7 +139,8 @@ offset_top = 914.0
 offset_right = 1858.0
 offset_bottom = 1172.0
 scale = Vector2(0.2, 0.2)
-icon = ExtResource("8_job2a")
+theme = ExtResource("4_87cd1")
+text = "CAM 07"
 
 [node name="Icone_Danger" type="TextureRect" parent="Container_Boutons/Bouton_CAM07"]
 visible = false
@@ -164,7 +159,8 @@ offset_top = 881.0
 offset_right = 1957.0
 offset_bottom = 1139.0
 scale = Vector2(0.2, 0.2)
-icon = ExtResource("9_71ynp")
+theme = ExtResource("4_87cd1")
+text = "CAM 08"
 
 [node name="Icone_Danger" type="TextureRect" parent="Container_Boutons/Bouton_CAM08"]
 visible = false
@@ -183,7 +179,8 @@ offset_top = 881.0
 offset_right = 2042.0
 offset_bottom = 1139.0
 scale = Vector2(0.2, 0.2)
-icon = ExtResource("10_nsts7")
+theme = ExtResource("4_87cd1")
+text = "CAM 09"
 
 [node name="Bouton_CAM10" type="Button" parent="Container_Boutons"]
 layout_mode = 0
@@ -192,7 +189,8 @@ offset_top = 880.0
 offset_right = 2125.0
 offset_bottom = 1138.0
 scale = Vector2(0.2, 0.2)
-icon = ExtResource("11_l16op")
+theme = ExtResource("4_87cd1")
+text = "CAM 10"
 
 [node name="Bouton_CAM11" type="Button" parent="Container_Boutons"]
 layout_mode = 0
@@ -201,7 +199,8 @@ offset_top = 956.0
 offset_right = 1945.0
 offset_bottom = 1214.0
 scale = Vector2(0.2, 0.2)
-icon = ExtResource("12_lv74b")
+theme = ExtResource("4_87cd1")
+text = "CAM 11"
 
 [node name="Bouton_CAM12" type="Button" parent="Container_Boutons"]
 layout_mode = 0
@@ -210,7 +209,8 @@ offset_top = 951.0
 offset_right = 2131.0
 offset_bottom = 1209.0
 scale = Vector2(0.2, 0.2)
-icon = ExtResource("13_vt1tl")
+theme = ExtResource("4_87cd1")
+text = "CAM 12"
 
 [node name="Bouton_CAM13" type="Button" parent="Container_Boutons"]
 layout_mode = 0
@@ -219,7 +219,8 @@ offset_top = 1018.0
 offset_right = 2061.0
 offset_bottom = 1276.0
 scale = Vector2(0.2, 0.2)
-icon = ExtResource("16_ocw4j")
+theme = ExtResource("4_87cd1")
+text = "CAM 13"
 
 [node name="Label_Nom_Salle" type="Label" parent="."]
 layout_mode = 0

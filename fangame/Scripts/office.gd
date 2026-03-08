@@ -220,13 +220,23 @@ func toggle_silent_ventilateur():
 func gestion_inputs_clavier():
 	# --- 1. GESTION DES LUMIÈRES (Toggle : On appuie pour allumer/éteindre) ---
 	if Input.is_action_just_pressed("input_light_left"):
+		# SÉCURITÉ : Si la lumière droite est allumée, on l'éteint de force !
+		if light_right_on: 
+			porte_droite._on_light_stop()
+			
 		porte_gauche._on_light_start()
+		
 	elif Input.is_action_just_released("input_light_left"):
 		porte_gauche._on_light_stop()
 		
 	# LUMIÈRE DROITE
 	if Input.is_action_just_pressed("input_light_right"):
+		# SÉCURITÉ : Si la lumière gauche est allumée, on l'éteint de force !
+		if light_left_on: 
+			porte_gauche._on_light_stop()
+			
 		porte_droite._on_light_start()
+		
 	elif Input.is_action_just_released("input_light_right"):
 		porte_droite._on_light_stop()
 
