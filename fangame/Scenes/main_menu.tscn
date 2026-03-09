@@ -1,4 +1,4 @@
-[gd_scene load_steps=70 format=3 uid="uid://d1jvp74qdhp23"]
+[gd_scene load_steps=72 format=3 uid="uid://d1jvp74qdhp23"]
 
 [ext_resource type="Script" uid="uid://bbqvbkh1q8p0h" path="res://Scripts/main_menu.gd" id="1_yhxw7"]
 [ext_resource type="Texture2D" uid="uid://bn0yyf1714mg" path="res://freddy.png" id="2_trj04"]
@@ -9,6 +9,7 @@
 [ext_resource type="Texture2D" uid="uid://dwcdk0csyvkix" path="res://star_nightmare.png" id="5_trj04"]
 [ext_resource type="AudioStream" uid="uid://f1m0j2lgiypg" path="res://Sounds/camera_change.wav" id="6_5egv6"]
 [ext_resource type="Theme" uid="uid://bam5aqp08aeb1" path="res://bouton_nuits_play.tres" id="6_vr1f0"]
+[ext_resource type="Theme" uid="uid://c2r2ycjy2t0md" path="res://bouton_normal.tres" id="7_8dnnj"]
 [ext_resource type="Theme" uid="uid://n1k81tt8bp16" path="res://bouton_nuits_play2.tres" id="7_t1dhk"]
 [ext_resource type="Shader" uid="uid://hhifebkgqjh8" path="res://moniteur_cctv.gdshader" id="7_vtepg"]
 [ext_resource type="Theme" uid="uid://lyt4apyh6hj5" path="res://bouton_retour.tres" id="8_5egv6"]
@@ -373,9 +374,15 @@ animations = [{
 }]
 
 [sub_resource type="LabelSettings" id="LabelSettings_7vrkn"]
+font_size = 30
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8qtwp"]
 bg_color = Color(0.16565639, 0.16565642, 0.16565639, 1)
+
+[sub_resource type="StyleBoxLine" id="StyleBoxLine_5egv6"]
+color = Color(1, 1, 1, 1)
+grow_begin = 2.0
+thickness = 4
 
 [sub_resource type="LabelSettings" id="LabelSettings_fu7sn"]
 font = ExtResource("3_vr1f0")
@@ -406,7 +413,6 @@ offset_bottom = 1080.0
 color = Color(0, 0, 0, 1)
 
 [node name="Ecran_Accueil" type="Control" parent="."]
-visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -435,55 +441,59 @@ at
 Freddy's :
 Grande Réouverture"
 
-[node name="Bouton_Play" type="Button" parent="Ecran_Accueil"]
-layout_mode = 0
+[node name="Boutons" type="VBoxContainer" parent="Ecran_Accueil"]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
 offset_left = 137.0
-offset_top = 634.0
-offset_right = 350.0
-offset_bottom = 704.0
+offset_top = 260.0
+offset_right = 177.0
+offset_bottom = 300.0
+grow_vertical = 2
+
+[node name="Bouton_Play" type="Button" parent="Ecran_Accueil/Boutons"]
+layout_mode = 2
+size_flags_horizontal = 0
 theme = ExtResource("3_5egv6")
 text = "Jouer"
 text_direction = 3
 
-[node name="Bouton_Quitter" type="Button" parent="Ecran_Accueil"]
-layout_mode = 0
-offset_left = 141.0
-offset_top = 883.0
-offset_right = 436.0
-offset_bottom = 953.0
-theme = ExtResource("3_5egv6")
-text = "Quitter"
-
-[node name="Bouton_Options" type="Button" parent="Ecran_Accueil"]
-layout_mode = 0
-offset_left = 141.0
-offset_top = 800.0
-offset_right = 436.0
-offset_bottom = 870.0
-theme = ExtResource("3_5egv6")
-text = "Options"
-
-[node name="version" type="Label" parent="Ecran_Accueil"]
-layout_mode = 0
-offset_left = 2.0
-offset_top = 1061.0
-offset_right = 354.0
-offset_bottom = 1149.0
-scale = Vector2(0.2, 0.2)
-theme_override_fonts/font = ExtResource("3_vr1f0")
-theme_override_font_sizes/font_size = 10
-text = "v0.3.0"
-label_settings = SubResource("LabelSettings_7vrkn")
-
-[node name="Bouton_Succes" type="Button" parent="Ecran_Accueil"]
-layout_mode = 0
-offset_left = 141.0
-offset_top = 717.0
-offset_right = 395.0
-offset_bottom = 787.0
+[node name="Bouton_Succes" type="Button" parent="Ecran_Accueil/Boutons"]
+layout_mode = 2
+size_flags_horizontal = 0
 theme = ExtResource("3_5egv6")
 text = "Succès"
 text_direction = 3
+
+[node name="Bouton_Options" type="Button" parent="Ecran_Accueil/Boutons"]
+layout_mode = 2
+size_flags_horizontal = 0
+theme = ExtResource("3_5egv6")
+text = "Options"
+
+[node name="Bouton_Animatroniques" type="Button" parent="Ecran_Accueil/Boutons"]
+layout_mode = 2
+size_flags_horizontal = 0
+theme = ExtResource("3_5egv6")
+text = "Animatroniques"
+
+[node name="Bouton_Quitter" type="Button" parent="Ecran_Accueil/Boutons"]
+layout_mode = 2
+size_flags_horizontal = 0
+theme = ExtResource("3_5egv6")
+text = "Quitter"
+
+[node name="version" type="Label" parent="Ecran_Accueil"]
+layout_mode = 0
+offset_top = 1073.0
+offset_right = 129.99998
+offset_bottom = 1108.0
+scale = Vector2(0.2, 0.2)
+theme_override_fonts/font = ExtResource("3_vr1f0")
+theme_override_font_sizes/font_size = 50
+text = "v1.0.0"
+label_settings = SubResource("LabelSettings_7vrkn")
 
 [node name="Container_Etoiles" type="HBoxContainer" parent="Ecran_Accueil"]
 layout_mode = 0
@@ -519,6 +529,21 @@ visible = false
 layout_mode = 2
 texture = ExtResource("5_trj04")
 
+[node name="Bouton_Reset" type="Button" parent="Ecran_Accueil"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -8.0
+offset_top = -8.0
+grow_horizontal = 0
+grow_vertical = 0
+theme = ExtResource("7_8dnnj")
+theme_override_font_sizes/font_size = 30
+text = "Reset"
+
 [node name="Ecran_Selection" type="Control" parent="."]
 visible = false
 layout_mode = 1
@@ -536,7 +561,7 @@ offset_bottom = 1078.0
 [node name="Panneau_Details" type="Panel" parent="Ecran_Selection"]
 layout_mode = 0
 offset_left = 654.0
-offset_top = 6.0
+offset_top = 1.0
 offset_right = 1920.0
 offset_bottom = 1077.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_8qtwp")
@@ -551,30 +576,38 @@ theme = ExtResource("3_5egv6")
 theme_override_font_sizes/font_size = 90
 text = "Nuit 1"
 
+[node name="HSeparator" type="HSeparator" parent="Ecran_Selection/Panneau_Details"]
+layout_mode = 0
+offset_left = 94.0
+offset_top = 167.0
+offset_right = 1094.0
+offset_bottom = 175.0
+theme_override_styles/separator = SubResource("StyleBoxLine_5egv6")
+
 [node name="Label_Description" type="Label" parent="Ecran_Selection/Panneau_Details"]
 layout_mode = 0
 offset_left = 94.0
-offset_top = 384.0
+offset_top = 360.0
 offset_right = 1265.0
-offset_bottom = 487.0
+offset_bottom = 463.0
 theme = ExtResource("3_5egv6")
 text = "Description"
 
 [node name="Label_Duree" type="Label" parent="Ecran_Selection/Panneau_Details"]
 layout_mode = 0
 offset_left = 94.0
-offset_top = 207.0
-offset_right = 394.0
-offset_bottom = 237.0
+offset_top = 200.0
+offset_right = 546.0
+offset_bottom = 252.0
 theme = ExtResource("3_5egv6")
 text = "Durée : 1 heure"
 
 [node name="Label_Difficulte" type="Label" parent="Ecran_Selection/Panneau_Details"]
 layout_mode = 0
 offset_left = 94.0
-offset_top = 316.0
+offset_top = 280.0
 offset_right = 232.0
-offset_bottom = 353.0
+offset_bottom = 332.0
 theme = ExtResource("3_5egv6")
 text = "Easy"
 
@@ -606,7 +639,7 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -622.0
-offset_top = -280.5
+offset_top = -231.0
 offset_right = 635.0
 offset_bottom = 156.5
 grow_horizontal = 2
@@ -622,6 +655,8 @@ anchor_left = 1.0
 anchor_top = 0.5
 anchor_right = 1.0
 anchor_bottom = 0.5
+offset_top = 2.0
+offset_bottom = 2.0
 grow_horizontal = 0
 grow_vertical = 2
 
@@ -679,6 +714,7 @@ text = "Succès débloqués"
 label_settings = SubResource("LabelSettings_fu7sn")
 
 [node name="Ecran_Options" type="Control" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -730,6 +766,74 @@ offset_right = 8.0
 grow_vertical = 0
 theme = ExtResource("8_5egv6")
 text = "Retour"
+
+[node name="Ecran_Animatroniques" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Ecran_Animatroniques"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Grid_Animatroniques" type="GridContainer" parent="Ecran_Animatroniques/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 6
+size_flags_vertical = 6
+columns = 5
+
+[node name="Bouton_Retour" type="Button" parent="Ecran_Animatroniques"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -8.0
+offset_right = 8.0
+grow_vertical = 0
+theme = ExtResource("8_5egv6")
+text = "Retour"
+
+[node name="Label_Nom" type="Label" parent="Ecran_Animatroniques"]
+layout_mode = 0
+offset_left = 400.0
+offset_top = 850.0
+offset_right = 440.0
+offset_bottom = 902.0
+size_flags_vertical = 0
+theme = ExtResource("3_5egv6")
+
+[node name="Label_Description" type="Label" parent="Ecran_Animatroniques"]
+layout_mode = 0
+offset_left = 400.0
+offset_top = 900.0
+offset_right = 440.0
+offset_bottom = 932.0
+size_flags_vertical = 0
+theme = ExtResource("3_5egv6")
+theme_override_constants/line_spacing = 0
+theme_override_font_sizes/font_size = 30
+
+[node name="Label_Titre" type="Label" parent="Ecran_Animatroniques"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.0
+offset_right = 20.0
+offset_bottom = 52.0
+grow_horizontal = 2
+size_flags_vertical = 0
+theme = ExtResource("3_5egv6")
+theme_override_font_sizes/font_size = 80
+text = "Animatroniques"
 
 [node name="Ecran_Transition" type="ColorRect" parent="."]
 visible = false
@@ -800,10 +904,11 @@ grow_horizontal = 2
 grow_vertical = 2
 texture = ExtResource("8_8dnnj")
 
-[connection signal="pressed" from="Ecran_Accueil/Bouton_Play" to="." method="_on_aller_vers_selection"]
-[connection signal="pressed" from="Ecran_Accueil/Bouton_Quitter" to="." method="_on_bouton_quitter_pressed"]
-[connection signal="pressed" from="Ecran_Accueil/Bouton_Options" to="." method="_on_bouton_options_pressed"]
-[connection signal="pressed" from="Ecran_Accueil/Bouton_Succes" to="." method="_on_aller_vers_succes"]
+[connection signal="pressed" from="Ecran_Accueil/Boutons/Bouton_Play" to="." method="_on_aller_vers_selection"]
+[connection signal="pressed" from="Ecran_Accueil/Boutons/Bouton_Succes" to="." method="_on_aller_vers_succes"]
+[connection signal="pressed" from="Ecran_Accueil/Boutons/Bouton_Options" to="." method="_on_bouton_options_pressed"]
+[connection signal="pressed" from="Ecran_Accueil/Boutons/Bouton_Animatroniques" to="." method="_on_bouton_animatroniques_pressed"]
+[connection signal="pressed" from="Ecran_Accueil/Boutons/Bouton_Quitter" to="." method="_on_bouton_quitter_pressed"]
 [connection signal="pressed" from="Ecran_Selection/Panneau_Details/Bouton_Lancer_Nuit" to="." method="_on_bouton_lancer_nuit_pressed"]
 [connection signal="pressed" from="Ecran_Selection/Panneau_Details/Bouton_Lancer_No_Cams" to="." method="_on_bouton_lancer_no_cams_pressed"]
 [connection signal="pressed" from="Ecran_Selection/Bouton_Retour" to="." method="_on_bouton_retour_pressed"]

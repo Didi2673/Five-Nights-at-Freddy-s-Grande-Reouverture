@@ -1,8 +1,9 @@
-[gd_scene load_steps=230 format=3 uid="uid://dvu2p8dkvbruk"]
+[gd_scene load_steps=235 format=3 uid="uid://dvu2p8dkvbruk"]
 
 [ext_resource type="Script" uid="uid://binxa8r2e1lh" path="res://Scripts/office.gd" id="1_4i814"]
 [ext_resource type="Texture2D" uid="uid://bnoromdm53qd7" path="res://office_left_light.png" id="3_4hetp"]
 [ext_resource type="Texture2D" uid="uid://cpwovj8ggt1ld" path="res://office.webp" id="3_4i814"]
+[ext_resource type="Texture2D" uid="uid://dyucyufo2kiv4" path="res://vent_icon_off.png" id="3_sc6bq"]
 [ext_resource type="Texture2D" uid="uid://0hw82mtimimi" path="res://office_left_light_bonnie.png" id="4_o3cd7"]
 [ext_resource type="Texture2D" uid="uid://kts435o7bxf3" path="res://office_right_light.png" id="5_8qan1"]
 [ext_resource type="Texture2D" uid="uid://drqturv75nskt" path="res://office_right_light_chica.png" id="6_jktts"]
@@ -23,6 +24,7 @@
 [ext_resource type="Texture2D" uid="uid://bsuf1apsdeqi3" path="res://left_button_door_open.webp" id="13_4hetp"]
 [ext_resource type="Texture2D" uid="uid://cf78fi2d3xo03" path="res://left_button_door_close.webp" id="14_o3cd7"]
 [ext_resource type="Theme" uid="uid://b4ofsq1nh46rs" path="res://bouton.tres" id="15_26ul0"]
+[ext_resource type="Texture2D" uid="uid://btx1tavqoxa4p" path="res://vent_icon_on.png" id="16_7cw1a"]
 [ext_resource type="Texture2D" uid="uid://ddjihy4k62we5" path="res://fan.png" id="23_vh33w"]
 [ext_resource type="AudioStream" uid="uid://d1cpisn0dya54" path="res://Sounds/cameras.wav" id="24_2k2f6"]
 [ext_resource type="Texture2D" uid="uid://c0h8psp70h62t" path="res://freddy-jumpscare.png" id="25_8bfd6"]
@@ -49,6 +51,9 @@
 [ext_resource type="AudioStream" uid="uid://bfefynfajbb6i" path="res://outage.wav" id="35_5bs7n"]
 [ext_resource type="AudioStream" uid="uid://b763dhrxoexuh" path="res://Sounds/jumpscare_sound3.wav" id="36_t0v84"]
 [ext_resource type="AudioStream" uid="uid://ds6yutwlfil0o" path="res://Sounds/vent_walk.wav" id="37_7gj8a"]
+[ext_resource type="AudioStream" uid="uid://dxr3hjumhhdbq" path="res://Sounds/jumpscare_sound4.wav" id="39_fyq5a"]
+[ext_resource type="AudioStream" uid="uid://cvayeup1u85hu" path="res://Sounds/kitchen.wav" id="50_t0v84"]
+[ext_resource type="AudioStream" uid="uid://dmdonpe2a7u2u" path="res://Sounds/fire.wav" id="51_52d2s"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_wruqr"]
 font = ExtResource("8_lcwox")
@@ -1012,6 +1017,12 @@ animations = [{
 "frames": [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_yxuip")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_yxuip")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_yxuip")
 }],
 "loop": false,
 "name": &"default",
@@ -1315,6 +1326,8 @@ animations = [{
 
 [node name="office" type="Node2D" node_paths=PackedStringArray("portes", "systeme_camera", "porte_gauche", "porte_droite")]
 script = ExtResource("1_4i814")
+icone_vent_on = ExtResource("16_7cw1a")
+icone_vent_off = ExtResource("3_sc6bq")
 tex_normal = ExtResource("3_4i814")
 tex_light_left = ExtResource("3_4hetp")
 tex_light_left_bonnie = ExtResource("4_o3cd7")
@@ -1448,6 +1461,21 @@ theme = ExtResource("15_26ul0")
 theme_override_fonts/font = ExtResource("8_lcwox")
 theme_override_font_sizes/font_size = 46
 text = "OUVRIR MONITEUR"
+
+[node name="Bouton_Vent_Mobile" type="Button" parent="UI"]
+visible = false
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_top = -254.0
+offset_right = 508.0
+offset_bottom = 254.0
+grow_vertical = 2
+scale = Vector2(0.3, 0.3)
+size_flags_horizontal = 0
+size_flags_vertical = 4
+focus_mode = 0
+icon = ExtResource("16_7cw1a")
 
 [node name="Background" type="Sprite2D" parent="."]
 scale = Vector2(1.5, 1.5)
@@ -1584,7 +1612,7 @@ speed_scale = 4.0
 visible = false
 position = Vector2(959.9999, 540)
 sprite_frames = SubResource("SpriteFrames_bxfr6")
-speed_scale = 3.0
+speed_scale = 0.5
 
 [node name="Springtrap" type="AnimatedSprite2D" parent="Layer_Jumpscare"]
 visible = false
@@ -1601,6 +1629,18 @@ stream = ExtResource("35_1h3km")
 
 [node name="Audio_Jumpscare3" type="AudioStreamPlayer" parent="Layer_Jumpscare"]
 stream = ExtResource("36_t0v84")
+
+[node name="Audio_Jumpscare4" type="AudioStreamPlayer" parent="Layer_Jumpscare"]
+stream = ExtResource("39_fyq5a")
+
+[node name="Ecran_Feu" type="ColorRect" parent="Layer_Jumpscare"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(1, 0, 0, 1)
 
 [node name="Ventilateur" type="AudioStreamPlayer2D" parent="."]
 stream = ExtResource("25_hs4kw")
@@ -1657,6 +1697,12 @@ stream = ExtResource("35_5bs7n")
 
 [node name="Audio_Springtrap_Move" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("37_7gj8a")
+
+[node name="Audio_Chica_Kitchen" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("50_t0v84")
+
+[node name="Audio_Feu" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("51_52d2s")
 
 [connection signal="pressed" from="UI/Bouton_Monitor" to="." method="_on_bouton_monitor_button_up"]
 [connection signal="pressed" from="TextureButton" to="." method="_on_nez_freddy_pressed"]

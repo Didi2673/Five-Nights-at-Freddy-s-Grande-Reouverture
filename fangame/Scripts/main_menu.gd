@@ -37,7 +37,7 @@ extends Control
 @onready var ecran_succes = $Ecran_Succes
 @onready var grid_succes = $Ecran_Succes/ScrollContainer/Grid_Succes
 # Charge une icone par défaut si tu n'as pas encore créé les images
-@onready var icon_defaut = preload("res://icon.svg")
+@onready var icon_defaut = load("res://icon.svg")
 
 @onready var container_custom = $Ecran_Selection/Panneau_Details/Grid_Custom_Night
 
@@ -57,13 +57,52 @@ var actions_a_mapper = {
 var action_en_cours_de_modif : String = ""
 var bouton_en_cours_de_modif : Button = null
 
-var font_custom = load("res://OCRAEXT.ttf")
+var font_custom = preload("res://OCRAEXT.TTF")
 
 var nuit_selectionnee_temp : int = 1
 
+@onready var ecran_animatroniques = $Ecran_Animatroniques
+@onready var grid_animatroniques = $Ecran_Animatroniques/ScrollContainer/Grid_Animatroniques
+@onready var label_nom_bot = $Ecran_Animatroniques/Label_Nom
+@onready var label_desc_bot = $Ecran_Animatroniques/Label_Description
+
+var descriptions_animatroniques = {
+	"Freddy": "Invisible aux caméras, vous devez surveiller ses rires. 
+	Il ira se glisser dans la ventilation de la caméra 9 
+	au bout du 4ème rire. Coupez immédiatement votre 
+	ventilateur et il partira",
+	"Bonnie": "Bonnie se déplace de façon linéaire jusqu'à votre bureau, 
+	il ira à la porte de gauche. Fermez la porte s'il vous regarde.",
+	"Chica": "Chica se déplace vers la porte de droite. Fermez la 
+	porte si elle vous regarde. Elle fait du bruit quand elle est dans 
+	la cuisine.",
+	"Foxy": "Foxy essayera de sortir de sa scène. Restez vigilant, 
+	flashez-le pour le calmer.",
+	"Golden-Freddy": "Une hallucination du passé... Ne le fixez pas 
+	trop longtemps.",
+	"Shadow-Bonnie": "Une entité sombre. Si vous le voyez, regardez-le 
+	à travers les caméras pour le faire fuir.",
+	"Puppet": "Puppet se déplacera jusqu'à votre porte de droite. 
+	Si vous entendez sa mélodie dans votre bureau, fermez la porte 
+	de droite.",
+	"Mangle": "L'ancien jouet démonté par les enfants. Elle rampe 
+	dans la ventilation de la caméra 13. Scellez immédiatement la 
+	ventilation.",
+	"Springtrap": "Springtrap peut aller vers les deux portes où 
+	bien dans la ventilation. Soyez réactif..."
+}
+
 func _ready():
+	# 1. Le mode de mise à l'échelle reste le même pour tout le monde
 	get_window().content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
-	get_window().content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
+	
+	# 2. On change l'aspect selon la plateforme
+	if OS.has_feature("android") or OS.has_feature("mobile"):
+		# Sur téléphone : on étire l'image pour remplir tout l'écran (supprime les bandes noires)
+		get_window().content_scale_aspect = Window.CONTENT_SCALE_ASPECT_IGNORE
+	else:
+		# Sur PC : on garde le format 16:9 original (met des bandes noires si on redimensionne la fenêtre)
+		get_window().content_scale_aspect = Window.CONTENT_SCALE_ASPECT_IGNORE
 	if ecran_transition:
 		ecran_transition.visible = false
 		
@@ -97,23 +136,34 @@ func _ready():
 	if btn_lancer_no_cams:
 		btn_lancer_no_cams.pressed.connect(_on_bouton_lancer_no_cams_pressed)
 		btn_lancer_no_cams.mouse_entered.connect(_jouer_son_hover)
+		
+	var btn_reset = $Ecran_Accueil/Bouton_Reset # Adaptez le chemin
+	if btn_reset:
+		btn_reset.mouse_entered.connect(_jouer_son_hover)
+		btn_reset.pressed.connect(_on_bouton_reset_pressed)
 
-	var btn_quit = ecran_accueil.find_child("Bouton_Quitter", true, false)
+	var btn_quit = $Ecran_Accueil/Boutons/Bouton_Quitter
 	if btn_quit:
 		btn_quit.mouse_entered.connect(_jouer_son_hover)
 		btn_quit.pressed.connect(_on_bouton_quitter_pressed)
 		
-	var btn_options = ecran_accueil.find_child("Bouton_Options", true, false)
+	var btn_options = $Ecran_Accueil/Boutons/Bouton_Options
 	if btn_options:
-		btn_options.mouse_entered.connect(_jouer_son_hover)
-		btn_options.pressed.connect(_on_bouton_options_pressed)
+		# --- VERIFICATION MOBILE ---
+		if OS.has_feature("android") or OS.has_feature("mobile"):
+			btn_options.visible = false # On cache le bouton sur mobile
+		else:
+			# Sur PC, on le garde et on connecte les signaux normalement
+			btn_options.visible = true
+			btn_options.mouse_entered.connect(_jouer_son_hover)
+			btn_options.pressed.connect(_on_bouton_options_pressed)
 		
-	var btn_play = ecran_accueil.find_child("Bouton_Play", true, false)
+	var btn_play = $Ecran_Accueil/Boutons/Bouton_Play
 	if btn_play:
 		btn_play.mouse_entered.connect(_jouer_son_hover)
 		btn_play.pressed.connect(_on_aller_vers_selection)
 		
-	var btn_succes_accueil = ecran_accueil.find_child("Bouton_Succes", true, false)
+	var btn_succes_accueil = $Ecran_Accueil/Boutons/Bouton_Succes
 	if btn_succes_accueil:
 		btn_succes_accueil.pressed.connect(_on_aller_vers_succes)
 		btn_succes_accueil.mouse_entered.connect(_jouer_son_hover)
@@ -126,6 +176,28 @@ func _ready():
 		
 	if btn_retour:
 		btn_retour.pressed.connect(_on_retour_pressed)
+		
+	if ecran_animatroniques:
+		ecran_animatroniques.visible = false
+		
+	var btn_retour_anims = ecran_animatroniques.find_child("Bouton_Retour", true, false)
+	if btn_retour_anims:
+		btn_retour_anims.pressed.connect(_on_retour_accueil_depuis_anims)
+		btn_retour_anims.mouse_entered.connect(_jouer_son_hover)
+		
+	if label_nom_bot:
+		# Aligne le texte du nom en haut à gauche
+		label_nom_bot.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		label_nom_bot.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+		# Force la boîte à s'ancrer en haut du HBoxContainer
+		label_nom_bot.size_flags_vertical = Control.SIZE_SHRINK_BEGIN 
+		
+	if label_desc_bot:
+		# Aligne le texte de la desc en haut à gauche
+		label_desc_bot.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		label_desc_bot.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+		# Force la boîte à s'ancrer en haut du HBoxContainer
+		label_desc_bot.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	
 	creer_liste_boutons()
 		
@@ -133,6 +205,30 @@ func _ready():
 	verifier_etoiles()
 	update_details_panel(0) 
 	
+	
+var reset_confirm : bool = false
+
+func _on_bouton_reset_pressed() -> void:
+	if not reset_confirm:
+		# Premier clic : on demande confirmation
+		reset_confirm = true
+		var btn_reset = $Ecran_Accueil/Bouton_Reset
+		btn_reset.text = "Sûr ?"
+		btn_reset.modulate = Color.RED
+		
+		# On annule la confirmation au bout de 3 secondes si le joueur ne reclique pas
+		await get_tree().create_timer(3.0).timeout
+		reset_confirm = false
+		if btn_reset:
+			btn_reset.text = "Reset"
+			btn_reset.modulate = Color.WHITE
+	else:
+		# Deuxième clic : on efface tout !
+		GameData.reset_all_progress()
+		verifier_etoiles()
+		reset_confirm = false
+		var btn_reset = $Ecran_Accueil/Bouton_Reset
+		btn_reset.text = "Effacé !"
 	
 func creer_liste_boutons():
 	# 1. On nettoie la liste existante
@@ -352,7 +448,7 @@ func generer_liste_succes():
 	# 2. Configuration de la grille (Espacement)
 	grid_succes.add_theme_constant_override("h_separation", 20)
 	grid_succes.add_theme_constant_override("v_separation", 20)
-	
+	var panel_theme = load("res://panel_succes.tres")
 	# 3. Boucle sur les données
 	for ach in GameData.achievements_data:
 		var est_debloque = GameData.unlocked_achievements.has(ach["id"])
@@ -360,6 +456,7 @@ func generer_liste_succes():
 		# --- LE CONTENEUR (Panel) ---
 		var panel = PanelContainer.new()
 		panel.custom_minimum_size = Vector2(400, 100) # Taille fixe assez large
+		panel.theme = panel_theme
 		
 		# --- DISPOSITION (HBox : Icone à gauche | Texte à droite) ---
 		var hbox = HBoxContainer.new()
@@ -382,7 +479,7 @@ func generer_liste_succes():
 		else:
 			# Si verrouillé : Image sombre ou "?"
 			icon_rect.texture = icon_defaut
-			icon_rect.modulate = Color(0.1, 0.1, 0.1, 0.5) # Très sombre et transparent
+			icon_rect.modulate = Color(0.1, 0.1, 0.1, 1) # Très sombre et transparent
 			
 		hbox.add_child(icon_rect)
 		
@@ -720,24 +817,22 @@ func update_details_panel(numero_nuit):
 		
 		# Récupération du texte de difficulté
 		var diff_text = info["difficulty_label"]
-		label_difficulte.text = "Difficulté : " + diff_text
+		label_difficulte.text = "Difficulté: " + diff_text
 		
 		# --- CHANGEMENT DE COULEUR SELON LA DIFFICULTÉ ---
 		# On convertit en minuscule pour éviter les erreurs de majuscules (Facile vs facile)
 		match diff_text.to_lower():
 			"facile", "easy":
 				label_difficulte.modulate = Color.GREEN # Vert
-			"normal", "moyen":
+			"normale", "moyen":
 				label_difficulte.modulate = Color.YELLOW # Jaune
 			"difficile", "hard":
-				label_difficulte.modulate = Color(1, 0.2, 0.2) # Rouge
-			"extrême", "extreme", "cauchemar":
-				label_difficulte.modulate = Color(0.6, 0, 0) # Rouge Sang / Foncé
+				label_difficulte.modulate = Color(1, 0, 0) # Rouge
 			_:
 				label_difficulte.modulate = Color.WHITE # Blanc par défaut
 		
 		if label_duree:
-			label_duree.text = "Durée : " + info["display_duration_text"]
+			label_duree.text = "Durée: " + info["display_duration_text"]
 			
 		btn_lancer.disabled = false
 		
@@ -819,3 +914,108 @@ func _on_bouton_lancer_no_cams_pressed() -> void:
 func _on_lancer_nuit_classique():
 	GameData.no_cameras_mode_active = false # On s'assure que le mode est éteint
 	_on_lancer_nuit()
+
+func _on_bouton_animatroniques_pressed() -> void:
+	ecran_accueil.visible = false
+	ecran_animatroniques.visible = true
+	
+	# Réinitialisation des textes
+	label_nom_bot.text = "Sélectionnez un animatronique"
+	label_desc_bot.text = ""
+	
+	generer_liste_animatroniques()
+
+func _on_retour_accueil_depuis_anims() -> void:
+	ecran_animatroniques.visible = false
+	ecran_accueil.visible = true
+
+func generer_liste_animatroniques():
+	# 1. On nettoie la grille
+	for child in grid_animatroniques.get_children():
+		child.queue_free()
+		
+	# On s'assure de ne pas dépasser la nuit 6 pour chercher dans les tableaux
+	var nuit_max = clampi(GameData.unlocked_night, 1, 6)
+	
+	for bot in GameData.animatronics_data:
+		var nom_bot = bot["name"]
+		var est_debloque = false
+		var nuit_apparition = 1 # NOUVEAU : Pour stocker la nuit de déblocage
+		
+		var ai_levels = bot["ai_levels"]
+		
+		# --- 1. CHERCHER LA NUIT D'APPARITION GLOBALE ---
+		# On scanne TOUTES les nuits pour savoir quand il apparaît pour la 1ère fois
+		for i in range(ai_levels.size()):
+			var a_bouge = false
+			for niveau in ai_levels[i]:
+				if niveau > 0:
+					a_bouge = true
+					break
+			if a_bouge:
+				nuit_apparition = i + 1 # +1 car les tableaux commencent à l'index 0
+				break
+				
+		# --- 2. VÉRIFICATION DU DÉBLOCAGE ACTUEL DU JOUEUR ---
+		for nuit_index in range(nuit_max):
+			for niveau in ai_levels[nuit_index]:
+				if niveau > 0:
+					est_debloque = true
+					break 
+			if est_debloque:
+				break
+		# ---------------------------------
+		
+		# 3. CRÉATION DU BOUTON
+		var btn = Button.new()
+		btn.custom_minimum_size = Vector2(225, 300) # Taille carrée
+		
+		# Style de base pour faire joli
+		var style = StyleBoxFlat.new()
+		style.bg_color = Color(0.1, 0.1, 0.1, 1)
+		style.border_color = Color(0.5, 0.5, 0.5, 1)
+		style.border_width_bottom = 2
+		style.border_width_top = 2
+		style.border_width_left = 2
+		style.border_width_right = 2
+		btn.add_theme_stylebox_override("normal", style)
+		
+		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		
+		if est_debloque:
+			# --- ROBOT DÉBLOQUÉ ---
+			var chemin_image = "res://IconesAnimatroniques/" + nom_bot + ".webp"
+			if ResourceLoader.exists(chemin_image):
+				btn.icon = load(chemin_image)
+				btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+				btn.expand_icon = true
+			else:
+				btn.text = nom_bot 
+				
+			var desc = descriptions_animatroniques.get(nom_bot, "Aucune donnée trouvée.")
+			btn.pressed.connect(_on_animatronique_clicked.bind(nom_bot, desc))
+			
+		else:
+			# --- ROBOT BLOQUÉ ---
+			btn.text = "???"
+			if font_custom:
+				btn.add_theme_font_override("font", font_custom)
+			btn.add_theme_font_size_override("font_size", 50)
+			
+			# On le rend grisé visuellement, MAIS ON NE LE DÉSACTIVE PLUS !
+			btn.modulate = Color(0.4, 0.4, 0.4, 1) 
+			
+			# On crée la description personnalisée
+			var texte_secret = "Atteignez la Nuit " + str(nuit_apparition) + " pour révéler cet animatronique."
+				
+			btn.pressed.connect(_on_animatronique_clicked.bind("???", texte_secret))
+		
+		btn.mouse_entered.connect(_jouer_son_hover)
+		grid_animatroniques.add_child(btn)
+
+func _on_animatronique_clicked(nom_bot : String, description : String):
+	label_nom_bot.text = nom_bot
+	label_desc_bot.text = description
+	
+	if audio_hover:
+		audio_hover.play()

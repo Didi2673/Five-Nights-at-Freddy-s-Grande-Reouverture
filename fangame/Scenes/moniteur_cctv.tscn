@@ -1,10 +1,11 @@
-[gd_scene load_steps=13 format=3 uid="uid://dvj4ixdew2cl5"]
+[gd_scene load_steps=14 format=3 uid="uid://dvj4ixdew2cl5"]
 
 [ext_resource type="Script" uid="uid://dfukqvi7p8lin" path="res://Scripts/remote_cctv.gd" id="1_og2t3"]
 [ext_resource type="Texture2D" uid="uid://cqi8pfb27eur0" path="res://map.png" id="1_r7ydr"]
 [ext_resource type="Texture2D" uid="uid://cqs0towftcxht" path="res://Cameras/Cam01_Bonnie_Chica_Freddy.png" id="2_dshet"]
 [ext_resource type="Theme" uid="uid://3vys4refbmjc" path="res://bouton_cameras.tres" id="4_87cd1"]
 [ext_resource type="Texture2D" uid="uid://d3r2x3e0q0qpc" path="res://TheWarningSign.webp" id="8_87cd1"]
+[ext_resource type="AudioStream" uid="uid://cewarunmwxjqg" path="res://Sounds/static.wav" id="12_j7nes"]
 [ext_resource type="Shader" uid="uid://hhifebkgqjh8" path="res://moniteur_cctv.gdshader" id="15_lqbdw"]
 [ext_resource type="AudioStream" uid="uid://f1m0j2lgiypg" path="res://Sounds/camera_change.wav" id="18_73acr"]
 [ext_resource type="Theme" uid="uid://b4ofsq1nh46rs" path="res://bouton.tres" id="18_nsts7"]
@@ -297,6 +298,9 @@ stream = ExtResource("19_b4apj")
 [node name="Audio_Mangle_Static" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("20_job2a")
 volume_db = -18.84
+
+[node name="Audio_Static" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("12_j7nes")
 
 [connection signal="pressed" from="Container_Boutons/Bouton_CAM01" to="." method="_on_cam_01_pressed"]
 [connection signal="pressed" from="Container_Boutons/Bouton_CAM02" to="." method="_on_cam_02_pressed"]

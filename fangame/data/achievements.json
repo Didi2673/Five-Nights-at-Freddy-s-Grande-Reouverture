@@ -42,10 +42,24 @@
 		"hidden": true
 	},
 	{
-		"id": "20_20_mode",
-		"title": "Légende Vivante",
-		"description": "Terminer la Nuit 7 avec tous les animatroniques à 20.",
-		"icon": "res://achievements/badge_7.png",
+		"id": "challenges_1",
+		"title": "Challengeur débutant",
+		"description": "Terminer 5 Challenges sur les 15.",
+		"icon": "res://achievements/badge_challenges_1.png",
+		"hidden": true
+	},
+	{
+		"id": "challenges_2",
+		"title": "Challengeur",
+		"description": "Terminer 10 Challenges sur les 15.",
+		"icon": "res://achievements/badge_challenges_2.png",
+		"hidden": true
+	},
+	{
+		"id": "challenges_3",
+		"title": "Challengeur professionnel",
+		"description": "Terminer les 15 Challenges.",
+		"icon": "res://achievements/badge_challenges_3.png",
 		"hidden": true
 	},
 	{
@@ -96,5 +110,40 @@
 		"description": "Rester 10s au-dessus de 110°F sans mourir.",
 		"icon": "res://achievements/achievement_fire.png",
 		"hidden": false
+	},
+	{
+		"id": "blackout_win",
+		"title": "Sur le fil",
+		"description": "Gagner à 6 AM pendant une coupure de courant.",
+		"icon": "res://achievements/achievement_blackout.png",
+		"hidden": true
+	},
+	{
+		"id": "shadow_repelled",
+		"title": "Même pas peur",
+		"description": "Repousser Shadow Bonnie avec succès.",
+		"icon": "res://achievements/achievement_shadow.png",
+		"hidden": true
+	},
+	{
+		"id": "vent_blocked",
+		"title": "Accès Refusé",
+		"description": "Bloquer une attaque dans la ventilation.",
+		"icon": "res://achievements/achievement_vent.png",
+		"hidden": true
+	},
+	{
+		"id": "death_fire",
+		"title": "Merguez",
+		"description": "Mourir d'un coup de chaud (120°F).",
+		"icon": "res://achievements/achievement_fire_death.png",
+		"hidden": true
+	},
+	{
+		"id": "all_20_mode",
+		"title": "Légende Vivante",
+		"description": "Terminer une Custom Night avec tout le monde à 20.",
+		"icon": "res://achievements/achievement_legend.png",
+		"hidden": true
 	}
 ]

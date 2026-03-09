@@ -3,6 +3,7 @@ extends Control
 # --- RÉFÉRENCES VISUELLES ---
 @export var ecran_visuel : TextureRect 
 @export var ecran_brouillage : ColorRect # Assigne-le dans l'inspecteur si possible
+var est_en_brouillage : bool = false
 
 var flash_count_session : int = 0
 
@@ -165,10 +166,14 @@ func _on_flash_foxy():
 
 func toggle_monitor():
 	if not a_du_courant: return
-	est_ouvert = !est_ouvert
-	visible = est_ouvert
 	
 	if est_ouvert:
+		# Si le moniteur était ouvert, on appelle la vraie fonction de fermeture
+		fermer_moniteur()
+	else:
+		# Sinon, on l'ouvre
+		est_ouvert = true
+		visible = true
 		mettre_a_jour_image()
 
 func fermer_moniteur():
@@ -178,13 +183,39 @@ func fermer_moniteur():
 	# Au lieu de baisser le volume, on stop proprement
 	# (Le _process est une double sécurité, mais on le fait ici aussi)
 	if audio_mangle_static: audio_mangle_static.stop()
+	$Audio_Static.stop()
 
 func declencher_brouillage():
-	if not est_ouvert: return
+	# Si le moniteur est fermé ou qu'un brouillage est DÉJÀ en cours, on annule
+	if not est_ouvert or est_en_brouillage: return
+	
+	est_en_brouillage = true
+	
+	# 1. On lance le son de static
+	if has_node("Audio_Static"):
+		$Audio_Static.play()
+	
+	# 2. On met à jour l'image (ça va forcer le "Signal_Perdu.png" grâce à notre ajout précédent)
+	mettre_a_jour_image()
+	
 	if ecran_brouillage:
 		ecran_brouillage.visible = true
-		await get_tree().create_timer(1.0).timeout
-		if ecran_brouillage: ecran_brouillage.visible = false
+		
+	# 3. On attend 2 secondes
+	await get_tree().create_timer(2.0).timeout
+	
+	# 4. On remet tout à la normale
+	est_en_brouillage = false
+	
+	if ecran_brouillage:
+		ecran_brouillage.visible = false
+		
+	if has_node("Audio_Static"):
+		$Audio_Static.stop()
+		
+	# On recharge l'image normale de la caméra (seulement si le moniteur est toujours ouvert)
+	if est_ouvert:
+		mettre_a_jour_image()
 
 # --- NAVIGATION CAMÉRAS ---
 
@@ -227,6 +258,10 @@ func changer_camera(nom_cam : String):
 
 func mettre_a_jour_image():
 	if ecran_visuel == null: return
+	if est_en_brouillage:
+		ecran_visuel.texture = load("res://Cameras/Signal_Perdu.png")
+		return # On bloque tout le reste du code
+		
 	if GameData.current_night_played == 7 and camera_actuelle == "Cam01":
 		# L'écran n'aura pas de texture (il sera transparent/noir selon ton fond d'écran)
 		#ecran_visuel.texture = null 

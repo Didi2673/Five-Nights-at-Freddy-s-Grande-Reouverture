@@ -4,6 +4,10 @@ extends Node2D
 @export var vitesse_scroll : float = 600.0
 @export var zone_active_x : int = 150
 @onready var camera = $Camera2D
+
+var is_mobile : bool = false
+var swipe_sensitivity : float = 1.0
+
 @onready var background = $Background
 @onready var audio_warning = $Audio_Warning
 @onready var audio_fan = $Audio_Fan
@@ -13,6 +17,11 @@ extends Node2D
 @onready var audio_honk = $Audio_Honk
 @onready var audio_power_down = $Audio_PowerDown
 @onready var audio_freddy = $Audio_Freddy_Laugh
+@onready var audio_chica_kitchen = $Audio_Chica_Kitchen
+
+@export_group("Icônes Mobile")
+@export var icone_vent_on : Texture2D
+@export var icone_vent_off : Texture2D
 
 var heat_timer_accumulated : float = 0.0
 
@@ -100,6 +109,9 @@ var ecran_largeur : float
 @onready var ecran_jumpscare = $Layer_Jumpscare/Jumpscare 
 @onready var game_ui = $UI 
 @onready var map_container = $UI/Moniteur_CCTV 
+@onready var ecran_feu = $Layer_Jumpscare/Ecran_Feu # Ajustez le chemin selon où vous l'avez mis !
+@onready var audio_feu = $Audio_Feu # Ajustez le chemin
+@onready var bouton_vent_mobile = $UI/Bouton_Vent_Mobile
 
 # --- REFERENCES ---
 @export var portes : Array[Node] 
@@ -123,6 +135,8 @@ var est_coupure_courant : bool = false
 
 
 func _ready():
+	is_mobile = OS.has_feature("android") or OS.has_feature("mobile")
+	
 	ecran_largeur = get_viewport_rect().size.x
 	if background and background.texture:
 		var taille_image = background.texture.get_width() * background.scale.x 
@@ -165,6 +179,37 @@ func _ready():
 		if label_temp: label_temp.visible = false
 	else:
 		if label_temp: label_temp.visible = true
+		
+	if bouton_vent_mobile:
+		# On vérifie si le jeu tourne sur Android (ou iOS avec "mobile")
+		if OS.has_feature("android") or OS.has_feature("mobile"):
+			# On n'affiche le bouton qu'à partir de la nuit 3 (comme le clavier)
+			if night_index >= 3:
+				bouton_vent_mobile.visible = true
+				bouton_vent_mobile.pressed.connect(_on_bouton_vent_mobile_pressed)
+				maj_icone_ventilateur()
+		else:
+			# Sur PC, on s'assure qu'il est bien caché
+			bouton_vent_mobile.visible = false
+
+func maj_icone_ventilateur():
+	if not bouton_vent_mobile: return
+	
+	# Selon si vous utilisez un "Button" normal ou un "TextureButton" :
+	if bouton_vent_mobile is TextureButton:
+		if ventilateur_actif:
+			bouton_vent_mobile.texture_normal = icone_vent_on
+		else:
+			bouton_vent_mobile.texture_normal = icone_vent_off
+	elif bouton_vent_mobile is Button:
+		if ventilateur_actif:
+			bouton_vent_mobile.icon = icone_vent_on
+		else:
+			bouton_vent_mobile.icon = icone_vent_off
+
+func _on_bouton_vent_mobile_pressed():
+	if not est_coupure_courant and night_index >= 3:
+		toggle_ventilateur()
 
 func _on_nez_freddy_pressed():
 	if audio_honk: audio_honk.play()
@@ -198,6 +243,7 @@ func toggle_ventilateur():
 		if anim_ventilateur: anim_ventilateur.stop()
 		
 	print("Ventilateur Normal : ", ventilateur_actif)
+	maj_icone_ventilateur()
 	
 func toggle_silent_ventilateur():
 	silent_ventilateur_active = !silent_ventilateur_active
@@ -218,7 +264,9 @@ func toggle_silent_ventilateur():
 		print("Ventilateur Silencieux : INACTIF")
 
 func gestion_inputs_clavier():
+	
 	# --- 1. GESTION DES LUMIÈRES (Toggle : On appuie pour allumer/éteindre) ---
+	
 	if Input.is_action_just_pressed("input_light_left"):
 		# SÉCURITÉ : Si la lumière droite est allumée, on l'éteint de force !
 		if light_right_on: 
@@ -267,7 +315,20 @@ func gestion_inputs_clavier():
 				if porte_gauche.has_method("_on_light_stop"): porte_gauche._on_light_stop()
 				if porte_droite.has_method("_on_light_stop"): porte_droite._on_light_stop()
 
-
+func _input(event):
+	# On s'assure qu'on est sur mobile, vivant, et que les caméras sont baissées
+	if is_mobile and not game_over and not est_coupure_courant:
+		if systeme_camera and not systeme_camera.est_ouvert:
+			
+			# Si Godot détecte qu'un doigt glisse sur l'écran
+			if event is InputEventScreenDrag:
+				
+				# On déplace la Caméra2D sur l'axe X. 
+				# (Le "-=" permet d'avoir le mouvement naturel "j'agrippe et je tire")
+				camera.position.x -= event.relative.x * swipe_sensitivity
+				
+				# On s'assure que la caméra ne sort pas du bureau
+				camera.position.x = clamp(camera.position.x, limite_gauche, limite_droite)
 
 
 
@@ -321,8 +382,43 @@ func _process(delta):
 		
 	process_golden_freddy(delta)
 	gestion_puppet(delta)
+	gestion_audio_chica(delta)
 	
-	
+func gestion_audio_chica(delta):
+	if game_over or est_coupure_courant:
+		if audio_chica_kitchen and audio_chica_kitchen.playing:
+			audio_chica_kitchen.stop()
+		return
+
+	# 1. On vérifie si Chica est dans la Cam06 (Cuisine)
+	var chica_en_cuisine = false
+	if systeme_camera and systeme_camera.etat_salles.has("Cam06"):
+		if systeme_camera.etat_salles["Cam06"].has("Chica"):
+			chica_en_cuisine = true
+
+	# 2. On gère le son et le volume
+	if chica_en_cuisine:
+		# On lance le son en boucle s'il ne joue pas déjà
+		if audio_chica_kitchen and not audio_chica_kitchen.playing:
+			audio_chica_kitchen.play()
+			
+		# Calcul du volume de base (lointain)
+		var volume_cible = -11.0 # N'hésitez pas à modifier (-15 ou -20) selon votre fichier audio
+		
+		# Si le moniteur est ouvert et qu'on regarde SPÉCIFIQUEMENT la cuisine
+		if systeme_camera.est_ouvert and systeme_camera.camera_actuelle == "Cam06":
+			volume_cible = 0.0 # Volume à 100%
+			
+		# Transition douce du volume (effet de fondu comme pour la boîte à musique)
+		if audio_chica_kitchen:
+			audio_chica_kitchen.volume_db = lerp(audio_chica_kitchen.volume_db, volume_cible, 10 * delta)
+			
+	else:
+		# Chica n'est pas dans la cuisine, on coupe complètement le son
+		if audio_chica_kitchen and audio_chica_kitchen.playing:
+			audio_chica_kitchen.stop()
+
+
 func gestion_puppet(delta):
 	if game_over or est_coupure_courant: return
 
@@ -411,8 +507,39 @@ func calculer_temperature(delta):
 		heat_timer_accumulated = 0.0
 
 func trigger_game_over_heat():
-	trigger_jumpscare("Heat")
-	update_office_background()
+	if game_over: return
+	game_over = true
+	GameData.unlock_achievement("death_fire")
+	
+	print("GAME OVER : Température critique atteinte !")
+	
+	# 1. On coupe l'interface et les sons ambiants
+	if map_container: map_container.visible = false
+	if game_ui: game_ui.visible = false 
+	if audio_ambiance: audio_ambiance.stop()
+	if audio_fan: audio_fan.stop()
+	
+	# 2. On lance le son du feu
+	if audio_feu:
+		audio_feu.play()
+		
+	# 3. Animation d'apparition du filtre rouge (Surchauffe)
+	if ecran_feu:
+		ecran_feu.visible = true
+		ecran_feu.modulate.a = 0.0 # On commence transparent
+		
+		# Création d'un Tween pour faire un fondu fluide vers le rouge opaque
+		var tween = create_tween()
+		tween.tween_property(ecran_feu, "modulate:a", 1.0, 3.0) # Passe à 100% d'opacité en 2 secondes
+		
+		# On attend la fin de l'animation
+		await tween.finished
+		
+		# On laisse l'écran rouge fixe pendant 1 ou 2 secondes pour que le son finisse
+		await get_tree().create_timer(0.5).timeout
+		
+	# 4. Retour au menu
+	get_tree().change_scene_to_file("res://Scenes/main_menu.tscn")
 
 func jouer_audio_leurre(nom_camera : String):
 	if audio_leurre:
@@ -457,6 +584,9 @@ func update_office_background():
 			audio_warning.play()
 
 func gestion_camera_scroll(delta):
+	# --- AJOUT : Si on est sur mobile, on ignore ce code PC ---
+	if is_mobile: return
+	
 	var souris_x = get_viewport().get_mouse_position().x
 	
 	if souris_x < zone_active_x:
@@ -651,9 +781,11 @@ func trigger_jumpscare(nom_tueur : String):
 	if $Layer_Jumpscare.has_node("Audio_Jumpscare2") and (nom_tueur == "Puppet" or nom_tueur == "Golden-Freddy" or nom_tueur == "Mangle"):
 		$Layer_Jumpscare.get_node("Audio_Jumpscare2").play()
 	elif  $Layer_Jumpscare.has_node("Audio_Jumpscare3") and (nom_tueur == "Springtrap"):
-		$Layer_Jumpscare.get_node("Audio_Jumpscar3").play()
+		$Layer_Jumpscare.get_node("Audio_Jumpscare3").play()
 	elif $Layer_Jumpscare.has_node("Audio_Jumpscare") and (nom_tueur == "Freddy" or nom_tueur == "Bonnie" or nom_tueur == "Chica" or nom_tueur == "Foxy"):
 		$Layer_Jumpscare.get_node("Audio_Jumpscare").play()
+	elif $Layer_Jumpscare.has_node("Audio_Jumpscare4") and (nom_tueur == "Shadow-Bonnie"):
+		$Layer_Jumpscare.get_node("Audio_Jumpscare4").play()
 	
 	var sprite_tueur = $Layer_Jumpscare.get_node_or_null(nom_tueur)
 	
@@ -691,6 +823,9 @@ func trigger_victory():
 	if batterie >= 20.0:
 		GameData.unlock_achievement("battery_master")
 		
+	if est_coupure_courant:
+		GameData.unlock_achievement("blackout_win")
+		
 	# --- SUCCÈS : NUITS ---
 	if night_index >= 1 and night_index <= 6:
 		GameData.unlock_achievement("night_" + str(night_index))
@@ -703,23 +838,28 @@ func trigger_victory():
 			# Si pas déjà validé, on l'ajoute
 			if not id_chal in GameData.completed_challenges:
 				GameData.completed_challenges.append(id_chal)
-				GameData.save_game() # On sauvegarde immédiatemen
+				GameData.save_game() # On sauvegarde immédiatement
 				
-		var tous_a_20 = true
-		# On vérifie si un seul robot est en dessous de 20
-		# Attention : On vérifie TOUS les robots disponibles
-		for key in GameData.custom_night_levels:
-			if GameData.custom_night_levels[key] < 20:
-				tous_a_20 = false
-				break
-		
-		# Vérification supplémentaire : est-ce que les robots sont bien activés ?
-		# (Pour éviter le cheat où on met 0 partout)
-		if GameData.custom_night_levels.size() < 4: # Sécurité
-			tous_a_20 = false
-			 
-		if tous_a_20:
-			GameData.unlock_achievement("20_20_mode")
+			# --- AJOUT ICI : VÉRIFICATION DES SUCCÈS DE CHALLENGES ---
+			var nb_reussis = GameData.completed_challenges.size()
+			
+			if nb_reussis >= 5:
+				GameData.unlock_achievement("challenges_1")
+			if nb_reussis >= 10:
+				GameData.unlock_achievement("challenges_2")
+			if nb_reussis >= 15:
+				GameData.unlock_achievement("challenges_3")
+				
+			var tous_a_20 = true
+			for key in GameData.custom_night_levels:
+				if GameData.custom_night_levels[key] < 20:
+					tous_a_20 = false
+					break
+			
+			# Sécurité : vérifier qu'il y a bien des robots dans la liste
+			if GameData.custom_night_levels.size() > 0 and tous_a_20:
+				GameData.unlock_achievement("all_20_mode")
+				
 	
 	GameData.win_night(night_index)
 	audio_fan.stop()
@@ -728,6 +868,8 @@ func trigger_victory():
 	audio_music_box.stop()
 	audio_ambiance.stop()
 	audio_phone_call.stop()
+	porte_droite._on_light_stop()
+	porte_gauche._on_light_stop()
 	
 	if map_container: map_container.visible = false
 	if label_heure: label_heure.visible = false

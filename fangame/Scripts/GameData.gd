@@ -147,6 +147,19 @@ func save_keybinds():
 	config.save(keybinds_path)
 	print("Touches sauvegardées !")
 
+func reset_all_progress():
+	# 1. Remise à zéro des variables en mémoire
+	unlocked_night = 1
+	current_night_played = 1
+	unlocked_achievements.clear()
+	completed_challenges.clear()
+	completed_no_cameras_nights.clear()
+	
+	# 2. On écrase le fichier de sauvegarde avec ces données vides
+	save_game()
+	print(">>> PROGRESSION TOTALEMENT RÉINITIALISÉE <<<")
+
+
 func load_keybinds():
 	var config = ConfigFile.new()
 	var err = config.load(keybinds_path)

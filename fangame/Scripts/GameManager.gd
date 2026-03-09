@@ -14,13 +14,8 @@ func quit_game():
 	
 func soft_reset():
 	print(">>> RESET F2 : Retour au menu principal <<<")
-	
-	# Optionnel : Si tu as des variables globales temporaires dans GameData à nettoyer, fais-le ici.
-	# Par exemple, si tu veux reset le niveau de batterie global ou autre.
-	# Mais généralement, recharger la scène suffit.
-	
-	# On recharge la scène du menu principal
-	get_tree().change_scene_to_file("res://Scenes/main_menu.tscn")
+	OS.set_restart_on_exit(true)
+	get_tree().quit()
 	
 func _input(event):
 	if event.is_action_pressed("toggle_fullscreen"): # Crée cette action dans Input Map (F11)

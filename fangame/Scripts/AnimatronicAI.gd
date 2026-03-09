@@ -298,18 +298,14 @@ func tenter_attaque_chica():
 	
 	if porte_cible and porte_cible.est_fermee:
 		# --- LA PORTE EST FERMÉE ---
-		# Elle a 2 chances sur 3 (66.6%) d'abandonner
-		var choix = randi() % 3 # Renvoie 0, 1 ou 2
+		# Elle a 9 chances sur 10 (90%) d'abandonner
+		var choix = randi() % 10 
 		
-		if choix < 2: 
-			# Résultat 0 ou 1 -> Elle abandonne
+		if choix < 9: 
 			print("BLOCKED! Chica abandonne et retourne en Cam02.")
 			deplacer_chica("Cam02")
 		else: 
-			# Résultat 2 -> Elle est têtue
 			print("BLOCKED! Chica est têtue et campe à la porte droite.")
-			# On ne fait rien : elle reste à "Right_Door_Pos".
-			# Au prochain timer d'IA, elle repassera dans cette fonction.
 	else:
 		# --- LA PORTE EST OUVERTE ---
 		print("CHICA ENTRE DANS LE BUREAU !")
@@ -325,6 +321,7 @@ func attempt_mangle_move(ai_level):
 		# CONDITION DE DÉFENSE : Vent scellé
 		if camera_system_ref.vent_scelle:
 			print("BLOCKED! Mangle heurte la ventilation scellée (Départ Forcé).")
+			GameData.unlock_achievement("vent_blocked")
 			tenter_jouer_son_vent()
 			changer_position(0) # Retour départ
 			return # On s'arrête là, pas besoin de dés
@@ -371,7 +368,7 @@ func faire_apparaitre_shadow_bonnie():
 
 func desactiver_shadow_bonnie():
 	print("SHADOW BONNIE REPOUSSÉ !")
-	
+	GameData.unlock_achievement("shadow_repelled")
 	if camera_system_ref.has_method("afficher_danger"):
 		camera_system_ref.afficher_danger(sb_room, false)
 	
@@ -446,6 +443,12 @@ func avancer_sur_chemin():
 		camera_system_ref.etat_salles[nouvelle_salle].append(nom)
 	
 	print(nom, " a bougé vers ", nouvelle_salle)
+	
+	var cam_joueur = camera_system_ref.camera_actuelle
+	if camera_system_ref.est_ouvert and (cam_joueur == ancienne_salle or cam_joueur == nouvelle_salle):
+		if camera_system_ref.has_method("declencher_brouillage"):
+			camera_system_ref.declencher_brouillage()
+			
 	camera_system_ref.mettre_a_jour_image()
 
 func jouer_rire_freddy():
@@ -472,6 +475,11 @@ func tenter_attaque():
 		var salle_repli = path_list[current_path_index]
 		if camera_system_ref.etat_salles.has(salle_repli):
 			camera_system_ref.etat_salles[salle_repli].append(nom)
+			
+		var cam_joueur = camera_system_ref.camera_actuelle
+		if camera_system_ref.est_ouvert and (cam_joueur == salle_porte or cam_joueur == salle_repli):
+			if camera_system_ref.has_method("declencher_brouillage"):
+				camera_system_ref.declencher_brouillage()
 			
 		camera_system_ref.mettre_a_jour_image()
 	else:
@@ -533,6 +541,7 @@ func verifier_attaque_ventilation():
 	if office_ref.est_coupure_courant: return
 	if camera_system_ref.vent_scelle:
 		print("BLOCKED! Springtrap heurte la grille.")
+		GameData.unlock_achievement("vent_blocked")
 		if office_ref.has_node("Audio_Vent_Bang"):
 			office_ref.get_node("Audio_Vent_Bang").play()
 		else:
